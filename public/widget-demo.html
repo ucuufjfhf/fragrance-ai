@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+  Manual verification page for the Phase 8 embeddable widget (spec §35).
+
+  This page SIMULATES a merchant's website — including deliberately hostile
+  CSS (different font, RTL-forcing removal, aggressive link/button/heading
+  styles, box-sizing overrides) — to prove the iframe isolates the widget
+  from merchant styles in both directions.
+
+  Usage (local dev):
+    1. npm run dev
+    2. open http://localhost:3000/widget-demo.html
+    3. walk through the manual checklist below.
+-->
+<html lang="fa">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>فروشگاه نمونه — صفحه آزمایشی ویجت</title>
+  <!-- Hostile merchant CSS: must NOT leak into the widget iframe. -->
+  <style>
+    * { box-sizing: content-box !important; }
+    body { font-family: Comic Sans MS, cursive; background: #113311; color: #ff2222; margin: 0; }
+    h1 { color: #ffff00; letter-spacing: 6px; text-transform: uppercase; }
+    button { background: #ff00ff; color: #00ff00; border: 8px dotted black; font-size: 20px; }
+    a { color: #00ffff; text-decoration: line-through; }
+    input { background: #000; color: #0f0; }
+  </style>
+</head>
+<body>
+  <h1>فروشگاه نمونه</h1>
+  <p>
+    این صفحه نمایانگر وب‌سایت فروشنده است. ویجت زیر باید کاملاً مستقل از این
+    استایل‌ها نمایش داده شود.
+  </p>
+
+  <!-- The exact installation snippet a merchant copies from /admin/perfumes -->
+  <script src="/widget.js" data-store-id="store-demo-perfume-shop"></script>
+
+  <hr style="margin-top: 40px" />
+  <h2>چک‌لیست تأیید دستی</h2>
+  <ol style="line-height: 2">
+    <li>ویجت داخل قاب (iframe) بارگذاری شود و استایل‌های سبز/زرد صفحه به آن نفوذ نکند (RTL، فونت درست، رنگ‌های برنامه).</li>
+    <li>دکمهٔ «عطر خودتو پیدا کن ✨» رویداد QUIZ_STARTED را با storeId فروشگاه نمونه ثبت کند.</li>
+    <li>۱۰ سؤال با نوار پیشرفت و دکمه‌های قبلی/بعدی درست کار کند (یک سؤال در هر صفحه).</li>
+    <li>پس از سؤال آخر، حالت «در حال پیدا کردن عطر مناسب تو...» نمایش داده شود.</li>
+    <li>کارت‌های پیشنهاد به‌ترتیب رتبه (۱ تا ۵) و با درصدهای قطعی موتور نمایش داده شوند.</li>
+    <li>پیوند «مشاهده عطر →» فقط برای عطرهای دارای productUrl ظاهر شود و به سایت فروشنده باز شود + رویداد PERFUME_CLICKED ثبت شود.</li>
+    <li>ارتفاع قاب با تغییر مراحل (سؤال/نتیجه) خودکار تنظیم شود (postMessage).</li>
+    <li>دکمهٔ «شروع دوباره» به مقدمه برگردد و رویدادهای آزمون جدید دوباره ثبت شوند.</li>
+    <li>سایز موبایل (≈۳۶۰px): بدون اسکرول افقی، اهداف لمسی ≥ ۴۴px، متن فارسی سرریز نشود.</li>
+    <li>با data-store-id نامعتبر، ویجت اصلاً سوار نشود و در کنسول هشدار باشد.</li>
+  </ol>
+</body>
+</html>

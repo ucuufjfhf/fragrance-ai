@@ -1,0 +1,300 @@
+// Fragrance AI — Prisma schema
+//
+// Phase 2: domain models for stores, perfume inventory, structured fragrance
+// profiles, quiz sessions and deterministic recommendations.
+//
+// Prisma ORM 7 notes (do not "fix" this back to older config styles):
+//  - the `prisma-client` generator requires an explicit `output`
+//  - the connection URL lives in prisma.config.ts (`datasource.url`), NOT here,
+//    and it is read from DATABASE_URL by the environment.
+//
+// Delete behaviour is deliberate (see the comments on each relation): catalog
+// rows cascade, history rows (quiz sessions, recommendations) are preserved, and
+// stores/perfumes are meant to be soft-deactivated through their `active` flag.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Perfume audience/category. Mirrors `Gender` in types/fragrance.ts.
+enum Gender {
+  MEN
+  WOMEN
+  UNISEX
+}
+
+/// Occasion a perfume is worn for. Mirrors `Occasion` in types/fragrance.ts.
+enum Occasion {
+  DAILY
+  DATE
+  PARTY
+  OFFICE
+  FORMAL
+}
+
+/// Season suitability. Mirrors `Season` in types/fragrance.ts.
+enum Season {
+  SPRING
+  SUMMER
+  AUTUMN
+  WINTER
+  ALL
+}
+
+/// Lifecycle of one quiz attempt.
+enum QuizSessionStatus {
+  /// Started but not finished: the personality vector is still null.
+  STARTED
+  /// Finished: the nine vector columns always hold the Phase 1 values.
+  COMPLETED
+  /// Explicitly abandoned (widget closed) — kept for funnel analytics.
+  ABANDONED
+}
+
+/// A perfume shop using the SaaS (tenant boundary).
+model Store {
+  id   String @id @default(cuid())
+  name String
+  /// Public, URL-safe identifier used to embed the widget. Must be unique.
+  slug String @unique
+
+  websiteUrl String?
+  logoUrl    String?
+
+  /// Soft deactivation. Once a store has history it is deactivated, not deleted.
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Catalog is owned by the store: deleting a store removes its perfumes.
+  /// Deleting the store is still blocked while any of those perfumes are
+  /// referenced by historical recommendations (see Recommendation.perfume).
+  perfumes Perfume[]
+
+  /// History is preserved: deleting a store only detaches its sessions.
+  quizSessions QuizSession[]
+
+  /// Analytics observations scoped to this store (SetNull on store delete).
+  analyticsEvents AnalyticsEvent[]
+}
+
+/// A single perfume in a store's inventory.
+model Perfume {
+  id      String @id @default(cuid())
+  storeId String
+
+  name        String
+  brand       String
+  /// Optional per-store slug for clean product URLs.
+  slug        String?
+  description String?
+
+  /// Absolute URL back to the merchant's own product page. Optional on purpose:
+  /// merchants run different platforms (Shopify, WooCommerce, custom), so no URL
+  /// shape is assumed — the app only links out to whatever is stored here.
+  productUrl String?
+  imageUrl   String?
+
+  /// Audience/category of the perfume, used by the Phase 3 gender filter.
+  gender Gender @default(UNISEX)
+
+  /// Optional price in the store currency, used by the Phase 3 budget filter.
+  price    Float?
+  currency String @default("IRR")
+
+  /// Inventory state: out-of-stock perfumes are never recommended.
+  inStock Boolean @default(true)
+  /// Soft deactivation for a product the merchant no longer sells.
+  active  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// Exactly one structured profile per perfume; it dies with the perfume.
+  profile FragranceProfile?
+
+  /// History is preserved: a perfume referenced by recommendations cannot be
+  /// hard-deleted (Restrict) — deactivate it instead.
+  recommendations Recommendation[]
+
+  /// Per-store product slug uniqueness (Postgres allows many NULL slugs).
+  @@unique([storeId, slug])
+  /// One composite index that covers store inventory lookups and the Phase 3
+  /// `active` + `inStock` filters through the leftmost-prefix rule.
+  @@index([storeId, active, inStock])
+}
+
+/// Structured characteristics of one perfume, consumed by the deterministic
+/// matching engine. All numeric values are normalised to 0–100 integers.
+///
+/// The first nine columns are the engine's matching axes and are required: they
+/// are the very same nine dimensions the Phase 1 quiz produces for the user,
+/// which is what makes similarity scoring deterministic and comparable. The
+/// columns below them are optional fragrance metadata used for copy, the
+/// fragrance-DNA view and later tuning — never a replacement for the nine axes.
+model FragranceProfile {
+  id        String @id @default(cuid())
+  perfumeId String @unique
+
+  // --- the nine matching axes (0–100, required) ---
+  social       Int
+  adventurous  Int
+  expressive   Int
+  mysterious   Int
+  fresh        Int
+  warm         Int
+  experimental Int
+  elegant      Int
+  bold         Int
+
+  // --- additional fragrance descriptors (0–100, optional) ---
+  sweet   Int?
+  woody   Int?
+  spicy   Int?
+  floral  Int?
+  citrus  Int?
+  aquatic Int?
+  smoky   Int?
+  clean   Int?
+
+  // --- intensity characteristics (0–100, optional) ---
+  longevity  Int?
+  projection Int?
+
+  /// Fragrance family, e.g. "woody amber". Free-form so product imports are not
+  /// blocked by a taxonomy the product has not settled on yet.
+  family   String?
+  /// Fragrance notes, e.g. ["زعفران", "چرم"].
+  notes    String[]  @default([])
+  /// Best season / occasion, used as optional Phase 3 filters.
+  season   Season?
+  occasion Occasion?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  perfume Perfume @relation(fields: [perfumeId], references: [id], onDelete: Cascade)
+}
+
+/// One quiz attempt: a historical snapshot of the raw answers plus the nine
+/// normalised dimensions produced by `lib/personality/scoring.ts`.
+///
+/// The database NEVER recalculates the personality score — the deterministic
+/// TypeScript engine stays the single source of truth. The nine vector columns
+/// are nullable because a session may be stored while still in progress
+/// (STARTED) and are always populated for COMPLETED sessions.
+model QuizSession {
+  id      String  @id @default(cuid())
+  storeId String?
+
+  /// Raw Phase 1 answer snapshot: QuizAnswer[] ({ questionId, optionId }).
+  answers Json
+
+  // --- personality vector snapshot (0–100, set on completion) ---
+  social       Int?
+  adventurous  Int?
+  expressive   Int?
+  mysterious   Int?
+  fresh        Int?
+  warm         Int?
+  experimental Int?
+  elegant      Int?
+  bold         Int?
+
+  /// Archetype id from `lib/personality/archetypes.ts`, e.g. "bold-one".
+  archetypeId String?
+  status      QuizSessionStatus @default(STARTED)
+
+  /// Session context captured by the widget and consumed by the Phase 3
+  /// inventory filters (budget / season / occasion).
+  season   Season?
+  occasion Occasion?
+  budget   Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// History is preserved when a store is removed.
+  store Store? @relation(fields: [storeId], references: [id], onDelete: SetNull)
+
+  /// Recommendations are children of the session and cascade with it.
+  recommendations Recommendation[]
+
+  /// Per-store session retrieval, completion-status filtering and newest-first
+  /// ordering in a single composite index.
+  @@index([storeId, status, createdAt])
+}
+
+/// The deterministic result of matching one QuizSession against one Perfume.
+model Recommendation {
+  id            String @id @default(cuid())
+  quizSessionId String
+  perfumeId     String
+
+  /// 1-based position in the deterministic Top-N list, unique per session.
+  rank Int
+
+  /// Deterministic match score, 0–100. Written only by the matching engine.
+  score Float
+
+  /// Optional AI-written Persian «چرا این عطر؟» text. Nullable on purpose: the
+  /// recommendation stays valid and useful when the AI layer is unavailable.
+  explanation String?
+
+  createdAt DateTime @default(now())
+
+  quizSession QuizSession @relation(fields: [quizSessionId], references: [id], onDelete: Cascade)
+
+  /// Restrict: deleting a perfume must never silently delete recommendation
+  /// history. Deactivate the perfume (active = false) instead.
+  perfume Perfume @relation(fields: [perfumeId], references: [id], onDelete: Restrict)
+
+  /// One rank slot per session — also serves "recommendations of a session".
+  @@unique([quizSessionId, rank])
+  @@index([perfumeId])
+}
+
+/// One anonymous analytics observation (Phase 7). Append-only: rows are never
+/// updated or deleted by the application, so the dashboard always reflects the
+/// real event stream.
+///
+/// Privacy on purpose: an event never carries IP, email, phone, name, precise
+/// location, fingerprint or advertising identifiers. The optional `sessionId`
+/// is a random opaque token (not a user identity) and `metadata` is a small
+/// validated JSON object for aggregate-oriented context only (e.g. counts).
+model AnalyticsEvent {
+  id String @id @default(cuid())
+
+  /// Tenant boundary. Optional because some customer-side events (e.g. an early
+  /// quiz start before a store context exists) may fire without one.
+  storeId String?
+  /// Opaque random token correlating one anonymous quiz attempt's events.
+  sessionId String?
+  /// Optional perfume association; MUST belong to `storeId` (validated in
+  /// lib/analytics before any write).
+  perfumeId String?
+
+  /// Discriminator from the canonical `ANALYTICS_EVENT_TYPES` contract.
+  eventType String
+
+  /// Small, validated context object (e.g. { "count": 4 }). Never PII.
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  /// History is preserved when a store is removed (matches QuizSession).
+  store Store? @relation(fields: [storeId], references: [id], onDelete: SetNull)
+
+  /// Every dashboard query is store + time scoped through this index.
+  @@index([storeId, createdAt])
+  /// Perfume-level roll-ups (top recommended / clicked) filter by perfume.
+  @@index([perfumeId, eventType, createdAt])
+}

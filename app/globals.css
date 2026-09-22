@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+/*
+ * Fragrance AI — base styles
+ *
+ * Persian-first, RTL, mobile-first. The palette is a single premium dark theme
+ * suited to a perfume storefront (Phase 5 polishes the result UI on top of it).
+ */
+
+:root {
+  --background: #0b0910;
+  --foreground: #f6f4f8;
+  --surface: #141019;
+  --surface-2: #1d1623;
+  --border-soft: rgba(255, 255, 255, 0.09);
+  --accent: #d9a24a;
+  --accent-soft: rgba(217, 162, 74, 0.14);
+  --muted: #a49cb2;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border-soft: var(--border-soft);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-muted: var(--muted);
+  --font-sans: var(--font-persian), "Vazirmatn", "IRANSansX", "IRANSans", "Segoe UI",
+    Tahoma, sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  /* Persian script needs a roomier line height than Latin text. */
+  line-height: 1.9;
+  text-rendering: optimizeLegibility;
+}
+
+/* Persian digits are long by nature; tabular figures keep progress labels stable. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Question and result screens rise into place; skipped for reduced-motion users. */
+@keyframes quiz-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.quiz-rise {
+  animation: quiz-rise 0.28s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quiz-rise {
+    animation: none;
+  }
+}
