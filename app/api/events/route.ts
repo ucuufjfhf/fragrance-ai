@@ -24,7 +24,7 @@ import {
  */
 
 export async function POST(request: Request): Promise<Response> {
-  const limit = checkRateLimit(
+  const limit = await checkRateLimit(
     `events:requester:${requesterIdentity(request)}`,
     PUBLIC_RATE_LIMITS.eventsRequester,
   );

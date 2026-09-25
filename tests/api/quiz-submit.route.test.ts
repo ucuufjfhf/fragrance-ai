@@ -1,4 +1,7 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const rateCounts = new Map<string, number>();
+vi.mock("@/lib/db", () => ({ getPrisma: () => ({ $queryRaw: async (_s: TemplateStringsArray, ...v: unknown[]) => { const n = (rateCounts.get(String(v[0])) ?? 0) + 1; rateCounts.set(String(v[0]), n); return [{ count: n }]; }, rateLimitCounter: { deleteMany: vi.fn() } }) }));
 
 import { POST } from "@/app/api/quiz/submit/route";
 import { resetRateLimitsForTests } from "@/lib/rate-limit";
@@ -12,7 +15,7 @@ import type {
 
 const PERSIAN_TEXT = /[\u0600-\u06FF]/;
 
-beforeEach(() => resetRateLimitsForTests());
+beforeEach(() => { rateCounts.clear(); resetRateLimitsForTests(); });
 
 const completeAnswers = (): QuizAnswer[] =>
   QUIZ_QUESTIONS.map((question) => ({

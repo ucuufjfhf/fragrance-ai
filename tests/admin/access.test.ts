@@ -94,7 +94,7 @@ describe("adminAccessCookieOptions", () => {
     expect(prod.httpOnly).toBe(true);
     expect(prod.sameSite).toBe("lax");
     expect(prod.secure).toBe(true);
-    expect(prod.path).toBe("/");
+    expect(prod.path).toBe("/admin");
     expect(prod.maxAge).toBeGreaterThan(0);
   });
 

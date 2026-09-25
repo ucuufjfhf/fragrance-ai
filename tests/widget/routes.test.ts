@@ -6,6 +6,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * plain functions with constructed Requests, exactly as Next.js would.
  */
 
+const rateCounts = new Map<string, number>();
+vi.mock("@/lib/rate-limit", () => ({
+  PUBLIC_RATE_LIMITS: { widgetRequester: { limit: 10, windowMs: 60_000 }, widgetStore: { limit: 30, windowMs: 60_000 }, eventsRequester: { limit: 120, windowMs: 60_000 }, quizRequester: { limit: 30, windowMs: 60_000 }, adminUnlock: { limit: 5, windowMs: 900_000 } },
+  checkRateLimit: vi.fn(async (key: string, policy: { limit: number }) => { const n = (rateCounts.get(key) ?? 0) + 1; rateCounts.set(key, n); return { allowed: n <= policy.limit, retryAfterSeconds: 1 }; }),
+  rateLimitResponse: vi.fn((retryAfterSeconds: number, body: unknown, headers: Record<string, string> = {}) => Response.json(body, { status: 429, headers: { ...headers, "Retry-After": String(retryAfterSeconds) } })),
+  requesterIdentity: vi.fn(() => "test-requester"),
+  resetRateLimitsForTests: vi.fn(() => rateCounts.clear()),
+  clearRateLimit: vi.fn(),
+}));
+
 const mocks = vi.hoisted(() => ({
   storeFindFirst: vi.fn(),
   perfumeFindMany: vi.fn(),
@@ -40,6 +50,7 @@ vi.mock("@/lib/ai/explanation", () => ({
 import { GET as configGet } from "@/app/api/widget/config/route";
 import { POST as recommendPost } from "@/app/api/widget/recommend/route";
 import type { MatchResult } from "@/types/recommendation";
+import { widgetCorsHeaders } from "@/lib/widget/cors";
 import { resetRateLimitsForTests } from "@/lib/rate-limit";
 
 const VECTOR = {
@@ -69,10 +80,21 @@ function makeMatchResult(storeId: string, count: number): MatchResult {
 beforeEach(() => {
   vi.clearAllMocks();
   resetRateLimitsForTests();
-  mocks.storeFindFirst.mockResolvedValue({ name: "فروشگاه نمونه" });
+  mocks.storeFindFirst.mockResolvedValue({ name: "فروشگاه نمونه", websiteUrl: "https://shop.example" });
   mocks.createAIProvider.mockReturnValue({ isAvailable: () => false });
 });
 
+describe("widget CORS", () => {
+  it("allows only the configured store origin", () => {
+    expect(widgetCorsHeaders("https://shop.example", "https://shop.example") ["Access-Control-Allow-Origin"]).toBe("https://shop.example");
+    expect(widgetCorsHeaders("https://evil.example", "https://shop.example")["Access-Control-Allow-Origin"]).toBeUndefined();
+    expect(widgetCorsHeaders("https://shop.example", null)["Access-Control-Allow-Origin"]).toBeUndefined();
+    expect(widgetCorsHeaders("http://localhost:3000", "http://localhost:3000")["Access-Control-Allow-Origin"]).toBe("http://localhost:3000");
+    expect(widgetCorsHeaders("http://127.0.0.1:3000", "http://127.0.0.1:3000")["Access-Control-Allow-Origin"]).toBe("http://127.0.0.1:3000");
+    expect(widgetCorsHeaders("http://localhost:3001", "http://localhost:3000")["Access-Control-Allow-Origin"]).toBeUndefined();
+    expect(widgetCorsHeaders("https://other.example", "https://shop.example")["Access-Control-Allow-Origin"]).toBeUndefined();
+  });
+});
 describe("GET /api/widget/config — store validation (§11)", () => {
   it("returns customer-safe config for an active store", async () => {
     const response = await configGet(new Request("https://app.test/api/widget/config?storeId=store-A"));
@@ -85,7 +107,7 @@ describe("GET /api/widget/config — store validation (§11)", () => {
     });
     expect(mocks.storeFindFirst).toHaveBeenCalledWith({
       where: { id: "store-A", active: true },
-      select: { name: true },
+      select: { name: true, websiteUrl: true },
     });
   });
 

@@ -1850,3 +1850,14 @@ This entry records the current working-tree implementation independently of earl
 ---
 
 
+
+# Current working-tree update — CORS, shared quotas, and admin hardening
+
+This entry records the combined uncommitted implementation currently present in the working tree.
+
+- **Widget CORS:** Public widget endpoints now allow only the origin configured in `Store.websiteUrl`; missing or mismatched website origins receive no `Access-Control-Allow-Origin` header. Localhost, `127.0.0.1`, and `::1` are recognized by hostname, including development ports such as `:3000`, while mismatched local ports remain rejected.
+- **PostgreSQL-backed rate limiting:** Public request limits and AI global/per-store usage quotas use the `RateLimitCounter` table and an atomic PostgreSQL upsert, with bounded window cleanup. Database counter failures fail open and emit a safe structured log event. The AI circuit breaker remains process-local.
+- **Phase 12.6-D admin hardening:** Shared-secret authentication comparison is constant-time, the admin cookie is restricted to `/admin` while retaining HttpOnly/SameSite/Secure and bounded lifetime, and a logout action invalidates the cookie. The existing shared/global secret model remains; this is not per-merchant identity or a full authentication system. No CSRF token infrastructure was added; current mutations remain protected by server-side guards and `SameSite=Lax` server actions.
+- **Current validation target:** 47 test files and 538 tests, with Prisma validation, typecheck, lint, and production build required before commit.
+
+

@@ -1,12 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
 const mocks = vi.hoisted(() => ({ record: vi.fn() }));
+const rateCounts = new Map<string, number>();
+vi.mock("@/lib/db", () => ({ getPrisma: () => ({
+  $queryRaw: async (_s: TemplateStringsArray, ...v: unknown[]) => { const k = String(v[0]); const n = (rateCounts.get(k) ?? 0) + 1; rateCounts.set(k, n); return [{ count: n }]; },
+  rateLimitCounter: { deleteMany: vi.fn() },
+}) }));
 vi.mock("@/lib/analytics/service", () => ({ recordAnalyticsEvent: mocks.record }));
 
 import { POST } from "@/app/api/events/route";
 import { resetRateLimitsForTests } from "@/lib/rate-limit";
 
 beforeEach(() => {
+  rateCounts.clear();
   vi.clearAllMocks();
   resetRateLimitsForTests();
   mocks.record.mockResolvedValue({ ok: true });

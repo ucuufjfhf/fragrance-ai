@@ -25,7 +25,7 @@ import {
  *  - 400 `QuizSubmitErrorResponse` for malformed JSON or invalid answers
  */
 export async function POST(request: Request): Promise<Response> {
-  const limit = checkRateLimit(
+  const limit = await checkRateLimit(
     `quiz:requester:${requesterIdentity(request)}`,
     PUBLIC_RATE_LIMITS.quizRequester,
   );

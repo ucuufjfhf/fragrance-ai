@@ -88,6 +88,8 @@ model Store {
   slug String @unique
 
   websiteUrl String?
+  /// Null blocks browser CORS matching for every cross-origin widget embed; set
+  /// this to the real merchant origin before using the store in production.
   logoUrl    String?
 
   /// Soft deactivation. Once a store has history it is deactivated, not deleted.
@@ -400,4 +402,18 @@ model BulkProfileItem {
   @@unique([jobId, perfumeId])
   /// The claim / resume / progress queries all filter by job + status.
   @@index([jobId, status])
+}
+
+/// Process-local usage state is intentionally limited to the circuit breaker.
+/// Request quotas are persisted through RateLimitCounter.
+model RateLimitCounter {
+  id          String   @id @default(cuid())
+  key         String
+  windowStart DateTime
+  count       Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([key, windowStart])
+  @@index([windowStart])
+  @@index([key])
 }

@@ -63,7 +63,14 @@ export async function isAdminRequestAuthorized(
     return false;
   }
   const expected = await hashAdminSecret(secret as string);
-  return cookieValue === expected;
+  if (typeof cookieValue !== "string" || cookieValue.length !== expected.length) {
+    return false;
+  }
+  let difference = 0;
+  for (let index = 0; index < expected.length; index += 1) {
+    difference |= cookieValue.charCodeAt(index) ^ expected.charCodeAt(index);
+  }
+  return difference === 0;
 }
 
 /** The expected cookie value for the configured secret (its hash). */
@@ -76,7 +83,7 @@ export function adminAccessCookieOptions(requestHost?: string): {
   httpOnly: true;
   sameSite: "lax";
   secure: boolean;
-  path: "/";
+  path: "/admin";
   maxAge: number;
 } {
   const host = requestHost ?? "";
@@ -88,7 +95,7 @@ export function adminAccessCookieOptions(requestHost?: string): {
     httpOnly: true,
     sameSite: "lax",
     secure: !isLocal,
-    path: "/",
+    path: "/admin",
     // One week of operator convenience; changing the secret invalidates it.
     maxAge: 7 * 24 * 60 * 60,
   };

@@ -1,4 +1,20 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const dbMocks = vi.hoisted(() => ({ counts: new Map<string, number>() }));
+vi.mock("@/lib/db", () => ({
+  getPrisma: () => ({
+    $queryRaw: async (_strings: TemplateStringsArray, ...values: unknown[]) => {
+      const key = `${String(values[0])}:${String(values[1])}`;
+      const count = (dbMocks.counts.get(key) ?? 0) + 1;
+      dbMocks.counts.set(key, count);
+      return [{ count }];
+    },
+    rateLimitCounter: { deleteMany: vi.fn(async ({ where }: { where: { key?: string } }) => {
+      if (where.key) for (const key of dbMocks.counts.keys()) if (key.startsWith(`${where.key}:`)) dbMocks.counts.delete(key);
+      return { count: 0 };
+    }) },
+  }),
+}));
 
 import {
   PUBLIC_RATE_LIMITS,
@@ -9,39 +25,42 @@ import {
   resetRateLimitsForTests,
 } from "@/lib/rate-limit";
 
-beforeEach(() => resetRateLimitsForTests());
+beforeEach(() => {
+  dbMocks.counts.clear();
+  resetRateLimitsForTests();
+});
 
 describe("checkRateLimit", () => {
-  it("allows requests through the limit and blocks the next request", () => {
+  it("allows requests through the limit and blocks the next request", async () => {
     const policy = { limit: 2, windowMs: 1_000 };
 
-    expect(checkRateLimit("a", policy, 0).allowed).toBe(true);
-    expect(checkRateLimit("a", policy, 0).allowed).toBe(true);
+    expect((await checkRateLimit("a", policy, 0)).allowed).toBe(true);
+    expect((await checkRateLimit("a", policy, 0)).allowed).toBe(true);
 
-    const blocked = checkRateLimit("a", policy, 0);
+    const blocked = await checkRateLimit("a", policy, 0);
     expect(blocked.allowed).toBe(false);
     expect(blocked.retryAfterSeconds).toBe(1);
   });
 
-  it("returns the correct Retry-After and resets after the fixed window", () => {
+  it("returns the correct Retry-After and resets after the fixed window", async () => {
     const policy = { limit: 1, windowMs: 10_000 };
 
-    expect(checkRateLimit("a", policy, 0).allowed).toBe(true);
-    expect(checkRateLimit("a", policy, 1_001).retryAfterSeconds).toBe(9);
-    expect(checkRateLimit("a", policy, 10_000).allowed).toBe(true);
+    expect((await checkRateLimit("a", policy, 0)).allowed).toBe(true);
+    expect((await checkRateLimit("a", policy, 1_001)).retryAfterSeconds).toBe(9);
+    expect((await checkRateLimit("a", policy, 10_000)).allowed).toBe(true);
   });
 
-  it("isolates keys and clears a successful identity", () => {
-    expect(checkRateLimit("a", { limit: 1, windowMs: 1_000 }, 0).allowed).toBe(true);
-    expect(checkRateLimit("b", { limit: 1, windowMs: 1_000 }, 0).allowed).toBe(true);
+  it("isolates keys and clears a successful identity", async () => {
+    expect((await checkRateLimit("a", { limit: 1, windowMs: 1_000 }, 0)).allowed).toBe(true);
+    expect((await checkRateLimit("b", { limit: 1, windowMs: 1_000 }, 0)).allowed).toBe(true);
 
-    clearRateLimit("a");
-    expect(checkRateLimit("a", { limit: 1, windowMs: 1_000 }, 0).allowed).toBe(true);
+    await clearRateLimit("a");
+    expect((await checkRateLimit("a", { limit: 1, windowMs: 1_000 }, 0)).allowed).toBe(true);
   });
 
   it("fails open for invalid timing or policy and emits a valid 429 helper", async () => {
-    expect(checkRateLimit("a", { limit: 0, windowMs: 0 }, 0).allowed).toBe(true);
-    expect(checkRateLimit("a", { limit: 1, windowMs: 1_000 }, Number.NaN).allowed).toBe(true);
+    expect((await checkRateLimit("a", { limit: 0, windowMs: 0 }, 0)).allowed).toBe(true);
+    expect((await checkRateLimit("a", { limit: 1, windowMs: 1_000 }, Number.NaN)).allowed).toBe(true);
 
     const response = rateLimitResponse(7, { ok: false, error: "RATE_LIMITED" });
     expect(response.status).toBe(429);

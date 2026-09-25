@@ -63,7 +63,7 @@ export async function unlockAdminAccessAction(formData: FormData): Promise<void>
 
   // Only failed attempts consume quota. Locked and unlocked states use the
   // same generic outcome so this gate reveals nothing about the configured value.
-  const attemptLimit = checkRateLimit(unlockKey, PUBLIC_RATE_LIMITS.adminUnlock);
+  const attemptLimit = await checkRateLimit(unlockKey, PUBLIC_RATE_LIMITS.adminUnlock);
   if (!attemptLimit.allowed) {
     gateRedirect(nextPath, ADMIN_UNLOCK_REDIRECT_ERROR);
   }
@@ -81,7 +81,7 @@ export async function unlockAdminAccessAction(formData: FormData): Promise<void>
     gateRedirect(nextPath, "wrong");
   }
 
-  clearRateLimit(unlockKey);
+  await clearRateLimit(unlockKey);
   const host = headersList.get("host") ?? "";
   const cookieStore = await cookies();
   cookieStore.set(ADMIN_ACCESS_COOKIE, expectedHash, adminAccessCookieOptions(host));
@@ -90,4 +90,10 @@ export async function unlockAdminAccessAction(formData: FormData): Promise<void>
 
   // Open-redirect guard: only admin-relative destinations are honored.
   redirect(nextPath);
+}
+
+export async function logoutAdminAccessAction(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set(ADMIN_ACCESS_COOKIE, "", { ...adminAccessCookieOptions(), maxAge: 0 });
+  redirect(ADMIN_ACCESS_PATH);
 }

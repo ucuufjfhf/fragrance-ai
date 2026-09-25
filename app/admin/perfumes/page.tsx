@@ -1,3 +1,5 @@
+import { logoutAdminAccessAction } from "@/app/admin/access/actions";
+
 import { headers } from "next/headers";
 import Link from "next/link";
 
@@ -194,6 +196,9 @@ function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
       {children}
+      <form action={logoutAdminAccessAction} className="self-end">
+        <button type="submit" className="text-sm underline">خروج از مدیریت</button>
+      </form>
     </main>
   );
 }

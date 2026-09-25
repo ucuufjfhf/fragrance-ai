@@ -42,7 +42,7 @@ interface WidgetRecommendRequest {
 
 export async function POST(request: Request): Promise<Response> {
   const origin = request.headers.get("origin");
-  const headers = widgetCorsHeaders(origin);
+  let headers = widgetCorsHeaders(origin, null);
 
   let payload: unknown;
 
@@ -59,34 +59,17 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ ok: false, reason: "INVALID_ID" }, { status: 400, headers });
   }
 
-  // Charge both dimensions before any DB or AI work. A caller cannot consume a
-  // different store's quota, and rotating requester addresses does not bypass
-  // the store's aggregate protection.
-  const requester = requesterIdentity(request);
-  const requesterLimit = checkRateLimit(
-    `widget:requester:${requester}`,
-    PUBLIC_RATE_LIMITS.widgetRequester,
-  );
-  const storeLimit = checkRateLimit(
-    `widget:store:${body.storeId}`,
-    PUBLIC_RATE_LIMITS.widgetStore,
-  );
-  if (!requesterLimit.allowed || !storeLimit.allowed) {
-    const limited = !requesterLimit.allowed ? requesterLimit : storeLimit;
-    return rateLimitResponse(
-      limited.retryAfterSeconds,
-      { ok: false, reason: "RATE_LIMITED" },
-      headers,
-    );
-  }
+  // Rate limits are applied after authoritative store lookup so the response
+  // CORS decision uses that store's websiteUrl.
 
   const prisma = getPrisma();
 
   try {
     const store = await prisma.store.findFirst({
       where: { id: body.storeId, active: true },
-      select: { id: true },
+      select: { id: true, websiteUrl: true },
     });
+    headers = widgetCorsHeaders(origin, store?.websiteUrl);
 
     if (!store) {
       return Response.json({ ok: false, reason: "STORE_NOT_FOUND" }, { status: 404, headers });
@@ -94,6 +77,15 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     return Response.json({ ok: false, reason: "STORE_NOT_FOUND" }, { status: 500, headers });
   }
+  const requester = requesterIdentity(request);
+  const requesterLimit = await checkRateLimit(`widget:requester:${requester}`, PUBLIC_RATE_LIMITS.widgetRequester);
+  const storeLimit = await checkRateLimit(`widget:store:${body.storeId}`, PUBLIC_RATE_LIMITS.widgetStore);
+  if (!requesterLimit.allowed || !storeLimit.allowed) {
+    const limited = !requesterLimit.allowed ? requesterLimit : storeLimit;
+    return rateLimitResponse(limited.retryAfterSeconds, { ok: false, reason: "RATE_LIMITED" }, headers);
+  }
+
+
 
   // --- 2. vector validation (all nine axes, strict integers) ---
   const vector = validateWidgetVector(body.personalityVector);
@@ -163,9 +155,12 @@ export async function POST(request: Request): Promise<Response> {
   return Response.json({ ok: true, ...response }, { status: 200, headers });
 }
 
-export function OPTIONS(request: Request): Response {
-  return new Response(null, {
-    status: 204,
-    headers: widgetCorsHeaders(request.headers.get("origin")),
-  });
+export async function OPTIONS(request: Request): Promise<Response> {
+  const storeId = new URL(request.url).searchParams.get("storeId");
+  const origin = request.headers.get("origin");
+  const prisma = getPrisma();
+  const store = storeId && isValidStoreId(storeId)
+    ? await prisma.store.findFirst({ where: { id: storeId, active: true }, select: { websiteUrl: true } })
+    : null;
+  return new Response(null, { status: 204, headers: widgetCorsHeaders(origin, store?.websiteUrl) });
 }

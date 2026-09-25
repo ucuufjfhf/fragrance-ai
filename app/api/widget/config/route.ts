@@ -19,9 +19,8 @@ import { widgetCorsHeaders } from "@/lib/widget/cors";
 
 export async function GET(request: Request): Promise<Response> {
   const origin = request.headers.get("origin");
-  const headers = widgetCorsHeaders(origin);
-
   const storeId = new URL(request.url).searchParams.get("storeId");
+  let headers = widgetCorsHeaders(origin, null);
 
   if (!isValidStoreId(storeId)) {
     return Response.json(
@@ -35,8 +34,9 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const store = await prisma.store.findFirst({
       where: { id: storeId, active: true },
-      select: { name: true },
+      select: { name: true, websiteUrl: true },
     });
+    headers = widgetCorsHeaders(origin, store?.websiteUrl);
 
     if (!store) {
       return Response.json(
@@ -61,9 +61,12 @@ export async function GET(request: Request): Promise<Response> {
   }
 }
 
-export function OPTIONS(request: Request): Response {
-  return new Response(null, {
-    status: 204,
-    headers: widgetCorsHeaders(request.headers.get("origin")),
-  });
+export async function OPTIONS(request: Request): Promise<Response> {
+  const storeId = new URL(request.url).searchParams.get("storeId");
+  const origin = request.headers.get("origin");
+  const prisma = getPrisma();
+  const store = storeId && isValidStoreId(storeId)
+    ? await prisma.store.findFirst({ where: { id: storeId, active: true }, select: { websiteUrl: true } })
+    : null;
+  return new Response(null, { status: 204, headers: widgetCorsHeaders(origin, store?.websiteUrl) });
 }
