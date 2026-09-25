@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 import ProgressBar from "@/components/quiz/ProgressBar";
+import { BrandMark } from "@/components/ui-icons";
+
 import Question from "@/components/quiz/Question";
 import WidgetRecommendationCard from "@/components/widget/WidgetRecommendationCard";
 import { trackEvent } from "@/lib/analytics/client";
@@ -176,14 +178,14 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
         <button
           type="button"
           onClick={() => void handleSubmit()}
-          className="mt-4 flex min-h-12 w-full items-center justify-center rounded-2xl bg-[#d9a24a] px-5 font-medium text-white transition-colors hover:bg-[#c8913e]"
+          className="mt-4 flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-white transition-colors hover:bg-accent/90"
         >
           تلاش دوباره
         </button>
         <button
           type="button"
           onClick={handleRestart}
-          className="mt-2 flex min-h-12 w-full items-center justify-center rounded-2xl border border-[#e5e0d8] px-5 text-sm text-[#6b6257] transition-colors hover:border-[#d9a24a]/50"
+          className="mt-2 flex min-h-12 w-full items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50"
         >
           شروع دوباره آزمون
         </button>
@@ -204,13 +206,13 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
 
   if (state.flow.phase === "intro") {
     return (
-      <section className="flex flex-col gap-5 rounded-3xl border border-[#e5e0d8] bg-white p-6">
+      <section className="flex flex-col gap-5 rounded-3xl border border-border-soft bg-surface p-6">
         <div className="flex flex-col gap-2">
-          <span className="w-fit rounded-full border border-[#e5e0d8] bg-[#faf7f2] px-4 py-1 text-sm text-[#b07d2a]">
-            ✨ آزمون سلیقه عطری
+          <span className="w-fit rounded-full border border-border-soft bg-accent-soft px-4 py-1 text-sm text-accent">
+            <BrandMark className="mr-1 inline h-4 w-4" /> آزمون سلیقه عطری
           </span>
-          <h1 className="text-2xl font-bold leading-10 text-[#2b2620]">عطر مناسب خودت رو پیدا کن</h1>
-          <p className="text-sm leading-8 text-[#6b6257]">
+          <h1 className="text-2xl font-bold leading-10 text-foreground">عطر مناسب خودت رو پیدا کن</h1>
+          <p className="text-sm leading-8 text-muted">
             فقط به ۱۰ سؤال کوتاه جواب بده تا ببینیم چه رایحه‌ای بیشتر با سلیقه و شخصیت عطری تو هماهنگه.
           </p>
         </div>
@@ -218,9 +220,9 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
         <button
           type="button"
           onClick={handleStart}
-          className="flex min-h-12 flex-1 items-center justify-center rounded-2xl bg-[#d9a24a] px-5 font-medium text-white transition-colors hover:bg-[#c8913e]"
+          className="flex min-h-12 flex-1 items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-white transition-colors hover:bg-accent/90"
         >
-          عطر خودتو پیدا کن ✨
+          عطر خودتو پیدا کن
         </button>
       </section>
     );
@@ -249,7 +251,7 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
         <button
           type="button"
           onClick={() => setState((current) => ({ ...current, flow: goPrevious(current.flow) }))}
-          className="flex min-h-12 items-center justify-center rounded-2xl border border-[#e5e0d8] px-5 text-sm text-[#6b6257] transition-colors hover:border-[#d9a24a]/50"
+          className="flex min-h-12 items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50"
         >
           قبلی
         </button>
@@ -263,9 +265,9 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
               setState((current) => ({ ...current, flow: goNext(current.flow) }));
             }
           }}
-          className="flex min-h-12 flex-1 items-center justify-center rounded-2xl bg-[#d9a24a] px-5 font-medium text-white transition-colors hover:bg-[#c8913e] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex min-h-12 flex-1 items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-white transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLastQuestion ? "دیدن نتیجه ✨" : "بعدی"}
+          {isLastQuestion ? "دیدن نتیجه" : "بعدی"}
         </button>
       </div>
     </section>
@@ -285,12 +287,12 @@ function WidgetResult({
 }) {
   return (
     <div className="flex flex-col gap-5">
-      <section className="flex flex-col items-center gap-2 rounded-3xl border border-[#d9a24a]/40 bg-[#faf7f2] p-6 text-center">
+      <section className="flex flex-col items-center gap-2 rounded-3xl border border-accent/40 bg-accent-soft p-6 text-center">
         <span aria-hidden="true" className="text-4xl">
           {result.archetype.emoji}
         </span>
-        <h1 className="text-xl font-bold text-[#2b2620]">{result.archetype.label}</h1>
-        <p className="text-sm leading-8 text-[#6b6257]">{result.archetype.description}</p>
+        <h1 className="text-xl font-bold text-foreground">{result.archetype.label}</h1>
+        <p className="text-sm leading-8 text-muted">{result.archetype.description}</p>
       </section>
 
       {data.recommendations.length === 0 ? (
@@ -311,12 +313,12 @@ function WidgetResult({
       <button
         type="button"
         onClick={onRestart}
-        className="flex min-h-12 items-center justify-center rounded-2xl border border-[#e5e0d8] px-5 text-sm text-[#6b6257] transition-colors hover:border-[#d9a24a]/50"
+        className="flex min-h-12 items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50"
       >
         شروع دوباره
       </button>
 
-      <p className="text-xs leading-7 text-[#6b6257]">
+      <p className="text-xs leading-7 text-muted">
         این نتیجه یک تحلیل سلیقه‌ای برای انتخاب عطر است، نه یک تست روانشناسی.
       </p>
     </div>
@@ -327,7 +329,7 @@ function WidgetNotice({ children }: { children: React.ReactNode }) {
   return (
     <div
       role="status"
-      className="flex min-h-32 flex-col items-center justify-center rounded-3xl border border-[#e5e0d8] bg-white p-6 text-center text-sm leading-8 text-[#6b6257]"
+      className="flex min-h-32 flex-col items-center justify-center rounded-3xl border border-border-soft bg-surface p-6 text-center text-sm leading-8 text-muted"
     >
       {children}
     </div>

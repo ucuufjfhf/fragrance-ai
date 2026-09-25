@@ -82,7 +82,7 @@ export default async function AdminAccessPage({ searchParams }: AdminAccessPageP
           />
           <button
             type="submit"
-            className="min-h-12 rounded-2xl bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90"
+            className="min-h-12 rounded-2xl btn-primary bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90"
           >
             ورود
           </button>

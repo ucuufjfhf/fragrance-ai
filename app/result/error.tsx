@@ -1,5 +1,7 @@
 "use client";
 
+import { WarningMark } from "@/components/ui-icons";
+
 import Link from "next/link";
 import { useEffect } from "react";
 
@@ -27,9 +29,7 @@ export default function ResultError({
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
       <section className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 text-center sm:p-8">
-        <span aria-hidden="true" className="text-4xl">
-          ⚠️
-        </span>
+        <WarningMark className="mx-auto h-8 w-8 text-accent" />
         <h1 className="text-xl font-bold sm:text-2xl">
           مشکلی پیش اومد
         </h1>

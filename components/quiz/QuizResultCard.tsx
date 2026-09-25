@@ -1,10 +1,13 @@
 import Link from "next/link";
 
+import { BottleMark } from "@/components/ui-icons";
+
 import { resetAnalyticsFlow } from "@/lib/analytics/flow-tracker";
 import { serializeResultsParams } from "@/lib/results/params";
 import { PERSONALITY_LABELS } from "@/lib/personality/labels";
 import { formatPersianPercent } from "@/lib/persian";
 import { PERSONALITY_DIMENSIONS } from "@/types/personality";
+import type { CSSProperties } from "react";
 import type { QuizResult } from "@/types/personality";
 
 interface QuizResultCardProps {
@@ -38,12 +41,17 @@ export default function QuizResultCard({
   const resultsHref = `/result?${serializeResultsParams(vector, archetype.id, storeId)}`;
 
   return (
-    <section className="quiz-rise flex flex-col gap-5">
+    <section
+      className="quiz-rise flex flex-col gap-5 transition-colors duration-300"
+      style={{
+        "--accent": archetype.accentColor,
+        "--accent-soft": `color-mix(in srgb, ${archetype.accentColor} 14%, white)`,
+        "--accent-contrast": archetype.id === "clean-minimalist" || archetype.id === "elegant-classic" ? "#2A2420" : "#FFFFFF",
+      } as CSSProperties}
+    >
       <div className="flex flex-col items-center gap-3 rounded-3xl border border-accent/40 bg-accent-soft p-6 text-center sm:p-8">
         <span className="text-sm text-accent">پروفایل عطری تو</span>
-        <span aria-hidden="true" className="text-4xl">
-          {archetype.emoji}
-        </span>
+        <BottleMark className="h-8 w-8 text-accent" />
         <h1 className="text-2xl font-bold sm:text-3xl">{archetype.label}</h1>
         <p className="text-sm leading-8 text-foreground/80">
           {archetype.description}
@@ -61,9 +69,9 @@ export default function QuizResultCard({
             // again for a future attempt (Phase 7, §12).
             resetAnalyticsFlow();
           }}
-          className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90"
+          className="flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90"
         >
-          دیدن عطرهای پیشنهادی ✨
+          دیدن عطرهای پیشنهادی
         </Link>
       </div>
 
@@ -102,7 +110,7 @@ export default function QuizResultCard({
       <button
         type="button"
         onClick={onRestart}
-        className="flex min-h-12 items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90"
+        className="flex min-h-12 items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90"
       >
         شروع دوباره
       </button>

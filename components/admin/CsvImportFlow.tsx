@@ -41,15 +41,15 @@ type PreviewResult = PreviewState | (ActionError & { ok?: false });
 type ConfirmResult = { ok: true; importedCount: number } | (ActionError & { ok: false });
 
 const STATUS_LABEL: Record<PreviewRow["status"], string> = {
-  valid: "✓ معتبر",
-  invalid: "❌ دارای خطا",
-  duplicate: "❌ تکراری",
+  valid: "معتبر",
+  invalid: "دارای خطا",
+  duplicate: "تکراری",
 };
 
 const STATUS_CLASS: Record<PreviewRow["status"], string> = {
-  valid: "text-emerald-700 dark:text-emerald-400",
-  invalid: "text-red-700 dark:text-red-400",
-  duplicate: "text-amber-700 dark:text-amber-400",
+  valid: "text-forest",
+  invalid: "text-red-700",
+  duplicate: "text-accent",
 };
 
 export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) {
@@ -132,7 +132,7 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
           event.preventDefault();
           void handlePreview(new FormData(event.currentTarget));
         }}
-        className="space-y-4 rounded-xl border border-neutral-200 p-6 dark:border-neutral-800"
+        className="space-y-4 rounded-xl border border-border-soft p-6 border-border-soft"
       >
         <div>
           <label htmlFor="csv-store" className="mb-1 block text-sm font-medium">
@@ -143,7 +143,7 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
             name="storeId"
             value={storeId}
             onChange={(event) => setStoreId(event.target.value)}
-            className="w-full max-w-sm rounded-lg border border-neutral-300 bg-white px-3 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-neutral-700 dark:bg-neutral-900"
+            className="w-full max-w-sm rounded-lg border border-neutral-300 bg-surface px-3 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-neutral-700 dark:bg-accent"
           >
             {stores.map((store) => (
               <option key={store.id} value={store.id}>
@@ -163,9 +163,9 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
             type="file"
             accept=".csv,text/csv"
             required
-            className="w-full max-w-sm rounded-lg border border-neutral-300 bg-white px-3 py-2 file:mr-3 file:rounded file:border-0 file:bg-neutral-100 file:px-3 file:py-1 dark:border-neutral-700 dark:bg-neutral-900 dark:file:bg-neutral-800"
+            className="w-full max-w-sm rounded-lg border border-neutral-300 bg-surface px-3 py-2 file:mr-3 file:rounded file:border-0 file:bg-surface-2 file:px-3 file:py-1 dark:border-neutral-700 dark:bg-accent dark:file:bg-neutral-800"
           />
-          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-xs text-neutral-500 text-muted">
             حداکثر حجم: ۵ مگابایت — حداکثر ردیف: ۵٬۰۰۰
           </p>
         </div>
@@ -173,7 +173,7 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
         <button
           type="submit"
           disabled={submitting !== null}
-          className="rounded-lg bg-neutral-900 px-4 py-2 font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 dark:bg-white dark:text-neutral-900"
+          className="rounded-lg bg-accent px-4 py-2 font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 dark:bg-surface text-white"
         >
           {submitting === "preview" ? "در حال بررسی..." : "بارگذاری و پیش‌نمایش"}
         </button>
@@ -203,21 +203,21 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
 
       {preview !== null && (
         <section aria-live="polite" className="space-y-4">
-          <div className="flex flex-wrap gap-4 rounded-xl border border-neutral-200 p-4 text-sm dark:border-neutral-800">
+          <div className="flex flex-wrap gap-4 rounded-xl border border-border-soft p-4 text-sm border-border-soft">
             <span>تعداد کل ردیف‌ها: <strong>{preview.summary.totalRows.toLocaleString("fa-IR")}</strong></span>
-            <span className="text-emerald-700 dark:text-emerald-400">
+            <span className="text-forest">
               تعداد معتبر: <strong>{preview.summary.validRows.toLocaleString("fa-IR")}</strong>
             </span>
-            <span className="text-red-700 dark:text-red-400">
+            <span className="text-red-700">
               تعداد خطادار: <strong>{preview.summary.errorRows.toLocaleString("fa-IR")}</strong>
             </span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-800">
+          <div className="overflow-x-auto rounded-xl border border-border-soft border-border-soft">
             <table className="w-full text-sm">
               <caption className="sr-only">پیش‌نمایش ردیف‌های فایل CSV</caption>
               <thead>
-                <tr className="bg-neutral-100 text-right dark:bg-neutral-800">
+                <tr className="bg-surface-2 text-right bg-surface-2">
                   <th scope="col" className="px-3 py-2">ردیف</th>
                   <th scope="col" className="px-3 py-2">نام</th>
                   <th scope="col" className="px-3 py-2">برند</th>
@@ -228,7 +228,7 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
               </thead>
               <tbody>
                 {preview.rows.map((entry) => (
-                  <tr key={entry.row} className="border-t border-neutral-200 dark:border-neutral-800">
+                  <tr key={entry.row} className="border-t border-border-soft border-border-soft">
                     <td className="px-3 py-2">{entry.row.toLocaleString("fa-IR")}</td>
                     <td className="px-3 py-2">{entry.name || "—"}</td>
                     <td className="px-3 py-2">{entry.brand || "—"}</td>
@@ -254,7 +254,7 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
           </div>
 
           {hasErrors ? (
-            <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+            <div role="alert" className="rounded-xl border border-accent/30 bg-accent-soft p-4 text-foreground border-accent/30 bg-accent-soft text-foreground">
               به دلیل وجود خطا، امکان وارد کردن فایل وجود ندارد. لطفاً فایل را اصلاح و دوباره بارگذاری کنید.
             </div>
           ) : (

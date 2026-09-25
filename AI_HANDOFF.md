@@ -1860,4 +1860,131 @@ This entry records the combined uncommitted implementation currently present in 
 - **Phase 12.6-D admin hardening:** Shared-secret authentication comparison is constant-time, the admin cookie is restricted to `/admin` while retaining HttpOnly/SameSite/Secure and bounded lifetime, and a logout action invalidates the cookie. The existing shared/global secret model remains; this is not per-merchant identity or a full authentication system. No CSRF token infrastructure was added; current mutations remain protected by server-side guards and `SameSite=Lax` server actions.
 - **Current validation target:** 47 test files and 538 tests, with Prisma validation, typecheck, lint, and production build required before commit.
 
+---
 
+# Current working-tree update — Fragrantica reference grounding for AI enrichment (2026-09-25)
+
+## What this is
+
+The AI enrichment flow (Phase 11 single-perfume and Phase 12.4 bulk profiling, both reached
+through `AIProvider.generatePerfumeProfile`) can now ground its descriptor output in a real
+fragrance database when the perfume being enriched is known to it. This reduces LLM
+hallucination and improves descriptor consistency. It is prompt-context only:
+
+* the **output contract is unchanged** — same 10 writable descriptors, same `family`/`notes`,
+  same `validateAiProfileResult` validation, same clamping;
+* the **9 matching axes are untouched** — they remain user-personality-derived; the reference
+  data never touches them and the matching engine never reads it;
+* when **no match** is found, the enrichment prompt is **byte-identical** to the previous
+  behaviour (tested).
+
+## Data source and location
+
+* Source: Kaggle **"Fragrantica.com Fragrance Dataset"** (`fra_cleaned.csv`, 2024-09 snapshot,
+  English-language, 24,063 rows). The original CSV is kept at
+  `data/fragrantica/fra_cleaned.csv` (6.5 MB, Windows-1252 encoding, `;`-separated).
+* The compact, project-owned form is **`data/fragrantica/reference.json`** (~5.8 MB):
+  **23,846 unique perfumes** (deduplicated by normalized brand+name slug; the better-rated
+  duplicate row wins) with brand, name, gender, flattened top/middle/base notes, main accords
+  (≤ 5) and release year. Rows without any accord data are dropped.
+* The file also carries an `_meta` block documenting source/purpose/license. **The Kaggle
+  dataset license must be verified before any production/commercial use of this data.**
+
+## Implementation map
+
+```text
+data/fragrantica/reference.json      the reference data (generated, committed)
+scripts/generate-reference-data.py   one-off converter (CSV → JSON); re-run to refresh
+lib/ai/reference-lookup.ts           lazy loader, fuzzy matcher, accord vocabulary export
+lib/ai/perfume-profile.ts            buildReferenceGrounding() + optional prompt parameter
+lib/ai/qwen.ts                       resolves the match per request and passes it in
+tests/ai/reference-lookup.test.ts    matcher + vocabulary tests
+tests/ai/reference-grounding.test.ts prompt grounding tests (with/without match)
+```
+
+* `findReferenceMatch(name, brand)` normalizes both sides (lowercase, diacritics stripped,
+  `&` → "and", non-alphanumerics → spaces) so the dataset's slugified names compare equal to
+  display names. Exact normalized brand+name wins; otherwise the best token-overlap candidate
+  (≥ 0.5 Jaccard) sharing the brand; if the brand is unknown in the dataset, name-only exact
+  then overlap. Dependency-free — no ML/fuzzy npm packages.
+* `REFERENCE_ACCORD_VOCABULARY` (84 controlled accord labels, e.g. "woody", "warm spicy") is
+  exported and appended to `PROFILE_SYSTEM_PROMPT`: the model is asked to prefer these terms
+  when describing scent character.
+* The lookup is wrapped defensively in `qwen.ts`: any failure (e.g. chunk load error) degrades
+  to "no reference" — enrichment never breaks because of grounding.
+
+## Hard boundaries (do not violate)
+
+* This reference data is for **internal AI grounding only**. It must **never** be shown
+  directly to customers, never exposed through any customer-facing API or the widget, and
+  never treated as verified store inventory (it is not the `Perfume` model and is not
+  importable through the merchant CSV path).
+* The reference rows are community-sourced Fragrantica data, not our curation; note names and
+  accords are English. The AI already writes Persian copy on top — the grounding context
+  stays English, the output stays Persian where required.
+
+## How to refresh the data later
+
+1. Place an updated `fra_cleaned.csv` at `data/fragrantica/fra_cleaned.csv`.
+2. Run `python scripts/generate-reference-data.py` (Python 3, stdlib only).
+3. Re-run `npm test` — the reference tests (Sauvage/Dior, Lancome, Jean Paul Gaultier
+   entries and the 84-label accord list) will fail loudly if the vocabulary or the lookup
+   contract changed shape.
+
+## Validation after this change
+
+`npx vitest run tests/ai/*` — 38 tests across 4 files pass, including all pre-existing
+enrichment contract suites (`perfume-profile.test.ts`, `profiler.test.ts`) **unmodified**.
+
+---
+
+# Current working-tree update — Warm visual redesign (2026-09-25)
+
+This entry records the uncommitted customer-facing visual work present in the working tree,
+implemented independently of the historical handoff sections above (which describe the
+deployment-era UI).
+
+## Scope
+
+A complete warm-cream visual redesign of the shopper-facing and admin surfaces, with no
+changes to any deterministic logic, contract or database schema:
+
+* **Color system (`app/globals.css`):** the palette moved from the previous premium dark
+  theme to a warm cream theme (`--background: #faf7f2`, `--foreground: #2a2420`, layered
+  `--surface` / `--surface-2` / `--border-soft`, `--accent: #b5652d`, `--forest` support
+  color, soft shadow tokens). Tailwind v4 `@theme inline` tokens map them to utility
+  classes. `prefers-reduced-motion` is respected for all new animation.
+* **Custom fonts:** two local woff2 fonts are wired via `@font-face` and the theme tokens —
+  **SG Kara** (headings, `public/fonts/SGKara-SemiBold.woff2`) and **Estedad** (body,
+  `public/fonts/Estedad-Regular.woff2`), with Vazirmatn as fallback. Vazirmatn remains the
+  only `next/font/google` font; the two new fonts are self-hosted static assets.
+* **Per-archetype accent colors:** all 8 archetypes in `lib/personality/archetypes.ts` now
+  carry an `accentColor` hex field (typed in `types/personality.ts`, format-locked in
+  `tests/personality/archetypes.test.ts`). `components/results/ResultsView.tsx` and
+  `components/quiz/QuizResultCard.tsx` apply it as a **scoped CSS custom-property override**
+  (`--accent`, `--accent-soft`, plus a per-archetype `--accent-contrast` for readability),
+  so every surface below the scope inherits the archetype's color without global restyling.
+* **Animated trait bars:** new `components/results/TraitBars.tsx` renders the nine-dimension
+  profile with an IntersectionObserver scroll-triggered fill (1000 ms ease-out, 90 ms
+  staggered per bar, Persian percent labels, `role="progressbar"` ARIA attributes, and a
+  reduced-motion bypass). It replaced the old static traits block in `ResultsView`.
+* **Local SVG icons:** `components/ui-icons.tsx` (`BrandMark`, `BottleMark`) replaces
+  external/emoji icon usage in the results surfaces.
+* **Structural fix:** `app/globals.css` was restructured (font-face declarations moved above
+  the Tailwind import boundary, token definitions consolidated) — this was the fix the
+  redesign depended on.
+* The same styling pass touched the admin pages, quiz components, widget shell and error
+  boundaries for consistency; behavior of those screens is unchanged.
+
+## Boundaries
+
+* No matching-engine, scoring, quiz-flow, API or persistence changes — visual only plus the
+  `accentColor` data field on the (UX-only) archetypes.
+* `ui-audit/` at the repo root is a throwaway screenshot folder from the redesign review;
+  it is NOT part of the project source and must not be committed (git-ignore or delete).
+
+## Validation status
+
+Tests 556/556 across 49 files, lint 0 errors / 6 pre-existing warnings, typecheck pass,
+production build (webpack) pass — measured with this redesign and the Fragrantica
+reference-grounding feature combined in one working tree (see the entry below).

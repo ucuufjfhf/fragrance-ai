@@ -54,6 +54,8 @@ export interface Archetype {
   description: string;
   /** Persian hint about the fragrance direction that fits this archetype. */
   fragranceHint: string;
+  /** Hex accent used only by the results presentation layer. */
+  accentColor: string;
   /** Single emoji used as the archetype badge. */
   emoji: string;
   /**

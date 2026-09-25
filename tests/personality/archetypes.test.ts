@@ -34,6 +34,11 @@ describe("archetypes", () => {
     expect(ARCHETYPES.map((archetype) => archetype.id)).toEqual(EXPECTED_IDS);
   });
 
+  it("gives every archetype a valid accent color", () => {
+    for (const archetype of ARCHETYPES) {
+      expect(archetype.accentColor).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    }
+  });
   it("gives every archetype Persian copy and an emoji badge", () => {
     for (const archetype of ARCHETYPES) {
       expect(archetype.name.length).toBeGreaterThan(0);

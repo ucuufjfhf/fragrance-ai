@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandMark } from "@/components/ui-icons";
 import { useCallback, useState } from "react";
 
 import {
@@ -124,7 +125,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
       <section className="quiz-rise flex flex-col gap-6 rounded-3xl border border-border-soft bg-surface p-6 sm:p-8">
         <div className="flex flex-col gap-3">
           <span className="w-fit rounded-full border border-border-soft bg-surface-2 px-4 py-1 text-sm text-accent">
-            ✨ آزمون سلیقه عطری
+            <BrandMark className="ml-1 inline h-4 w-4" /> آزمون سلیقه عطری
           </span>
           <h1 className="text-2xl font-bold leading-10 sm:text-3xl">
             عطر مناسب خودت رو پیدا کن

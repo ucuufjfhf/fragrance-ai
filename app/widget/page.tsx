@@ -17,7 +17,7 @@ import WidgetApp from "@/components/widget/WidgetApp";
  */
 
 export const metadata: Metadata = {
-  title: "عطر خودتو پیدا کن ✨",
+  title: "عطر خودتو پیدا کن",
   robots: { index: false, follow: false },
 };
 

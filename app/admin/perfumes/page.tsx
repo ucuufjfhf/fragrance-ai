@@ -1,3 +1,5 @@
+import { ArchiveMark } from "@/components/ui-icons";
+
 import { logoutAdminAccessAction } from "@/app/admin/access/actions";
 
 import { headers } from "next/headers";
@@ -128,7 +130,7 @@ export default async function AdminPerfumesPage({ searchParams }: AdminPerfumesP
 
       <Link
         href={`/admin/perfumes/new?store=${selectedStore.id}`}
-        className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
+        className="flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
       >
         + افزودن عطر جدید
       </Link>
@@ -206,7 +208,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
 function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <section className="flex flex-col items-center gap-3 rounded-3xl border border-border-soft bg-surface p-8 text-center">
-      <span aria-hidden="true" className="text-4xl">🗃️</span>
+      <ArchiveMark className="h-8 w-8 text-accent" />
       <h2 className="text-lg font-semibold">{title}</h2>
       <p className="text-sm leading-8 text-muted">{body}</p>
     </section>

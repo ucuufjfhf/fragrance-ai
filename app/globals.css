@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "SG Kara";
+  src: url('/fonts/SGKara-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Estedad";
+  src: url('/fonts/Estedad-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
 /*
  * Fragrance AI — base styles
  *
@@ -8,14 +22,19 @@
  */
 
 :root {
-  --background: #0b0910;
-  --foreground: #f6f4f8;
-  --surface: #141019;
-  --surface-2: #1d1623;
-  --border-soft: rgba(255, 255, 255, 0.09);
-  --accent: #d9a24a;
-  --accent-soft: rgba(217, 162, 74, 0.14);
-  --muted: #a49cb2;
+  --background: #faf7f2;
+  --foreground: #2a2420;
+  --surface: #ffffff;
+  --surface-2: #f5f0e8;
+  --border-soft: #eae2d4;
+  --accent: #b5652d;
+  --accent-soft: #f3e5d8;
+  --muted: #756b5e;
+  --forest: #4a5d4e;
+  --forest-soft: #e7eee7;
+  --shadow-soft: 0 12px 32px rgba(74, 55, 39, 0.08);
+  --shadow-card: 0 4px 18px rgba(74, 55, 39, 0.06);
+  --shadow-accent: 0 8px 18px rgba(181, 101, 45, 0.22);
 }
 
 @theme inline {
@@ -27,9 +46,23 @@
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-muted: var(--muted);
-  --font-sans: var(--font-persian), "Vazirmatn", "IRANSansX", "IRANSans", "Segoe UI",
-    Tahoma, sans-serif;
+  --color-forest: var(--forest);
+  --color-forest-soft: var(--forest-soft);
+  --font-heading: "SG Kara", "Vazirmatn", sans-serif;
+  --font-body: "Estedad", "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
+  --font-sans: var(--font-body);
 }
+
+.btn-primary {
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--accent) 92%, white) 0%, var(--accent) 58%, color-mix(in srgb, var(--accent) 88%, black) 100%);
+  box-shadow: var(--shadow-accent);
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+.btn-primary:hover { transform: translateY(-1px) scale(1.02); box-shadow: 0 12px 24px rgba(181, 101, 45, 0.3); filter: saturate(1.05); }
+.btn-primary:active { transform: translateY(1px) scale(0.98); box-shadow: 0 4px 10px rgba(181, 101, 45, 0.2); }
+.btn-primary:focus-visible { outline: 3px solid color-mix(in srgb, var(--forest) 45%, white); outline-offset: 3px; }
+.results-accent-text { color: var(--accent-contrast); }
+@media (prefers-reduced-motion: reduce) { .btn-primary { transform: none !important; transition: none; } }
 
 html {
   -webkit-text-size-adjust: 100%;
@@ -38,12 +71,16 @@ html {
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   /* Persian script needs a roomier line height than Latin text. */
   line-height: 1.9;
   text-rendering: optimizeLegibility;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
 /* Persian digits are long by nature; tabular figures keep progress labels stable. */
 .tnum {
   font-variant-numeric: tabular-nums;

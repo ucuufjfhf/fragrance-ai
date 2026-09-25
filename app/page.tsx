@@ -1,3 +1,5 @@
+import { BrandMark } from "@/components/ui-icons";
+
 import Link from "next/link";
 
 type PhaseStatus = "done" | "next" | "planned";
@@ -49,7 +51,7 @@ export default function Home() {
         <span className="w-fit rounded-full border border-border-soft bg-surface px-4 py-1 text-sm text-accent">
           Fragrance AI — نسخهٔ MVP
         </span>
-        <h1 className="text-3xl font-bold sm:text-4xl">✨ عطر خودتو پیدا کن</h1>
+        <h1 className="text-3xl font-bold sm:text-4xl"><BrandMark className="ml-2 inline h-8 w-8 text-accent" />عطر خودتو پیدا کن</h1>
         <p className="text-muted sm:text-lg">
           عطری که بهت میاد چیه؟ فقط به ۱۰ سؤال کوتاه جواب بده تا ببینیم چه رایحه‌ای بیشتر با
           سلیقه و شخصیت عطری تو هماهنگه.
@@ -65,7 +67,7 @@ export default function Home() {
         </p>
         <Link
           href="/quiz"
-          className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
+          className="flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
         >
           شروع آزمون
         </Link>

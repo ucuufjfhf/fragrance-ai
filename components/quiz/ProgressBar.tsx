@@ -1,4 +1,5 @@
 import { formatPersianPercent, toPersianDigits } from "@/lib/persian";
+import { BrandMark } from "@/components/ui-icons";
 
 interface ProgressBarProps {
   /** 1-based position of the current question. */
@@ -12,7 +13,8 @@ export default function ProgressBar({ current, total }: ProgressBarProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between text-sm text-muted">
+      <div className="flex items-center gap-2 text-sm text-muted">
+        <BrandMark className="h-4 w-4 text-accent" />
         <span aria-live="polite">
           سؤال {toPersianDigits(current)} از {toPersianDigits(total)}
         </span>

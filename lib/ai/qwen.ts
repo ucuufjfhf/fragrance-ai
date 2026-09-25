@@ -16,6 +16,8 @@ import {
   buildProfileUserPrompt,
   validateAiProfileResult,
 } from "@/lib/ai/perfume-profile";
+import { findReferenceMatch } from "@/lib/ai/reference-lookup";
+import type { FragranceReferenceEntry } from "@/lib/ai/reference-lookup";
 
 /**
  * Qwen 3.6 implementation of `AIProvider`, talking to the GapGPT API
@@ -192,9 +194,22 @@ export function createQwenProvider(options: QwenProviderOptions): AIProvider {
     async generatePerfumeProfile(
       input: AiPerfumeProfileInput,
     ): Promise<AiPerfumeProfileResult> {
+      // Grounding: when this perfume exists in the Fragrantica reference data,
+      // its verified accords/notes travel into the prompt as extra context.
+      // No match → the prompt is byte-identical to the non-grounded behaviour.
+      // Lookup failure must never break enrichment, hence the defensive catch.
+      let reference: FragranceReferenceEntry | null = null;
+
+      try {
+        const match = findReferenceMatch(input.name, input.brand);
+        reference = match?.entry ?? null;
+      } catch {
+        reference = null;
+      }
+
       const raw = await complete(
         PROFILE_SYSTEM_PROMPT,
-        buildProfileUserPrompt(input),
+        buildProfileUserPrompt(input, reference),
       );
 
       return validateAiProfileResult(raw, input);

@@ -1,5 +1,7 @@
 "use client";
 
+import { WarningMark } from "@/components/ui-icons";
+
 import { useEffect } from "react";
 
 export default function AdminPerfumesError({
@@ -16,7 +18,7 @@ export default function AdminPerfumesError({
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
       <section className="flex flex-col items-center gap-3 rounded-3xl border border-border-soft bg-surface p-8 text-center">
-        <span aria-hidden="true" className="text-4xl">⚠️</span>
+        <WarningMark className="mx-auto h-8 w-8 text-accent" />
         <h1 className="text-lg font-semibold">خطا در بارگذاری مدیریت عطرها</h1>
         <p className="text-sm leading-8 text-muted">
           مشکلی پیش اومد؛ می‌تونی دوباره تلاش کنی.

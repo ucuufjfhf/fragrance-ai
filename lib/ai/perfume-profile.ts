@@ -1,4 +1,6 @@
 import { AiResponseError } from "@/lib/ai/errors";
+import type { FragranceReferenceEntry } from "@/lib/ai/reference-lookup";
+import { REFERENCE_ACCORD_VOCABULARY } from "@/lib/ai/reference-lookup";
 import type {
   AIProvider,
   AiOutcome,
@@ -36,10 +38,44 @@ export const PROFILE_SYSTEM_PROMPT = [
   `Never include any other key. These keys are forbidden: ${MATCHING_DIMENSIONS.join(", ")}.`,
   '"family" is a short English fragrance family label.',
   '"notes" is an array of up to 6 short Persian note names.',
+  `When describing scent character, prefer these known accord terms when applicable: ${REFERENCE_ACCORD_VOCABULARY.join(", ")}.`,
 ].join("\n");
 
 /** Defensive cap on the human description we forward (keeps prompts cheap). */
 export const PROFILE_DESCRIPTION_MAX_CHARS = 400;
+
+/** Caps grounding notes/accords per line so a matched row stays cheap. */
+const REFERENCE_NOTES_MAX = 8;
+const REFERENCE_ACCORDS_MAX = 5;
+
+/**
+ * Formats a matched Fragrantica reference row as grounding context, or returns
+ * `null` when there is no match (the prompt must then be byte-identical to the
+ * pre-grounding behaviour).
+ *
+ * This only ever ADDS context to the prompt: the output contract (descriptors,
+ * family, notes) and its validation are untouched.
+ */
+export function buildReferenceGrounding(
+  reference: FragranceReferenceEntry | null | undefined,
+): string | null {
+  if (!reference) {
+    return null;
+  }
+
+  const notes = reference.t.slice(0, REFERENCE_NOTES_MAX);
+  const accords = reference.a.slice(0, REFERENCE_ACCORDS_MAX);
+
+  return [
+    "Verified reference data for this exact perfume from a public fragrance database:",
+    `Main accords: ${accords.join(", ")}`,
+    `Notes (top to base): ${notes.join(", ")}`,
+    reference.y ? `Release year: ${reference.y}` : null,
+    "Use this reference to inform your descriptor, family and notes output; do not contradict it without cause.",
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
+}
 
 function formatDescriptors(
   descriptors: AiPerfumeProfileInput["descriptors"],
@@ -51,13 +87,22 @@ function formatDescriptors(
   return entries.length > 0 ? entries.join(", ") : "none recorded";
 }
 
-/** Builds the user prompt from facts only — no scores, ranks or other products. */
-export function buildProfileUserPrompt(input: AiPerfumeProfileInput): string {
+/**
+ * Builds the user prompt from facts only — no scores, ranks or other products.
+ *
+ * `reference` is optional grounding context from the Fragrantica lookup
+ * (`findReferenceMatch`); when absent the prompt is identical to the
+ * non-grounded behaviour.
+ */
+export function buildProfileUserPrompt(
+  input: AiPerfumeProfileInput,
+  reference?: FragranceReferenceEntry | null,
+): string {
   const description = (input.description ?? "")
     .trim()
     .slice(0, PROFILE_DESCRIPTION_MAX_CHARS);
 
-  return [
+  const lines = [
     `Perfume: ${input.name}`,
     `Brand: ${input.brand}`,
     description === "" ? "Description: (none)" : `Description: ${description}`,
@@ -67,8 +112,18 @@ export function buildProfileUserPrompt(input: AiPerfumeProfileInput): string {
     `Reference profile (read-only, do not repeat or change): ${MATCHING_DIMENSIONS.map(
       (dimension) => `${dimension}=${input.matchingProfile[dimension]}`,
     ).join(", ")}`,
+  ];
+
+  const grounding = buildReferenceGrounding(reference);
+  if (grounding !== null) {
+    lines.push(grounding);
+  }
+
+  lines.push(
     'Return JSON like {"descriptors":{"woody":70},"family":"woody amber","notes":["عود","چرم"]}.',
-  ].join("\n");
+  );
+
+  return lines.join("\n");
 }
 
 const ALLOWED_KEYS = ["descriptors", "family", "notes"] as const;

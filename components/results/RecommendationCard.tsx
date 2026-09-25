@@ -1,5 +1,6 @@
 "use client";
 
+import { BottleMark } from "@/components/ui-icons";
 import { trackEvent } from "@/lib/analytics/client";
 import { formatPersianScore } from "@/lib/persian";
 import type { MatchedPerfume } from "@/types/recommendation";
@@ -43,7 +44,7 @@ export default function RecommendationCard({
               aria-hidden="true"
               className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-border-soft bg-surface-2 text-2xl"
             >
-              🧴
+              <BottleMark className="h-7 w-7" />
             </span>
           )}
 

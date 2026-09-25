@@ -54,14 +54,14 @@ export default async function AdminAnalyticsPage({ searchParams }: AdminAnalytic
         <h1 className="mb-6 text-2xl font-bold">تحلیل عملکرد</h1>
         <div
           role="status"
-          className="rounded-xl border border-amber-300 bg-amber-50 p-6 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
+          className="rounded-xl border border-accent/30 bg-accent-soft p-6 text-foreground border-accent/30 bg-accent-soft text-foreground"
         >
           <p className="font-medium">هنوز فروشگاه فعالی وجود ندارد.</p>
           <p className="mt-2 text-sm">برای دیدن تحلیل عملکرد، ابتدا یک فروشگاه فعال لازم است.</p>
         </div>
         <Link
           href="/admin/perfumes"
-          className="mt-6 inline-block rounded-lg bg-neutral-900 px-4 py-2 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:bg-white dark:text-neutral-900"
+          className="mt-6 inline-block rounded-lg btn-primary bg-accent px-4 py-2 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 bg-accent text-white"
         >
           بازگشت به مدیریت عطرها
         </Link>
