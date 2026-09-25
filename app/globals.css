@@ -107,3 +107,44 @@ h1, h2, h3, h4, h5, h6 {
     animation: none;
   }
 }
+
+/* Trait bars (results page): the fill's leading edge glows while it grows, and
+ * each bar plays a brief completion pulse once it settles. Both are decorative
+ * and skipped for reduced-motion users. Colors come from the scoped --accent
+ * custom property so they follow the user's archetype. */
+.trait-bar-tip {
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 35%, white), transparent);
+  filter: blur(2px);
+  animation: trait-bar-tip-pulse 700ms ease-in-out infinite alternate;
+}
+
+@keyframes trait-bar-tip-pulse {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 0.95;
+  }
+}
+
+.trait-bar-pulse {
+  animation: trait-bar-pulse 480ms ease-out forwards;
+}
+
+@keyframes trait-bar-pulse {
+  0% {
+    opacity: 0.85;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  100% {
+    opacity: 0;
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trait-bar-tip,
+  .trait-bar-pulse {
+    animation: none;
+  }
+}

@@ -1,31 +1,170 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PERSONALITY_LABELS } from "@/lib/personality/labels";
 import { formatPersianPercent } from "@/lib/persian";
 import { PERSONALITY_DIMENSIONS } from "@/types/personality";
 import type { PersonalityVector } from "@/types/personality";
 
+/**
+ * Trait bars for the results screen.
+ *
+ * Three layered, dependency-free animations (Decision #7):
+ *  1. the bar fill grows via a CSS width transition (scroll-triggered),
+ *  2. the percentage number counts up in sync via requestAnimationFrame,
+ *  3. the leading edge glows while filling, then a brief completion pulse
+ *     plays when each bar settles.
+ *
+ * All three are skipped for `prefers-reduced-motion`, where the final state is
+ * rendered directly.
+ */
+
+/** Shared fill/count-up duration in milliseconds (matches `duration-1000`). */
+const ANIMATION_DURATION_MS = 1000;
+/** Per-bar stagger so the bars cascade instead of filling in unison. */
+const ANIMATION_STAGGER_MS = 90;
+
+/** Approximates the CSS `ease-out` curve for the numeric count-up. */
+function easeOutCubic(progress: number): number {
+  return 1 - Math.pow(1 - progress, 3);
+}
+
 export default function TraitBars({ vector }: { vector: PersonalityVector }) {
   const sectionRef = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  // Displayed numbers start at 0 and count up to the real vector once in view.
+  const [displayValues, setDisplayValues] = useState<number[]>(() =>
+    PERSONALITY_DIMENSIONS.map(() => 0),
+  );
+  // A bar is "settled" once its fill reaches its target (drives tip + pulse).
+  const [settled, setSettled] = useState<boolean[]>(() =>
+    PERSONALITY_DIMENSIONS.map(() => false),
+  );
+
+  // Scroll-triggered reveal (or an immediate reveal for reduced motion).
   useEffect(() => {
     const element = sectionRef.current;
     if (!element) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { requestAnimationFrame(() => setVisible(true)); return; }
-    const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } }, { threshold: 0.25 });
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      requestAnimationFrame(() => {
+        setReducedMotion(true);
+        setVisible(true);
+      });
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.25 },
+    );
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-  return <section ref={sectionRef} className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6">
-    <h2 className="font-semibold">پروفایل شخصیتی تو</h2>
-    <ul className="flex flex-col gap-3">
-      {PERSONALITY_DIMENSIONS.map((dimension, index) => <li key={dimension} className="flex flex-col gap-1">
-        <div className="flex items-center justify-between text-sm"><span>{PERSONALITY_LABELS[dimension]}</span><span className="tnum text-muted">{formatPersianPercent(vector[dimension])}</span></div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-label={PERSONALITY_LABELS[dimension]} aria-valuemin={0} aria-valuemax={100} aria-valuenow={vector[dimension]}>
-          <div className="h-full rounded-full bg-accent transition-[width] duration-1000 ease-out" style={{ width: visible ? `${vector[dimension]}%` : "0%", transitionDelay: visible ? `${index * 90}ms` : "0ms" }} />
-        </div>
-      </li>)}
-    </ul>
-  </section>;
+
+  // Reduced motion: jump straight to the final values, no glow, no pulse.
+  useEffect(() => {
+    if (!visible || !reducedMotion) return;
+    const frame = requestAnimationFrame(() => {
+      setDisplayValues(PERSONALITY_DIMENSIONS.map((dimension) => Math.round(vector[dimension])));
+      setSettled(PERSONALITY_DIMENSIONS.map(() => true));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [visible, reducedMotion, vector]);
+
+  // Count the numbers up in step with the CSS-driven fill. `vector` is a stable
+  // server-passed prop, so this effect does not restart on our own re-renders.
+  useEffect(() => {
+    if (!visible || reducedMotion) return;
+    const targets = PERSONALITY_DIMENSIONS.map((dimension) => vector[dimension]);
+    const totalDuration =
+      ANIMATION_DURATION_MS + ANIMATION_STAGGER_MS * Math.max(0, targets.length - 1);
+    let frame = 0;
+    let startedAt: number | null = null;
+    const step = (now: number) => {
+      if (startedAt === null) startedAt = now;
+      const elapsed = now - startedAt;
+      setDisplayValues(
+        targets.map((target, index) => {
+          const local = (elapsed - index * ANIMATION_STAGGER_MS) / ANIMATION_DURATION_MS;
+          const progress = Math.min(1, Math.max(0, local));
+          return Math.round(target * easeOutCubic(progress));
+        }),
+      );
+      if (elapsed < totalDuration) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [visible, reducedMotion, vector]);
+
+  // Called when a bar's width transition finishes: stop the glow, play the pulse.
+  const handleFillEnd = useCallback((index: number) => {
+    setSettled((previous) => {
+      if (previous[index]) return previous;
+      const next = previous.slice();
+      next[index] = true;
+      return next;
+    });
+  }, []);
+
+  return (
+    <section ref={sectionRef} className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6">
+      <h2 className="font-semibold">پروفایل شخصیتی تو</h2>
+      <ul className="flex flex-col gap-3">
+        {PERSONALITY_DIMENSIONS.map((dimension, index) => {
+          const target = vector[dimension];
+          const isSettled = settled[index];
+          const showTip = visible && !isSettled && displayValues[index] > 0;
+          return (
+            <li key={dimension} className="flex flex-col gap-1">
+              <div className="flex items-center justify-between text-sm">
+                <span>{PERSONALITY_LABELS[dimension]}</span>
+                <span className="tnum text-muted">{formatPersianPercent(displayValues[index])}</span>
+              </div>
+              <div className="relative">
+                <div
+                  className="h-2 w-full overflow-hidden rounded-full bg-surface-2"
+                  role="progressbar"
+                  aria-label={PERSONALITY_LABELS[dimension]}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={target}
+                >
+                  <div
+                    className="relative h-full rounded-full transition-[width] duration-1000 ease-out motion-reduce:transition-none"
+                    style={{
+                      width: visible ? `${target}%` : "0%",
+                      transitionDelay: visible ? `${index * ANIMATION_STAGGER_MS}ms` : "0ms",
+                      backgroundImage:
+                        "linear-gradient(to left, var(--accent) 0%, var(--accent) 60%, color-mix(in srgb, var(--accent) 60%, white) 100%)",
+                    }}
+                    onTransitionEnd={(event) => {
+                      if (event.propertyName === "width") handleFillEnd(index);
+                    }}
+                  >
+                    {showTip ? (
+                      <span
+                        aria-hidden="true"
+                        className="trait-bar-tip pointer-events-none absolute inset-y-0 end-0 w-5 rounded-full"
+                      />
+                    ) : null}
+                  </div>
+                </div>
+                {isSettled ? (
+                  <span
+                    aria-hidden="true"
+                    className="trait-bar-pulse pointer-events-none absolute inset-0 rounded-full"
+                  />
+                ) : null}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
 }
