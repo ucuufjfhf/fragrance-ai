@@ -6,10 +6,14 @@ import { createPerfumeAction } from "@/app/admin/perfumes/actions";
 import type { AdminActionState } from "@/app/admin/perfumes/actions";
 import type { Metadata } from "next";
 
+import { requireAdmin } from "@/lib/admin/server-access";
+
 /**
  * GET /admin/perfumes/new — create form (Phase 6A, server component).
- * The store is selected via the query param; the form submits to the server
- * action which re-validates and enforces store isolation.
+ * Server-side admin gate: unauthenticated requests are redirected to the
+ * gate page before anything renders. The store is selected via the query
+ * param; the form submits to the server action which re-validates and
+ * enforces store isolation.
  */
 export const metadata: Metadata = {
   title: "افزودن عطر | مدیریت",
@@ -23,6 +27,9 @@ interface NewPerfumePageProps {
 export default async function NewPerfumePage({ searchParams }: NewPerfumePageProps) {
   const params = await searchParams;
   const storeParam = Array.isArray(params.store) ? params.store[0] : params.store;
+
+  await requireAdmin(`/admin/perfumes/new${storeParam ? `?store=${encodeURIComponent(storeParam)}` : ""}`);
+
   const stores = await getActiveStores();
   const store = stores.find((candidate) => candidate.id === storeParam) ?? stores[0];
 

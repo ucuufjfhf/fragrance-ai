@@ -101,6 +101,6 @@ export interface QuizSubmitResponse {
 
 /** `POST /api/quiz/submit` error payload (developer-facing reasons). */
 export interface QuizSubmitErrorResponse {
-  error: "INVALID_JSON" | "INVALID_ANSWERS";
+  error: "INVALID_JSON" | "INVALID_ANSWERS" | "RATE_LIMITED";
   reason: string;
 }

@@ -1,8 +1,14 @@
 import { headers } from "next/headers";
 import Link from "next/link";
 
+import { requireAdmin } from "@/lib/admin/server-access";
+
+import BulkProfilingPanel from "@/components/admin/BulkProfilingPanel";
 import PerfumeToggles from "@/components/admin/PerfumeToggles";
 import WidgetEmbedCode from "@/components/admin/WidgetEmbedCode";
+import { getOpenBulkJobForStoreAction } from "@/app/admin/perfumes/bulk-actions";
+import { AI_BULK_MAX_ITEMS } from "@/lib/admin/bulk/contract";
+import { resolveBulkMaxItems } from "@/lib/admin/bulk/helpers";
 import {
   getActiveStores,
   getPerfumesForStore,
@@ -10,13 +16,16 @@ import {
 import { toPersianDigits } from "@/lib/persian";
 import type { Metadata } from "next";
 
+/** Canonical path of this page, reused as the post-unlock redirect target. */
+const ADMIN_PERFUMES_PATH = "/admin/perfumes";
+
 /**
  * GET /admin/perfumes — the internal admin product list (Phase 6A).
  *
- * Internal MVP surface: **authentication/authorization is deliberately
- * deferred** (a later phase); nothing here is customer-facing and no fake
- * login was added. Every query is scoped to the selected `storeId` — store
- * isolation is mandatory and mirrors the Phase 3 pattern.
+ * Server-side admin gate: the page renders only for a valid admin cookie
+ * (unauthenticated requests are redirected to the gate page). Every query
+ * is scoped to the selected `storeId` — store isolation is mandatory and
+ * mirrors the Phase 3 pattern.
  */
 
 export const metadata: Metadata = {
@@ -39,6 +48,8 @@ function first(value: string | string[] | undefined): string | undefined {
 }
 
 export default async function AdminPerfumesPage({ searchParams }: AdminPerfumesPageProps) {
+  await requireAdmin(ADMIN_PERFUMES_PATH);
+
   const params = await searchParams;
   const storeId = first(params.store)?.trim() ?? "";
 
@@ -61,6 +72,13 @@ export default async function AdminPerfumesPage({ searchParams }: AdminPerfumesP
 
   const perfumes = await getPerfumesForStore(selectedStore.id);
   const created = first(params.created) === "1";
+
+  // Phase 12.5: bulk AI profiling — restore an in-flight job (DB truth) and
+  // resolve the selection ceiling server-side (env-overridable, bounded).
+  const [openBulkJob, bulkMaxItems] = await Promise.all([
+    getOpenBulkJobForStoreAction(selectedStore.id),
+    Promise.resolve(resolveBulkMaxItems(process.env.AI_BULK_MAX_ITEMS, AI_BULK_MAX_ITEMS)),
+  ]);
 
   // Public app URL for the widget install snippet (§29): the documented
   // deployment env var, with the request origin as the local-dev fallback.
@@ -112,6 +130,17 @@ export default async function AdminPerfumesPage({ searchParams }: AdminPerfumesP
       >
         + افزودن عطر جدید
       </Link>
+
+      <BulkProfilingPanel
+        storeId={selectedStore.id}
+        perfumes={perfumes.map((perfume) => ({
+          id: perfume.id,
+          name: perfume.name,
+          brand: perfume.brand,
+        }))}
+        initialOpenJob={openBulkJob}
+        maxItems={bulkMaxItems}
+      />
 
       {perfumes.length === 0 ? (
         <EmptyState

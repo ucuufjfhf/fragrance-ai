@@ -12,7 +12,9 @@ merchant's real inventory, with a short Persian «چرا این عطر؟» expla
 
 ---
 
-## Status: Phases 0–6 complete (6A + 6B) · Phase 7 next
+## Status: **LIVE in production** · Phases 0–11 + 12.1–12.6-A/B/C + hardening/deployment (16A/16B) implemented · Current working tree requires a fresh deployment check
+
+**Production: <https://fiage.netlify.app>** — deployed 2026-09-24 and fully smoke-tested (public quiz, results, widget, admin gate, APIs, security scans all PASS).
 
 | Phase | Scope | State |
 | --- | --- | --- |
@@ -20,7 +22,7 @@ merchant's real inventory, with a short Persian «چرا این عطر؟» expla
 | 1 | Personality quiz engine (10 questions, scoring, archetypes, Persian RTL UI, API, tests) | ✅ done |
 | 2 | PostgreSQL + Prisma schema/migrations/seed, product CRUD | ✅ done |
 | 3 | Deterministic fragrance matching engine | ✅ done |
-| 4 | AI layer (Qwen3.6 provider behind an abstraction, Persian explanations, fallback) | ✅ done |
+| 4 | AI layer (Qwen 3.6 provider behind an abstraction, GapGPT-hosted API, Persian explanations, fallback) | ✅ done |
 | 5 | Results UI (renders the deterministic Top-N + optional AI explanations) | ✅ done |
 | 6A | Admin product management (list, create, edit, activate/deactivate, fragrance profile) | ✅ done |
 | 6B | CSV import (preview → confirm → atomic create-only import) | ✅ done |
@@ -29,9 +31,12 @@ merchant's real inventory, with a short Persian «چرا این عطر؟» expla
 | 9 | MVP polish: store attribution for standalone quiz traffic | ✅ done |
 | 9.5 | Matching validation: 100-perfume test dataset + out-of-stock eligibility fix | ✅ done |
 | 11 | AI-assisted fragrance profiling (admin generate → review → save) | ✅ done |
-| 7 | Analytics | planned |
-| 8 | Embeddable `widget.js` | planned |
-| 9 | MVP polish + merchant demo | planned |
+| 12.1 | Bulk AI profiling: contract + helpers (statuses, transitions, retry codes, backoff, limits) | ✅ done |
+| 12.2 | Bulk AI profiling: `BulkProfileJob` / `BulkProfileItem` schema + migration | ✅ done |
+| 12.3 | Bulk AI profiling: bulk job service (atomic claiming, heartbeats, stale reclaim, exactly-once counters, store isolation) | ✅ done |
+| 12.4 | Bulk AI profiling: AI execution / processing / retry handling | ✅ done |
+| 16A | Hardening: operator store provisioning + fail-closed admin access gate | ✅ done |
+| 16B | Production deployment to Netlify + full smoke testing | ✅ done |
 | 10 | First real customer | planned |
 
 The quiz engine (Phase 1) is live at `/quiz` with a deterministic scoring API at
@@ -40,13 +45,31 @@ internal admin product management (Phase 6A) is live at `/admin/perfumes` with t
 group CSV import (Phase 6B) at `/admin/perfumes/import`; the analytics dashboard
 (Phase 7) is live at `/admin/analytics`; the embeddable widget (Phase 8) is served
 from `/widget.js` + `/widget`; standalone quiz traffic (Phase 9) now carries store
-attribution via `/quiz?store=…`. The first real customer is Phase 10.
+attribution via `/quiz?store=…`. Bulk AI profiling (checkpoints 12.1–12.5) is complete:
+contract/helpers, job+item schema and migration, the database-backed bulk job service with
+atomic claiming, AI execution with retry/rate-limit handling, and the admin integration
+(product selection → job creation → browser-driven bounded chunks → progress → pause/resume →
+retry-failed). The first real customer is Phase 10.
 
-> **Phase 6A security note:** the admin surface is an internal MVP tool.
-> **Authentication and authorization are deliberately deferred** to a later phase —
-> there is no login, no password, no session infra, and the page is not
-> production-secure. It is marked `noindex, nofollow` and is not linked from any
-> customer-facing component.
+> **Admin security (post-hardening):** every `/admin/*` route sits behind a minimal
+> shared-secret gate (`ADMIN_ACCESS_SECRET`, server-side env only; fail-closed when unset),
+> enforced SERVER-SIDE — `requireAdmin()` guards every admin page and
+> `requireAdminAction()` guards every privileged admin server action
+> (`lib/admin/server-access.ts`; the former `proxy.ts` middleware was removed, so the
+> project emits no Edge middleware at all). `/admin/access` stays public so the operator
+> can unlock. The browser receives only a SHA-256 hash in an httpOnly cookie — never the
+> secret. This is a deliberately minimal gate, not an authentication system: no accounts,
+> roles or sessions. Admin pages remain `noindex, nofollow` and unlinked from
+> customer-facing components.
+
+**Store provisioning (operator-only):** new merchant stores are created server-side with
+
+```bash
+npx tsx scripts/create-store.ts --name "نام فروشگاه" --slug my-shop --website-url https://my-shop.ir
+```
+
+The script validates name/slug, creates the store with a Prisma-generated id, reports the id
+and widget snippet, and rejects duplicate slugs (rerun-safe; it never deletes).
 
 ---
 
@@ -247,7 +270,7 @@ fills optional descriptor fields.
 | --- | --- |
 | `lib/ai/provider.ts` | provider-agnostic `AIProvider` contract, config reader, null provider |
 | `lib/ai/errors.ts` | leaf error classes (`AiUnavailableError`, `AiRequestError`, `AiResponseError`) — separate to avoid an import cycle |
-| `lib/ai/qwen.ts` | the only vendor-aware file: Qwen3.6 over the GaptGPT API (OpenAI-style `/chat/completions`), bearer auth, `AbortController` timeout |
+| `lib/ai/qwen.ts` | the only vendor-aware file: Qwen 3.6 over the GapGPT API (OpenAI-compatible `/chat/completions`), bearer auth, `AbortController` timeout |
 | `lib/ai/perfume-profile.ts` | descriptor/family/notes enrichment prompt + validator |
 | `lib/ai/explanation.ts` | «چرا این عطر؟» prompt, Persian-copy validator, explanation helpers |
 | `scripts/verify-ai-fallback.ts` | live check that needs no AI credentials |
@@ -274,33 +297,47 @@ deterministic result with `aiAvailable: false`.
   forgetful future provider still cannot emit invalid copy.
 * `perfumeId` always comes from the input, never from the model.
 
-**Tests** — 44 tests in `tests/ai/` (Vitest, `node` env, no network — the Qwen transport is
+**Tests** — the Phase 4 suites in `tests/ai/` (Vitest, `node` env, no network — the Qwen transport is
 exercised through an injected fake `fetch`):
 
 | File | Covers |
 | --- | --- |
 | `tests/ai/provider.test.ts` | config defaults, provider selection, missing creds, `none`, unknown provider, no key leakage |
-| `tests/ai/qwen.test.ts` | request shape/bearer auth/token budget, base-URL trimming, JSON in prose, HTTP and non-JSON failures, timeout |
+| `tests/ai/qwen.test.ts` | request shape/bearer auth/token budget, GapGPT endpoint + model id, base-URL trimming (never `/v1/v1`), JSON in prose, malformed body / missing content, HTTP and non-JSON failures, timeout |
 | `tests/ai/perfume-profile.test.ts` | prompt facts, description cap, validator rejects forbidden keys/axes, clamping, `ok:false` degradation |
 | `tests/ai/explanation.test.ts` | trait bands, deterministic trait order, digit-free prompt, Persian/digit/foreign-product rejection, success + failure paths |
 | `tests/ai/fallback.test.ts` | engine output byte-identical for missing/slow/failing/healthy providers; only `perfumeId`+`explanation` escape |
 
 **Live verification** — `npx tsx scripts/verify-ai-fallback.ts` (read-only, needs the seeded
 dev DB) recomputes recommendations before and after an AI attempt and asserts they are
-byte-identical, then reports how many explanations were produced. With the current empty
-`QWEN_API_KEY`/`QWEN_BASE_URL` it prints `AI available: false` and passes.
+byte-identical, then reports how many explanations were produced. Without credentials it
+prints `AI available: false` and passes; with credentials configured it prints
+`AI available: true` plus the number of explanations generated.
 
 **Not part of Phase 4** — no AI is wired into any route, recommendation results are not
-persisted, there is no results UI (Phase 5), and the real GaptGPT endpoint has never been
-called because no credentials exist yet.
+persisted, and the results UI is Phase 5.
+
+**Live GapGPT verification (2026-09-23)** — the Qwen provider now talks to the **GapGPT**
+OpenAI-compatible API (`QWEN_BASE_URL` defaults to `https://api.gapgpt.app/v1`, model
+`QWEN_MODEL` defaults to `gapgpt-qwen-3.6`; see "AI provider notes"). A live smoke test was
+performed successfully:
+
+* `GET https://api.gapgpt.app/v1/models` returned **HTTP 200**.
+* `gapgpt-qwen-3.6` was confirmed in the model catalogue.
+* A real perfume-profile enrichment call through the existing `AIProvider` abstraction
+  succeeded and returned valid structured descriptors.
+* `response_format: {"type":"json_object"}` was accepted by the endpoint.
+
+The API key is read from the server environment only, and is never printed, logged or
+committed.
 
 ---
 
 ## Phase 6A — admin product management (implemented)
 
 The merchant/operator side: manage a store's perfume inventory through an internal
-Persian RTL admin surface at `/admin/perfumes`. **Not customer-facing; no
-authentication yet** (deliberately deferred — see the note above).
+Persian RTL admin surface at `/admin/perfumes`. **Not customer-facing; protected by
+the shared-secret admin gate** (see the Admin security note above).
 
 **Flow** — select an active store → see that store's perfumes → create, edit,
 toggle فعال/غیرفعال and موجود/ناموجود, and manage the 1:1 fragrance profile. Every
@@ -324,8 +361,10 @@ context. Tested in `tests/admin/validation.test.ts`.
 **Determinism untouched** — creating/editing writes normal application data through
 Prisma; the matching engine, `MATCHING_DIMENSIONS`, scoring and ranking are unchanged.
 An inactive perfume keeps its profile but disappears from recommendations via the
-existing `active: true` filter. `inStock` is managed but **not** used as a filter (a
-later business-filter step, per the handoff). Schema: **unchanged**.
+existing `active: true` filter, and an out-of-stock perfume is likewise excluded by the
+`inStock === true` eligibility check (the "out-of-stock eligibility fix" — see the
+Matching validation section). `inStock` is managed as inventory state, **and** is used as
+a recommendation filter; scoring, ranking and tie-breaks are untouched. Schema: **unchanged**.
 
 **Tests** — 18 tests in `tests/admin/validation.test.ts` (pure, no live DB): valid
 payload, required fields, non-integer/out-of-range axes, descriptor rules, enum
@@ -336,7 +375,7 @@ membership, URL/price/slug rules, boolean strictness, and the store-isolation gu
 ## Phase 6B — CSV import (implemented)
 
 Group product import for a selected store at `/admin/perfumes/import`. **Same admin
-security posture as 6A: internal MVP, no authentication (deliberately deferred).**
+security posture as 6A: protected by the shared-secret admin gate.**
 
 **Flow** — select an active store → upload a CSV (≤ 5 MB, ≤ 5,000 data rows) →
 server-side parse + validation + duplicate detection → preview table (تعداد کل / معتبر /
@@ -384,7 +423,7 @@ atomicity, commit-time re-validation and rollback reporting.
 
 Merchant-facing analytics at `/admin/analytics`, built on **persisted events only** —
 no fake data, no external analytics platform, no chart library. Same admin posture as
-6A/6B: internal MVP, **no authentication (deliberately deferred)**.
+6A/6B: protected by the shared-secret admin gate.
 
 **Data model** — one new table, `AnalyticsEvent` (migration
 `20260922_phase7_analytics_events`, applied via `migrate diff` + `deploy`): append-only
@@ -580,6 +619,63 @@ deterministic repeats, topN behavior, clean empty-inventory handling.
 
 ---
 
+---
+
+## Phase 12 — bulk AI profiling and Phase 12.6 controls (checkpoints 12.1–12.6-C implemented)
+
+Bulk AI profiling applies the existing Phase 4 enrichment across many perfumes in one run,
+with progress that survives a browser refresh or a server restart. It is built in gated
+checkpoints:
+
+**12.1 — contract + helpers (implemented, 2026-09-22).** `lib/admin/bulk/contract.ts` is the
+single source of truth: job statuses (`PENDING`, `RUNNING`, `PAUSED_RATE_LIMITED`,
+`COMPLETED`, `COMPLETED_WITH_ERRORS`, `FAILED`), item statuses (`PENDING`, `RUNNING`,
+`SUCCEEDED`, `FAILED`, `SKIPPED`), the allowed job/item transition maps, the typed retryable
+error codes (`timeout`, `http_429`, `http_5xx`), deterministic backoff constants, and the MVP
+limits (`AI_BULK_MAX_ITEMS`, `BULK_AI_CONCURRENCY = 1`, chunk size, max attempts,
+stale-heartbeat window). `lib/admin/bulk/helpers.ts` holds the pure guards/validators
+(transition checks, id-list validation, backoff). Both are dependency-free leaf modules.
+
+**12.2 — schema + migration (implemented, 2026-09-22).** `BulkProfileJob` and
+`BulkProfileItem` models with the `BulkProfileJobStatus` / `BulkProfileItemStatus` enums,
+`@@unique([jobId, perfumeId])`, job/status indexes and cascade deletes (migration
+`20260922_phase12_bulk_profile_jobs`). The database now has **three** migrations in total.
+No `aiEnrichedAt` column exists anywhere.
+
+**12.3 — bulk job service (implemented, 2026-09-23).** `lib/admin/bulk/service.ts` is
+server-only and contains **no AI, no `fetch` and no server actions**. It provides: atomic item
+claiming via a conditional `updateMany` decided by the affected-row count (plus bounded
+re-selection when another worker wins the race), conditional state transitions, heartbeats,
+stale-claim reclaim (which never increments `attempts`), terminal transitions with
+**exactly-once** job counters inside the same transaction, `FAILED → PENDING` retry
+preparation, job lifecycle transitions gated by the 12.1 contract, item-derived completion
+checks (`COMPLETED` vs `COMPLETED_WITH_ERRORS`), and store isolation on every operation (a
+foreign id and a missing id are indistinguishable, so cross-store existence never leaks).
+Race conditions are proven against live PostgreSQL in `tests/admin/bulk-service.race.test.ts`.
+
+**12.4 — AI execution / processing / retry handling (implemented, 2026-09-23).**
+`lib/admin/bulk/processor.ts` orchestrates claim → heartbeat → AI request → validate →
+persist. The AI call runs **outside any transaction** through the `AIProvider` abstraction
+(`createAIProvider()`), concurrency is 1, chunks are bounded (size 10, 120 s budget), transient
+failures (`timeout`, `http_429`, `http_5xx`) retry with deterministic exponential backoff and
+honored `Retry-After` hints, two consecutive 429s pause the job, a claimed item always lands
+in a safe state (terminal or released to `PENDING`), and stale-heartbeat items are reclaimed
+so a closed browser or server restart never loses work. Stored failure messages are fixed
+Persian diagnostics — never provider payloads.
+
+**12.5 — server integration + admin UI (implemented, 2026-09-23).**
+`app/admin/perfumes/bulk-actions.ts` exposes the engine to the admin as thin server actions
+(create / start / pause / resume / process-chunk / progress / retry-failed / open-job), all
+store-isolated through the Phase 12.3 service. `components/admin/BulkProfilingPanel.tsx` adds
+the minimal product-list UI: per-product selection with a count/`AI_BULK_MAX_ITEMS` indicator,
+an explicit «AI پروفایل‌سازی» start (never automatic), browser-driven bounded chunk progression
+(one in-flight request per UI instance, stall-guarded), DB-derived progress (status label,
+percentage, succeeded/failed/skipped/remaining), pause/resume, a failed-item list with safe
+Persian messages and batch retry, and reload-safe restore of an in-flight job. `lib/admin/bulk/ui.ts`
+holds the pure presentation model. AI credentials stay server-side; no new infrastructure.
+
+---
+
 ## Architecture principles
 
 ```
@@ -592,7 +688,8 @@ Store website → Persian RTL widget → 10-question quiz → personality vector
   deterministic application code (`lib/matching/**`). AI only enriches perfume profiles
   and writes explanations; if the AI provider is down, recommendations still render.
 * **Provider-agnostic AI.** Application code depends on an `AIProvider` interface in
-  `lib/ai/`, not on a vendor SDK. Current provider: **Qwen3.6 via the GaptGPT API**,
+  `lib/ai/`, not on a vendor SDK. Current provider: **Qwen 3.6 via the GapGPT API**
+(`https://api.gapgpt.app/v1`, model `gapgpt-qwen-3.6`),
   selected through the `AI_PROVIDER` env var, with DeepSeek-style providers addable later.
 * **No local model/server infrastructure.**
 
@@ -602,13 +699,76 @@ Store website → Persian RTL widget → 10-question quiz → personality vector
 
 | Area | Choice |
 | --- | --- |
-| Framework | Next.js 16.3.5 (App Router, Turbopack) |
+| Framework | Next.js 16.3.5 (App Router; production build via Webpack) |
 | UI | React 19.2.8, TypeScript 5 (strict), Tailwind CSS v4 |
 | Fonts | Vazirmatn via `next/font/google` (Persian, RTL) |
 | Lint | ESLint 9 + `eslint-config-next` (flat config) |
 | Tests | Vitest 5 (`node` environment, `tests/**/*.test.ts`) |
 | Database | PostgreSQL via Prisma ORM 7.10.0 + `@prisma/adapter-pg` |
 | Runtime | Node.js 20.9+ (developed on Node 24.21.0) |
+
+---
+
+## Deployment
+
+**The app is LIVE in production: <https://fiage.netlify.app>** (Netlify,
+project `fiage`; deployed 2026-09-24, deploy `6ab4b1e7eff8ea05cf01667a`, full
+smoke-test suite passed). Redeploys run from the project root:
+
+```bash
+npx netlify deploy --build --prod
+```
+
+No platform-specific configuration is committed — the app is a standard
+Next.js (App Router) build served by Netlify's auto-installed OpenNext adapter
+(`@netlify/plugin-nextjs`; no `netlify.toml` committed, none pinned); any
+other managed Next.js/Node platform also works. The deployment packages **Node
+Functions only — zero Edge Functions**.
+
+The production build intentionally uses **Webpack** (`npm run build` →
+`next build --webpack`). Turbopack's production file-tracing on Windows staged
+broken symlinks for Prisma/pg packages into the deployed function (verified
+2026-09-24); Webpack traces real files. A `build:turbo` script keeps Turbopack
+available for local builds — do not switch the production build back.
+
+The app deliberately uses NO middleware: an earlier attempt to protect
+`/admin/*` with Next 16's `proxy.ts` middleware failed Netlify's Edge
+Functions bundling (historical; `proxy.ts` has since been removed). Admin
+authentication lives entirely in the server-side Node runtime — see Admin
+security below.
+
+**Required production environment variables** (placeholders in `.env.example`;
+never commit real values):
+
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL connection string (Supabase). SSL via `sslmode=require` in the string. Use the **Session Pooler** URL — direct IPv6 may be unreachable from some hosts. |
+| `ADMIN_ACCESS_SECRET` | Shared secret for the `/admin/*` gate. **Required in production** — the gate fails closed (admin unreachable) when unset. Use a long random value; rotating it invalidates issued unlock cookies. |
+| `NEXT_PUBLIC_APP_URL` | Public origin (e.g. `https://your-domain.com`) used for the widget install snippet. Read server-side at request time with a request-origin fallback, so it can be set at runtime. |
+| `AI_PROVIDER` | `qwen` (the only configured provider). |
+| `QWEN_API_KEY` | Server-side only — never reaches the browser. Optional: AI features degrade gracefully without it. |
+| `QWEN_BASE_URL` | OpenAI-compatible endpoint (`https://api.gapgpt.app/v1`). |
+| `QWEN_MODEL` | `gapgpt-qwen-3.6`. |
+| `QWEN_TIMEOUT_MS` | Optional AI hard timeout (default 15000). |
+| `PG_POOL_MAX` | Optional per-instance pg pool cap (serverless hosts; default 5). |
+
+**Build & run:**
+
+```bash
+npm install            # postinstall runs `prisma generate` (the generated client is git-ignored)npx prisma migrate deploy   # apply committed migrations (never `migrate dev` — see §Phase 2 note)
+npm run build
+npm start
+```
+
+On managed platforms the same steps map to: install/build commands as above,
+plus a **release/migration step** of `npx prisma migrate deploy` before or at
+deploy. `prisma migrate dev` cannot be used against the Supabase Session Pooler
+(documented in `AI_HANDOFF.md` §6.1) — deploy-only workflow.
+
+Node.js ≥ 20.9 is required by Next.js 16 (developed on Node 24).
+
+`lib/generated/prisma` is a build artifact (git-ignored) and is regenerated by
+`postinstall`; nothing else in the repo is generated.
 
 ---
 
@@ -632,13 +792,14 @@ npm run dev                 # http://localhost:3000
 Validation commands:
 
 ```bash
-npm test            # Vitest (152 tests, 16 files)
+npm test            # Vitest (516 tests, 41 files)
 npx tsx scripts/verify-matching.ts  # live matching-engine check against the seeded dev DB
 npx tsx scripts/verify-ai-fallback.ts  # Phase 4: AI fallback (needs no AI credentials)
 npm run lint        # ESLint
 npm run typecheck   # next typegen && tsc --noEmit
 npm run typegen     # generate Next.js route types only
-npm run build       # production build
+npm run build       # production build (next build --webpack)
+npm run build:turbo # Turbopack build (local use; NOT for Netlify deploys)
 npm run db:validate # prisma validate
 ```
 
@@ -666,9 +827,9 @@ npm run db:validate # prisma validate
 | --- | --- | --- |
 | `DATABASE_URL` | 2+ | PostgreSQL connection string (read by `prisma.config.ts`) |
 | `AI_PROVIDER` | 4+ | Selects the AI provider implementation (`qwen`) |
-| `QWEN_API_KEY` | 4+ | GaptGPT API key for Qwen3.6 — **server-side only** |
-| `QWEN_BASE_URL` | 4+ | Base URL of the GaptGPT API endpoint |
-| `QWEN_MODEL` | 4+ | Model identifier (`qwen3.6`) |
+| `QWEN_API_KEY` | 4+ | GapGPT API key for Qwen 3.6 — **server-side only** |
+| `QWEN_BASE_URL` | 4+ | Base URL of the GapGPT API endpoint (default `https://api.gapgpt.app/v1`) |
+| `QWEN_MODEL` | 4+ | Model identifier (default `gapgpt-qwen-3.6`) |
 | `QWEN_TIMEOUT_MS` | 4+ | Hard timeout for AI calls, in milliseconds |
 
 `.env` is git-ignored; `.env.example` holds placeholders. Secrets are never hardcoded and
@@ -698,13 +859,14 @@ fragrance-ai/
 │   ├── fragrance/            # Phases 2–3: profile helpers, categories
 │   ├── matching/             # Phase 3: filters, score, ranking
 │   ├── ai/                   # Phase 4: provider.ts, qwen.ts, perfume-profile.ts, explanation.ts
+│   ├── admin/                # Phases 6A–6B (repository, validation, csv/*) + 12.1–12.3 (bulk/*)
 │   └── analytics/            # Phase 7
 ├── prisma/
-│   ├── schema.prisma         # Phase 0: datasource + generator; models land in Phase 2
-│   └── migrations/           # Phase 2
+│   ├── schema.prisma         # Phases 2, 7 and 12.2 (models, enums, indexes)
+│   └── migrations/           # Phase 2, Phase 7 and 12.2 (three migrations)
 ├── public/                   # Phase 8: widget.js
 ├── types/                    # Shared domain contracts (personality, fragrance, recommendation)
-├── tests/                    # Vitest suites (personality + API route) — Phase 1
+├── tests/                    # Vitest suites (516 tests, 41 files) across all phases
 ├── prisma.config.ts          # Prisma ORM 7 config (schema path, migrations, datasource)
 ├── vitest.config.mts         # Vitest config (`@/*` alias, node environment)
 └── .env.example
@@ -733,10 +895,19 @@ absent.
 
 ## AI provider notes
 
-* Qwen3.6 is reached through the **GaptGPT API** provider: `$0.25 / 1M` input tokens and
+* Qwen 3.6 is reached through the **GapGPT API** (OpenAI-compatible): `$0.25 / 1M` input tokens and
   `$2.00 / 1M` output tokens. A typical request (~2,000 in / 500 out) costs ≈ `$0.0015`, so
   the current promotional credit (≈ `$0.50`) covers roughly 300+ requests of that size, and
   the credit is temporary. Prompts must therefore stay small.
+* **Configuration** — `AI_PROVIDER=qwen` selects the provider; `QWEN_BASE_URL` defaults to
+  `https://api.gapgpt.app/v1` and `QWEN_MODEL` to `gapgpt-qwen-3.6` (`QWEN_TIMEOUT_MS` = 15 s).
+  Requests go to `POST {QWEN_BASE_URL}/chat/completions` (trailing slashes are trimmed, so the
+  path is never doubled into `/v1/v1/…`).
+* **Architecture** — application → `AIProvider` abstraction → Qwen provider (`lib/ai/qwen.ts`)
+  → GapGPT OpenAI-compatible API → Qwen 3.6. Only `lib/ai/**` knows the vendor, and the
+  deterministic engine never depends on the provider.
+* **Verified live (2026-09-23)** — see the "Live GapGPT verification" note in the Phase 4
+  section above.
 * The API key stays server-side (only `lib/ai/**` reads it) and the deterministic
   recommendation flow must remain fully functional without the provider.
 
@@ -746,8 +917,10 @@ absent.
 
 1. **No local `psql`, Docker or Git on this machine** — the database is a hosted Supabase
    instance, and `prisma migrate dev` is unusable there (see the Prisma 7 note in Phase 2).
-2. `QWEN_BASE_URL` (GaptGPT API endpoint) and a real `QWEN_API_KEY` are still missing; the
-   values in `.env` are empty placeholders, so the live AI path is unverified.
+2. **Resolved (2026-09-23).** The provider is Qwen 3.6 via the GapGPT API
+   (`QWEN_BASE_URL=https://api.gapgpt.app/v1`, `QWEN_MODEL=gapgpt-qwen-3.6`) and the live path
+   is verified (see "Live GapGPT verification"). A real `QWEN_API_KEY` lives in the local
+   `.env` only and is never committed or printed; `.env.example` keeps an empty placeholder.
 3. The AI layer is now consumed by the results page only; recommendation results are
    still never persisted (sessions/recommendations tables remain unwritten).
 4. **Test runner:** Vitest 5 (Phase 1). Node's built-in `node --test` was rejected because

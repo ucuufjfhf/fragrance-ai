@@ -1,5 +1,6 @@
 import { getPrisma } from "@/lib/db";
 import { isValidStoreId, type WidgetConfigResult } from "@/lib/widget/contract";
+import { widgetCorsHeaders } from "@/lib/widget/cors";
 
 /**
  * GET /api/widget/config?storeId=… — public widget store validation (Phase 8).
@@ -65,19 +66,4 @@ export function OPTIONS(request: Request): Response {
     status: 204,
     headers: widgetCorsHeaders(request.headers.get("origin")),
   });
-}
-
-/** Reflected-origin CORS headers for the public widget endpoints (§24). */
-export function widgetCorsHeaders(origin: string | null): Record<string, string> {
-  const headers: Record<string, string> = {
-    Vary: "Origin",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-
-  if (origin) {
-    headers["Access-Control-Allow-Origin"] = origin;
-  }
-
-  return headers;
 }

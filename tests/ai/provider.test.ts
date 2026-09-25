@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   AI_WRITABLE_DIMENSIONS,
   AiUnavailableError,
+  DEFAULT_AI_BASE_URL,
   DEFAULT_AI_MODEL,
   DEFAULT_AI_TIMEOUT_MS,
   createAIProvider,
@@ -27,7 +28,7 @@ describe("readAiConfig", () => {
       AI_PROVIDER: "QWEN",
       QWEN_API_KEY: "test-key",
       QWEN_BASE_URL: "https://ai.example/v1",
-      QWEN_MODEL: "qwen3.6",
+      QWEN_MODEL: "gapgpt-qwen-3.6",
       QWEN_TIMEOUT_MS: "9000",
     });
 
@@ -35,7 +36,7 @@ describe("readAiConfig", () => {
       provider: "qwen",
       apiKey: "test-key",
       baseUrl: "https://ai.example/v1",
-      model: "qwen3.6",
+      model: "gapgpt-qwen-3.6",
       timeoutMs: 9000,
     });
   });
@@ -45,7 +46,7 @@ describe("readAiConfig", () => {
 
     expect(empty.provider).toBe("qwen");
     expect(empty.apiKey).toBe("");
-    expect(empty.baseUrl).toBe("");
+    expect(empty.baseUrl).toBe(DEFAULT_AI_BASE_URL);
     expect(empty.model).toBe(DEFAULT_AI_MODEL);
     expect(empty.timeoutMs).toBe(DEFAULT_AI_TIMEOUT_MS);
 
@@ -59,6 +60,43 @@ describe("readAiConfig", () => {
       DEFAULT_AI_TIMEOUT_MS,
     );
     expect(readAiConfig({ QWEN_MODEL: "   " }).model).toBe(DEFAULT_AI_MODEL);
+  });
+});
+
+describe("GapGPT target defaults", () => {
+  it("resolves the documented GapGPT base URL and Qwen 3.6 model id", () => {
+    expect(DEFAULT_AI_BASE_URL).toBe("https://api.gapgpt.app/v1");
+    expect(DEFAULT_AI_MODEL).toBe("gapgpt-qwen-3.6");
+  });
+
+  it("reads the migrated config verbatim when the env vars are set", () => {
+    const config = readAiConfig({
+      AI_PROVIDER: "qwen",
+      QWEN_BASE_URL: "https://api.gapgpt.app/v1",
+      QWEN_MODEL: "gapgpt-qwen-3.6",
+    });
+
+    expect(config.provider).toBe("qwen");
+    expect(config.baseUrl).toBe("https://api.gapgpt.app/v1");
+    expect(config.model).toBe("gapgpt-qwen-3.6");
+  });
+
+  it("falls back to DEFAULT_AI_BASE_URL for a whitespace-only QWEN_BASE_URL", () => {
+    expect(readAiConfig({ QWEN_BASE_URL: "   " }).baseUrl).toBe(DEFAULT_AI_BASE_URL);
+  });
+
+  it("still honours a custom QWEN_MODEL (the model stays configurable)", () => {
+    expect(readAiConfig({ QWEN_MODEL: "custom-model" }).model).toBe("custom-model");
+  });
+
+  it("reports the missing API key (not the base URL) when only the key is absent", () => {
+    const provider = createAIProvider(
+      readAiConfig({ QWEN_BASE_URL: "https://api.gapgpt.app/v1", QWEN_MODEL: "gapgpt-qwen-3.6" }),
+    );
+
+    expect(provider.isAvailable()).toBe(false);
+    expect(provider.unavailableReason()).toContain("QWEN_API_KEY");
+    expect(provider.unavailableReason()).not.toContain("QWEN_BASE_URL");
   });
 });
 

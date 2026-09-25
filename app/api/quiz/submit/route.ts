@@ -3,6 +3,12 @@ import type {
   QuizSubmitErrorResponse,
   QuizSubmitResponse,
 } from "@/types/personality";
+import {
+  PUBLIC_RATE_LIMITS,
+  checkRateLimit,
+  rateLimitResponse,
+  requesterIdentity,
+} from "@/lib/rate-limit";
 
 /**
  * POST /api/quiz/submit
@@ -19,6 +25,18 @@ import type {
  *  - 400 `QuizSubmitErrorResponse` for malformed JSON or invalid answers
  */
 export async function POST(request: Request): Promise<Response> {
+  const limit = checkRateLimit(
+    `quiz:requester:${requesterIdentity(request)}`,
+    PUBLIC_RATE_LIMITS.quizRequester,
+  );
+  if (!limit.allowed) {
+    const body: QuizSubmitErrorResponse = {
+      error: "RATE_LIMITED",
+      reason: "too many requests; retry after the indicated delay.",
+    };
+    return rateLimitResponse(limit.retryAfterSeconds, body);
+  }
+
   let payload: unknown;
 
   try {

@@ -2,13 +2,16 @@ import Link from "next/link";
 
 import { getActiveStores } from "@/lib/admin/repository";
 import CsvImportFlow from "@/components/admin/CsvImportFlow";
+import { requireAdmin } from "@/lib/admin/server-access";
 
 /**
  * Phase 6B: CSV import page (server component).
  *
- * Loads the active stores server-side and hands them to the client flow
- * component (upload → preview → confirm). The page itself performs no
- * mutation; all writes happen in the confirm server action's transaction.
+ * Server-side admin gate: unauthenticated requests are redirected to the
+ * gate page before anything renders. Loads the active stores server-side
+ * and hands them to the client flow component (upload → preview → confirm).
+ * The page itself performs no mutation; all writes happen in the confirm
+ * server action's transaction.
  */
 export const metadata = {
   title: "ورود گروهی عطرها",
@@ -16,6 +19,8 @@ export const metadata = {
 };
 
 export default async function ImportPage() {
+  await requireAdmin("/admin/perfumes/import");
+
   const stores = await getActiveStores();
 
   if (stores.length === 0) {

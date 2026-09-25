@@ -56,6 +56,30 @@ enum QuizSessionStatus {
   ABANDONED
 }
 
+/// Lifecycle of one bulk AI profiling job (Phase 12). Mirrors
+/// `BULK_JOB_STATUSES` in `lib/admin/bulk/contract.ts`.
+enum BulkProfileJobStatus {
+  PENDING
+  RUNNING
+  /// Automatic pause after consecutive provider rate limits; resumed by admin.
+  PAUSED_RATE_LIMITED
+  COMPLETED
+  COMPLETED_WITH_ERRORS
+  FAILED
+}
+
+/// Per-perfume state inside one bulk profiling job (Phase 12). Mirrors
+/// `BULK_ITEM_STATUSES` in `lib/admin/bulk/contract.ts`.
+enum BulkProfileItemStatus {
+  PENDING
+  /// Claimed by a worker; `heartbeatAt` distinguishes live from stale claims.
+  RUNNING
+  SUCCEEDED
+  FAILED
+  /// Deliberately excluded (e.g. perfume deactivated or left the store mid-job).
+  SKIPPED
+}
+
 /// A perfume shop using the SaaS (tenant boundary).
 model Store {
   id   String @id @default(cuid())
@@ -82,6 +106,10 @@ model Store {
 
   /// Analytics observations scoped to this store (SetNull on store delete).
   analyticsEvents AnalyticsEvent[]
+
+  /// Bulk AI profiling jobs are operational state, not history: they cascade
+  /// with the store (Phase 12).
+  bulkProfileJobs BulkProfileJob[]
 }
 
 /// A single perfume in a store's inventory.
@@ -124,6 +152,10 @@ model Perfume {
   /// History is preserved: a perfume referenced by recommendations cannot be
   /// hard-deleted (Restrict) — deactivate it instead.
   recommendations Recommendation[]
+
+  /// Bulk profiling items are operational state and die with the perfume
+  /// (Phase 12).
+  bulkProfileItems BulkProfileItem[]
 
   /// Per-store product slug uniqueness (Postgres allows many NULL slugs).
   @@unique([storeId, slug])
@@ -297,4 +329,75 @@ model AnalyticsEvent {
   @@index([storeId, createdAt])
   /// Perfume-level roll-ups (top recommended / clicked) filter by perfume.
   @@index([perfumeId, eventType, createdAt])
+}
+
+/// One bulk AI profiling run over a store's perfumes (Phase 12).
+///
+/// The job row is the resumability unit: it survives browser refresh/close and
+/// server restarts, and its counters drive the admin progress view. AI HTTP
+/// calls NEVER run inside a transaction that writes these rows — the Phase 12.3
+/// service calls the provider between small per-item transactions.
+model BulkProfileJob {
+  id      String @id @default(cuid())
+  /// Tenant boundary: every job query/mutation is scoped through this store.
+  storeId String
+
+  status BulkProfileJobStatus @default(PENDING)
+
+  totalItems   Int
+  successCount Int @default(0)
+  failedCount  Int @default(0)
+  skippedCount Int @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  /// Jobs are operational state, not history: they die with the store.
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  items BulkProfileItem[]
+
+  /// Per-store job listing filtered by status, newest first.
+  @@index([storeId, status, createdAt])
+}
+
+/// One perfume's profiling state inside one BulkProfileJob (Phase 12).
+///
+/// Per-item status IS the resume/retry mechanism: PENDING = to do, RUNNING =
+/// claimed (heartbeatAt fresh), FAILED = reportable/retryable, SUCCEEDED and
+/// SKIPPED are terminal. `@@unique([jobId, perfumeId])` makes duplicate
+/// processing impossible by construction.
+model BulkProfileItem {
+  id        String @id @default(cuid())
+  jobId     String
+  perfumeId String
+  /// 1-based CSV row number when the item came from a bulk import, for reports.
+  rowNumber Int?
+
+  status   BulkProfileItemStatus @default(PENDING)
+  attempts Int                   @default(0)
+
+  /// Typed failure code from `BULK_AI_ERROR_CODES` (e.g. "http_429") plus a
+  /// truncated, key-safe message. Never provider payloads, never secrets.
+  errorCode    String?
+  errorMessage String?
+
+  /// Refreshed while an item is claimed; a stale heartbeat marks the claim as
+  /// abandoned (server restart) and the item becomes reclaimable.
+  heartbeatAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  job BulkProfileJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  /// Operational state dies with the perfume (unlike recommendation history).
+  perfume Perfume @relation(fields: [perfumeId], references: [id], onDelete: Cascade)
+
+  /// One item per perfume per job — kills duplicate processing.
+  @@unique([jobId, perfumeId])
+  /// The claim / resume / progress queries all filter by job + status.
+  @@index([jobId, status])
 }

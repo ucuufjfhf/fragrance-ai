@@ -14,6 +14,7 @@ import {
   DESCRIPTOR_DIMENSIONS,
 } from "@/lib/fragrance/profile";
 import { validatePerfumePayload } from "@/lib/admin/validation";
+import { requireAdminAction } from "@/lib/admin/server-access";
 import {
   createAIProvider,
   type AiOutcome,
@@ -25,13 +26,13 @@ import { enrichPerfumeProfile } from "@/lib/ai/perfume-profile";
 /**
  * Server actions for the admin product CRUD (Phase 6A).
  *
- * Every action runs server-side: it re-validates the untrusted form payload
- * (the browser is never trusted), enforces store isolation inside the
- * repository, and only then touches Prisma. Outcomes are returned as data so
- * the form can render Persian feedback next to the offending field.
- *
- * Authentication/authorization is intentionally deferred (Phase 6A is an
- * internal MVP surface); nothing here pretends to be a login gate.
+ * Every action runs server-side: it first performs the admin access gate
+ * check (`requireAdminAction` — unauthenticated callers are redirected to
+ * the gate page, mirroring the former `proxy.ts` network boundary), then
+ * re-validates the untrusted form payload (the browser is never trusted),
+ * enforces store isolation inside the repository, and only then touches
+ * Prisma. Outcomes are returned as data so the form can render Persian
+ * feedback next to the offending field.
  */
 
 export interface AdminActionState {
@@ -132,6 +133,8 @@ export async function createPerfumeAction(
   _prev: AdminActionState | null,
   formData: FormData,
 ): Promise<AdminActionState> {
+  await requireAdminAction();
+
   const payload = formDataToPayload(formData);
   const validated = validatePerfumePayload(payload);
 
@@ -155,6 +158,8 @@ export async function updatePerfumeAction(
   _prev: AdminActionState | null,
   formData: FormData,
 ): Promise<AdminActionState> {
+  await requireAdminAction();
+
   const payload = formDataToPayload(formData);
   const validated = validatePerfumePayload(payload);
 
@@ -177,6 +182,8 @@ export async function toggleActiveAction(
   storeId: string,
   active: boolean,
 ): Promise<AdminActionState> {
+  await requireAdminAction();
+
   const result = await setPerfumeFlags(perfumeId, storeId, { active });
 
   if (!result.ok) {
@@ -192,6 +199,8 @@ export async function toggleInStockAction(
   storeId: string,
   inStock: boolean,
 ): Promise<AdminActionState> {
+  await requireAdminAction();
+
   const result = await setPerfumeFlags(perfumeId, storeId, { inStock });
 
   if (!result.ok) {
@@ -244,6 +253,8 @@ export async function generateProfileAction(
   storeId: string,
   formData: FormData,
 ): Promise<GenerateProfileState> {
+  await requireAdminAction();
+
   if (typeof storeId !== "string" || storeId.trim() === "") {
     return { ok: false, message: PROFILER_MESSAGES.notFound };
   }

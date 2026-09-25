@@ -6,8 +6,14 @@ import type { AdminActionState } from "@/app/admin/perfumes/actions";
 import { getPerfumeForStore } from "@/lib/admin/repository";
 import type { Metadata } from "next";
 
+import { requireAdmin } from "@/lib/admin/server-access";
+
 /**
  * GET /admin/perfumes/[id]/edit — edit form (Phase 6A, server component).
+ *
+ * Server-side admin gate: unauthenticated requests are redirected to the
+ * gate page before anything renders (the `next` target is built from the
+ * dynamic route params, sanitized by `safeAdminRedirectPath`).
  *
  * Store isolation on reads: the perfume is loaded through
  * `getPerfumeForStore(id, storeId)`, so an id belonging to another store
@@ -28,6 +34,8 @@ export default async function EditPerfumePage({ params, searchParams }: EditPerf
   const query = await searchParams;
   const storeParam = Array.isArray(query.store) ? query.store[0] : query.store;
   const storeId = storeParam?.trim() ?? "";
+
+  await requireAdmin(`/admin/perfumes/${encodeURIComponent(id)}/edit${storeId ? `?store=${encodeURIComponent(storeId)}` : ""}`);
 
   const perfume = storeId ? await getPerfumeForStore(id, storeId) : null;
 

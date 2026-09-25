@@ -2,11 +2,14 @@
 
 import { CSV_MAX_FILE_BYTES } from "@/lib/admin/csv/contract";
 import { confirmCsvImport, previewCsvImport } from "@/lib/admin/csv/service";
+import { requireAdminAction } from "@/lib/admin/server-access";
 
 /**
  * Server actions for the Phase 6B CSV import flow.
  *
- * The browser only ever sends raw file text + the selected store id; all
+ * The browser only ever sends raw file text + the selected store id; every
+ * action first performs the admin access gate check (`requireAdminAction` —
+ * unauthenticated callers are redirected to the gate page), then all
  * parsing, validation, duplicate detection and the atomic transaction happen
  * server-side. Preview never touches the DB with a write; only the explicit
  * confirm action runs the transaction.
@@ -50,6 +53,8 @@ export async function previewCsvAction(
   _prev: unknown,
   formData: FormData,
 ): Promise<CsvActionError | { ok: true; raw: string; rows: unknown[]; summary: { totalRows: number; validRows: number; errorRows: number } }> {
+  await requireAdminAction();
+
   const storeId = String(formData.get("storeId") ?? "").trim();
 
   if (storeId === "") {
@@ -83,6 +88,8 @@ export async function previewCsvAction(
  * all rows or none.
  */
 export async function confirmCsvAction(formData: FormData): Promise<CsvActionError | { ok: true; importedCount: number }> {
+  await requireAdminAction();
+
   const storeId = String(formData.get("storeId") ?? "").trim();
   const raw = String(formData.get("raw") ?? "");
 

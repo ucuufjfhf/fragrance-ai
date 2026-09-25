@@ -10,7 +10,15 @@ import {
   type WidgetRecommendation,
   type WidgetRecommendationResponse,
 } from "@/lib/widget/contract";
-import { widgetCorsHeaders } from "@/app/api/widget/config/route";
+import { widgetCorsHeaders } from "@/lib/widget/cors";
+import {
+  PUBLIC_RATE_LIMITS,
+  checkRateLimit,
+  rateLimitResponse,
+  requesterIdentity,
+} from "@/lib/rate-limit";
+
+import { createControlledAIProvider } from "@/lib/ai/cost-controls";
 
 /**
  * POST /api/widget/recommend — the widget's recommendation endpoint (Phase 8).
@@ -51,6 +59,27 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ ok: false, reason: "INVALID_ID" }, { status: 400, headers });
   }
 
+  // Charge both dimensions before any DB or AI work. A caller cannot consume a
+  // different store's quota, and rotating requester addresses does not bypass
+  // the store's aggregate protection.
+  const requester = requesterIdentity(request);
+  const requesterLimit = checkRateLimit(
+    `widget:requester:${requester}`,
+    PUBLIC_RATE_LIMITS.widgetRequester,
+  );
+  const storeLimit = checkRateLimit(
+    `widget:store:${body.storeId}`,
+    PUBLIC_RATE_LIMITS.widgetStore,
+  );
+  if (!requesterLimit.allowed || !storeLimit.allowed) {
+    const limited = !requesterLimit.allowed ? requesterLimit : storeLimit;
+    return rateLimitResponse(
+      limited.retryAfterSeconds,
+      { ok: false, reason: "RATE_LIMITED" },
+      headers,
+    );
+  }
+
   const prisma = getPrisma();
 
   try {
@@ -83,7 +112,7 @@ export async function POST(request: Request): Promise<Response> {
   });
 
   // --- 4. optional AI explanations (existing Phase 4 abstraction) ---
-  const provider = createAIProvider();
+  const provider = createControlledAIProvider(createAIProvider(), body.storeId);
   const aiAvailable = provider.isAvailable() && matchResult.recommendations.length > 0;
 
   const explanations = new Map<string, string>();

@@ -30,7 +30,14 @@ export function getPrisma(): PrismaClient {
   }
 
   const prisma = new PrismaClient({
-    adapter: new PrismaPg({ connectionString }),
+    adapter: new PrismaPg({
+      connectionString,
+      // Cap the per-instance pool: on serverless hosts (Netlify/Vercel
+      // functions) every warm instance opens up to `max` Supabase pooler
+      // connections, so the pg default of 10 can exhaust the Session Pooler
+      // under concurrency. Override with PG_POOL_MAX when scaling deliberately.
+      max: Number(process.env.PG_POOL_MAX ?? 5),
+    }),
   });
 
   globalForPrisma.prismaClient = prisma;

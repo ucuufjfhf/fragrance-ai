@@ -40,6 +40,7 @@ vi.mock("@/lib/ai/explanation", () => ({
 import { GET as configGet } from "@/app/api/widget/config/route";
 import { POST as recommendPost } from "@/app/api/widget/recommend/route";
 import type { MatchResult } from "@/types/recommendation";
+import { resetRateLimitsForTests } from "@/lib/rate-limit";
 
 const VECTOR = {
   social: 60, adventurous: 40, expressive: 55, mysterious: 70, fresh: 30,
@@ -67,6 +68,7 @@ function makeMatchResult(storeId: string, count: number): MatchResult {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetRateLimitsForTests();
   mocks.storeFindFirst.mockResolvedValue({ name: "فروشگاه نمونه" });
   mocks.createAIProvider.mockReturnValue({ isAvailable: () => false });
 });
@@ -160,6 +162,27 @@ describe("POST /api/widget/recommend — store isolation (§4/§13)", () => {
 
     expect(response.status).toBe(400);
     expect(mocks.matchPerfumes).not.toHaveBeenCalled();
+  });
+
+  it("applies the stricter requester limit and preserves CORS and AI fallback", async () => {
+    mocks.matchPerfumes.mockReturnValue(makeMatchResult("store-A", 1));
+    const post = () => recommendPost(new Request("https://app.test/api/widget/recommend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "https://shop.example", "x-forwarded-for": "203.0.113.9" },
+      body: JSON.stringify({ storeId: "store-A", personalityVector: VECTOR }),
+    }));
+
+    for (let index = 0; index < 10; index += 1) {
+      const normal = await post();
+      expect(normal.status).toBe(200);
+      expect((await normal.json()).aiAvailable).toBe(false);
+    }
+
+    const limited = await post();
+    expect(limited.status).toBe(429);
+    expect(limited.headers.get("Retry-After")).toMatch(/^[1-9]\d*$/);
+    expect(limited.headers.get("Access-Control-Allow-Origin")).toBe("https://shop.example");
+    expect((await limited.json()).reason).toBe("RATE_LIMITED");
   });
 
   it("passes the engine the validated vector untouched (no local scoring, §13)", async () => {

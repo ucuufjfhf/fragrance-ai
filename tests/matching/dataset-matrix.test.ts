@@ -112,7 +112,7 @@ describe("matching test matrix — 100-perfume dataset (live DB, read-only)", ()
         expect(oosIds.has(rec.perfumeId)).toBe(false);
       }
     }
-  });
+  }, 15_000);
 
   it("H — CRITICAL: inactive perfumes NEVER appear in recommendations", async () => {
     const prisma = getPrisma();
@@ -127,7 +127,7 @@ describe("matching test matrix — 100-perfume dataset (live DB, read-only)", ()
         expect(inactiveIds.has(rec.perfumeId)).toBe(false);
       }
     }
-  });
+  }, 15_000);
 
   it("I — store isolation: no foreign-store perfume in either direction", async () => {
     const testResult = await getRecommendations({ storeId: STORE, personalityVector: MIXED, topN: 10 });

@@ -1,4 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// The admin access gate (added when `proxy.ts` was removed) is mocked here:
+// these tests verify the action boundary (serializability, payload shape),
+// not the gate itself (covered by access.test.ts / server-access.test.ts).
+vi.mock("@/lib/admin/server-access", () => ({
+  requireAdminAction: vi.fn(async () => {}),
+}));
 
 import {
   createPerfumeAction,

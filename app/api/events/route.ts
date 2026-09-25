@@ -1,4 +1,10 @@
 import { recordAnalyticsEvent } from "@/lib/analytics/service";
+import {
+  PUBLIC_RATE_LIMITS,
+  checkRateLimit,
+  rateLimitResponse,
+  requesterIdentity,
+} from "@/lib/rate-limit";
 
 /**
  * POST /api/events — the anonymous analytics write endpoint (Phase 7).
@@ -13,11 +19,22 @@ import { recordAnalyticsEvent } from "@/lib/analytics/service";
  * payload, 404 for an unknown store/perfume, 405 for anything but POST. No
  * stack traces, no Prisma errors, no DATABASE_URL.
  *
- * This endpoint is intentionally anonymous and rate-limit-free — analytics is
- * approximate, not fraud-proof (documented limitation).
+ * This endpoint remains anonymous and approximate; a requester-scoped
+ * limiter prevents unlimited submission without introducing tracking.
  */
 
 export async function POST(request: Request): Promise<Response> {
+  const limit = checkRateLimit(
+    `events:requester:${requesterIdentity(request)}`,
+    PUBLIC_RATE_LIMITS.eventsRequester,
+  );
+  if (!limit.allowed) {
+    return rateLimitResponse(
+      limit.retryAfterSeconds,
+      { ok: false, error: "RATE_LIMITED" },
+    );
+  }
+
   let payload: unknown;
 
   try {

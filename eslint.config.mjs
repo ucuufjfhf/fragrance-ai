@@ -14,6 +14,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Generated Prisma Client (created by `npm run db:generate`) is not our source.
     "lib/generated/**",
+    // Local tool/build artifacts (not source code).
+    ".kilo/**",
+    ".netlify/**",
   ]),
 ]);
 

@@ -31,7 +31,10 @@ export {
 
 /** Fallback timeout when `QWEN_TIMEOUT_MS` is missing or invalid. */
 export const DEFAULT_AI_TIMEOUT_MS = 15_000;
-export const DEFAULT_AI_MODEL = "qwen3.6";
+/** Default OpenAI-compatible base URL — Qwen 3.6 is hosted by the GapGPT API. */
+export const DEFAULT_AI_BASE_URL = "https://api.gapgpt.app/v1";
+/** Default model id GapGPT exposes for Qwen 3.6. */
+export const DEFAULT_AI_MODEL = "gapgpt-qwen-3.6";
 export const DEFAULT_AI_PROVIDER = "qwen";
 
 /** Descriptor dimensions the AI may fill in (never the 9 matching axes). */
@@ -136,7 +139,7 @@ export function readAiConfig(
   return {
     provider: (env.AI_PROVIDER ?? DEFAULT_AI_PROVIDER).trim().toLowerCase(),
     apiKey: (env.QWEN_API_KEY ?? "").trim(),
-    baseUrl: (env.QWEN_BASE_URL ?? "").trim(),
+    baseUrl: (env.QWEN_BASE_URL ?? "").trim() || DEFAULT_AI_BASE_URL,
     model: (env.QWEN_MODEL ?? DEFAULT_AI_MODEL).trim() || DEFAULT_AI_MODEL,
     timeoutMs: readTimeout(env.QWEN_TIMEOUT_MS),
   };

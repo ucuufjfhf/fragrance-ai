@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { POST } from "@/app/api/quiz/submit/route";
+import { resetRateLimitsForTests } from "@/lib/rate-limit";
 import { QUIZ_QUESTIONS } from "@/lib/personality/questions";
 import { scoreQuiz } from "@/lib/personality/scoring";
 import type {
@@ -10,6 +11,8 @@ import type {
 } from "@/types/personality";
 
 const PERSIAN_TEXT = /[\u0600-\u06FF]/;
+
+beforeEach(() => resetRateLimitsForTests());
 
 const completeAnswers = (): QuizAnswer[] =>
   QUIZ_QUESTIONS.map((question) => ({
@@ -53,6 +56,23 @@ describe("POST /api/quiz/submit", () => {
       expect(value).toBeGreaterThanOrEqual(0);
       expect(value).toBeLessThanOrEqual(100);
     }
+  });
+
+  it("allows normal submissions and returns 429 with Retry-After when flooded", async () => {
+    const request = () => new Request("http://localhost/api/quiz/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-forwarded-for": "198.51.100.8" },
+      body: JSON.stringify({ answers: completeAnswers() }),
+    });
+
+    for (let index = 0; index < 30; index += 1) {
+      expect((await POST(request())).status).toBe(200);
+    }
+
+    const response = await POST(request());
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toMatch(/^[1-9]\d*$/);
+    expect(((await response.json()) as QuizSubmitErrorResponse).error).toBe("RATE_LIMITED");
   });
 
   it("rejects malformed JSON with 400", async () => {

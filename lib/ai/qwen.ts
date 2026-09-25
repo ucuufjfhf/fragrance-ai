@@ -18,14 +18,15 @@ import {
 } from "@/lib/ai/perfume-profile";
 
 /**
- * Qwen3.6 implementation of `AIProvider`, talking to the GaptGPT API
+ * Qwen 3.6 implementation of `AIProvider`, talking to the GapGPT API
  * (OpenAI-compatible `/chat/completions`).
  *
  * This is the only file in the codebase that knows a vendor's HTTP shape. It:
  *  - keeps the API key server-side (sent as a bearer header, never logged);
  *  - enforces a hard timeout via `AbortController` (see `QWEN_TIMEOUT_MS`);
  *  - maps transport problems to `AiRequestError` / `AiResponseError` so callers
- *    can degrade instead of crashing;
+ *    can degrade instead of crashing, attaching STRUCTURED metadata (HTTP
+ *    status, timeout flag, parsed `Retry-After`) for reliable classification;
  *  - delegates all response validation to the pure validators in
  *    `perfume-profile.ts` / `explanation.ts` (structured output + anti-hallucination).
  *
@@ -54,6 +55,35 @@ interface ChatCompletionResponse {
 
 function endpointFor(baseUrl: string): string {
   return `${baseUrl.replace(/\/+$/, "")}/chat/completions`;
+}
+
+/**
+ * Parses a `Retry-After` header value into a millisecond delay (Phase 12.4).
+ *
+ * Supports both standard formats: delta-seconds ("30") and HTTP-date
+ * ("Fri, 01 Jan 2027 00:00:00 GMT"). Returns null for absent/empty/invalid
+ * values or non-positive delays. Pure and deterministic: `nowMs` is injected.
+ */
+export function parseRetryAfterMs(raw: string | null | undefined, nowMs: number): number | null {
+  const value = raw?.trim();
+  if (!value) {
+    return null;
+  }
+
+  // Delta-seconds form: a plain non-negative integer.
+  if (/^\d+$/.test(value)) {
+    const seconds = Number(value);
+    return seconds > 0 ? seconds * 1_000 : null;
+  }
+
+  // HTTP-date form: only meaningful when the date is in the future.
+  const timestamp = Date.parse(value);
+  if (!Number.isNaN(timestamp)) {
+    const delay = timestamp - nowMs;
+    return delay > 0 ? delay : null;
+  }
+
+  return null;
 }
 
 /** Extracts the first JSON object from a model reply, tolerating prose around it. */
@@ -109,11 +139,13 @@ export function createQwenProvider(options: QwenProviderOptions): AIProvider {
     } catch (error) {
       const reason = error instanceof Error ? error.name : "unknown error";
 
-      throw new AiRequestError(
-        reason === "AbortError"
-          ? `AI request timed out after ${timeoutMs}ms.`
-          : "AI request failed before a response was received.",
-      );
+      if (reason === "AbortError") {
+        throw new AiRequestError(`AI request timed out after ${timeoutMs}ms.`, {
+          timeout: true,
+        });
+      }
+
+      throw new AiRequestError("AI request failed before a response was received.");
     } finally {
       clearTimeout(timer);
     }
@@ -125,8 +157,13 @@ export function createQwenProvider(options: QwenProviderOptions): AIProvider {
         .replace(/\s+/g, " ")
         .trim();
 
+      // Structured metadata (Phase 12.4): the status and any Retry-After hint
+      // travel as properties, never as text an orchestrator has to parse.
+      const retryAfterMs = parseRetryAfterMs(response.headers.get("Retry-After"), Date.now());
+
       throw new AiRequestError(
         `AI request failed with HTTP ${response.status}${detail === "" ? "" : `: ${detail}`}`,
+        { status: response.status, retryAfterMs },
       );
     }
 

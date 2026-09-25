@@ -10,14 +10,16 @@ import AnalyticsRangeNav from "@/components/admin/AnalyticsRangeNav";
 import { formatPersianPercent, toPersianDigits } from "@/lib/persian";
 import type { Metadata } from "next";
 
+import { requireAdmin } from "@/lib/admin/server-access";
+
 /**
  * GET /admin/analytics — the Phase 7 dashboard (server component).
  *
- * All aggregation happens server-side from persisted AnalyticsEvent rows
- * (never fake data); the browser receives only computed numbers. Every query
- * is scoped to the selected store — a store's analytics are invisible to
- * another store's view (§13). Same internal-MVP posture as Phase 6A: no
- * authentication (deliberately deferred).
+ * Server-side admin gate: unauthenticated requests are redirected to the
+ * gate page before anything renders. All aggregation happens server-side
+ * from persisted AnalyticsEvent rows (never fake data); the browser
+ * receives only computed numbers. Every query is scoped to the selected
+ * store — a store's analytics are invisible to another store's view (§13).
  */
 
 export const metadata: Metadata = {
@@ -41,6 +43,9 @@ function readParams(
 
 export default async function AdminAnalyticsPage({ searchParams }: AdminAnalyticsPageProps) {
   const params = readParams(await searchParams);
+
+  await requireAdmin(`/admin/analytics?store=${encodeURIComponent(params.storeId)}&range=${encodeURIComponent(params.range)}`);
+
   const stores = await getActiveStores();
 
   if (stores.length === 0) {
