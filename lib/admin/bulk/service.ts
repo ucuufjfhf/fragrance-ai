@@ -874,12 +874,16 @@ export async function getBulkProfileJobProgress(
  * Fill-only semantics applied here, keyed on the unique `perfumeId`:
  *  - update: writes ONLY the eligible fields from the write (fillable
  *    descriptors, fillable `family`/`notes`) — non-zero stored values are
- *    structurally absent from the write, so they cannot be overwritten; the
- *    nine protected matching axes are never in the write;
- *  - create: a brand-new profile with the eligible AI fields and documented
- *    schema-consistent defaults for everything else — the nine required axes
- *    are stamped 0 (schema-consistent default; bulk profiling never invents
- *    matching values), `notes` defaults to [].
+ *    structurally absent from the write, so they cannot be overwritten;
+ *    the nine matching axes are written ONLY when the write carries
+ *    deterministically derived ones (`write.matching`) — never fabricated;
+ *  - create: a brand-new profile with the eligible fields. The nine required
+ *    axes come from `write.matching` when the reference lookup or the
+ *    deterministic axis derivation produced them; otherwise they are stamped
+ *    0 (schema-consistent default, never an invented matching value),
+ *    `notes` defaults to [].
+ *  - provenance: `profileSource` reflects the write's true source
+ *    (`REFERENCE` | `AI`), never a hardcoded label.
  *
  * A racing peer (or a rolled-back write) yields `NOT_RUNNING` / `DB_ERROR`:
  * no success is claimed, no count is bumped, and the item stays recoverable.
@@ -901,14 +905,22 @@ export async function persistBulkProfileItemSuccess(
   if (write.notes !== undefined) {
     updateData.notes = write.notes;
   }
+  // Only DETERMINISTICALLY DERIVED axes may travel in an update (the axis
+  // derivation in `computeBulkProfileWrite` already skipped stored axes).
+  if (write.matching !== undefined) {
+    for (const axis of MATCHING_DIMENSIONS) {
+      updateData[axis] = write.matching[axis];
+    }
+  }
 
   const createData: Record<string, unknown> = { perfumeId };
 
-  // The required axes are stamped 0: a schema-consistent default, never an
+  // The required axes come from the deterministic derivation when present;
+  // otherwise they are stamped 0: a schema-consistent default, never an
   // invented matching value. Admins can refine them later through the normal
-  // form; AI structurally cannot write them here.
+  // form; the AI structurally cannot supply them directly here.
   for (const axis of MATCHING_DIMENSIONS) {
-    createData[axis] = 0;
+    createData[axis] = write.matching?.[axis] ?? 0;
   }
   for (const [dimension, value] of Object.entries(write.descriptors)) {
     createData[dimension] = value;
@@ -917,6 +929,11 @@ export async function persistBulkProfileItemSuccess(
     createData.family = write.family;
   }
   createData.notes = write.notes ?? [];
+  // Provenance: the write's true source (reference hit or AI-derived).
+  createData.profileSource = write.source;
+  if (Object.keys(updateData).length > 0) {
+    updateData.profileSource = write.source;
+  }
 
   const work = async (tx: Prisma.TransactionClient): Promise<void> => {
     await tx.fragranceProfile.upsert({

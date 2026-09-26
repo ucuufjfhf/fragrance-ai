@@ -269,6 +269,8 @@ export async function confirmCsvImport(raw: string, storeId: string): Promise<Cs
                 ...(input.profile.family !== undefined ? { family: input.profile.family } : {}),
                 ...(input.profile.season !== undefined ? { season: input.profile.season } : {}),
                 ...(input.profile.occasion !== undefined ? { occasion: input.profile.occasion } : {}),
+                // CSV values are authoritative merchant data (§21) — MANUAL.
+                profileSource: "MANUAL",
               },
             },
           },

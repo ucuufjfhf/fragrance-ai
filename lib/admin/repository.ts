@@ -255,7 +255,14 @@ function toProfilePayload(input: AdminPerfumeInput) {
     notes: string[];
     season?: Season;
     occasion?: Occasion;
-  } & Record<ProfileColumn, number> = { ...axes, notes: input.profile.notes };
+    profileSource?: "REFERENCE" | "AI" | "MANUAL";
+  } & Record<ProfileColumn, number> = {
+    ...axes,
+    notes: input.profile.notes,
+    // Profiles entered by hand through the admin/CSV forms are MANUAL by
+    // definition; enrichment-driven paths stamp their own provenance.
+    profileSource: "MANUAL",
+  };
 
   if (input.profile.family !== undefined) {
     data.family = input.profile.family;

@@ -80,6 +80,16 @@ enum BulkProfileItemStatus {
   SKIPPED
 }
 
+/// How a FragranceProfile's data was produced. Minimal provenance for the
+/// reference-first enrichment strategy (REFERENCE = derived from the internal
+/// reference catalog, AI = AI-generated, MANUAL = merchant/operator entered).
+/// NULL rows predate the field and are treated as MANUAL by convention.
+enum ProfileSource {
+  REFERENCE
+  AI
+  MANUAL
+}
+
 /// A perfume shop using the SaaS (tenant boundary).
 model Store {
   id   String @id @default(cuid())
@@ -211,6 +221,10 @@ model FragranceProfile {
   /// Best season / occasion, used as optional Phase 3 filters.
   season   Season?
   occasion Occasion?
+
+  /// How this profile was produced (see ProfileSource). Optional so existing
+  /// rows migrate cleanly; enrichment writes REFERENCE or AI, forms write MANUAL.
+  profileSource ProfileSource?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

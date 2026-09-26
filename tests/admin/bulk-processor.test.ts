@@ -78,6 +78,8 @@ let jobStatus = "PENDING";
 let perfumeVisible = true;
 let storedProfile: Record<string, unknown> | null = null;
 let persistFails = false;
+let perfumeName = "Test Perfume";
+let perfumeBrand = "Test Brand";
 
 /** Fake provider: records profile calls; each test scripts the replies. */
 const profileReplies: Array<Promise<unknown>> = [];
@@ -149,6 +151,8 @@ beforeEach(() => {
   perfumeVisible = true;
   storedProfile = null;
   persistFails = false;
+  perfumeName = "Test Perfume";
+  perfumeBrand = "Test Brand";
   profileReplies.length = 0;
   profileCalls.length = 0;
   recordedDelays.length = 0;
@@ -253,7 +257,7 @@ beforeEach(() => {
     if (!item) {
       return null;
     }
-    return { id: item.perfumeId, name: "Test Perfume", brand: "Test Brand", description: null };
+    return { id: item.perfumeId, name: perfumeName, brand: perfumeBrand, description: null };
   });
 
   mocks.profileFindFirst.mockImplementation(async () => storedProfile);
@@ -338,7 +342,7 @@ describe("processBulkProfileChunk — basics", () => {
   it("respects the chunk size cap of 10 and leaves the rest claimable", async () => {
     seedPendingItems(12);
     for (let index = 0; index < 10; index += 1) {
-      profileReplies.push(validReply({ clean: 50 }));
+      profileReplies.push(validReply({ woody: 50 }));
     }
 
     const result = await chunk();
@@ -405,7 +409,7 @@ describe("processBulkProfileChunk — basics", () => {
 });
 
 describe("processBulkProfileChunk — fill-only AI success semantics", () => {
-  it("creates a brand-new profile with AI fields and stamped axis defaults", async () => {
+  it("creates a brand-new profile with AI fields and DERIVED axes (never stamped 0)", async () => {
     seedPendingItems(1);
     storedProfile = null;
     profileReplies.push(
@@ -425,20 +429,29 @@ describe("processBulkProfileChunk — fill-only AI success semantics", () => {
       update: Record<string, unknown>;
     };
     expect(upsertArgs.where.perfumeId).toBe("p-1");
-    // create: eligible AI fields + schema-consistent axis defaults (0) + notes [].
+    // create: eligible AI fields + deterministically DERIVED axes + notes [].
     expect(upsertArgs.create.woody).toBe(80);
     expect(upsertArgs.create.longevity).toBe(70);
     expect(upsertArgs.create.family).toBe("woody amber");
     expect(upsertArgs.create.notes).toEqual(["عود", "چرم"]);
     for (const axis of MATCHING_DIMENSIONS) {
-      expect(upsertArgs.create[axis]).toBe(0);
+      const value = upsertArgs.create[axis] as number;
+      expect(Number.isInteger(value)).toBe(true);
+      expect(value).toBeGreaterThanOrEqual(0);
+      expect(value).toBeLessThanOrEqual(100);
     }
-    // update: only the eligible AI fields — never an axis.
+    // Derived from woody=80 + family "woody amber":
+    // warm = (65 desc + 65 family-woody + 80 family-amber)/3 = 70,
+    // bold = (55 + 55 + 50)/3 = 53, elegant = (55 + 55)/2 = 55.
+    expect(upsertArgs.create.warm).toBe(70);
+    expect(upsertArgs.create.bold).toBe(53);
+    expect(upsertArgs.create.elegant).toBe(55);
+    expect(upsertArgs.create.social).toBe(40);
+    // update: eligible AI fields + derived axes, never AI-written raw values.
     expect(upsertArgs.update.woody).toBe(80);
     expect(upsertArgs.update.longevity).toBe(70);
-    for (const axis of MATCHING_DIMENSIONS) {
-      expect(upsertArgs.update[axis]).toBeUndefined();
-    }
+    expect(upsertArgs.update.warm).toBe(70);
+    expect(upsertArgs.update.profileSource).toBe("AI");
   });
 
   it("preserves existing non-zero descriptors and fills only zeros", async () => {
@@ -491,11 +504,10 @@ describe("processBulkProfileChunk — fill-only AI success semantics", () => {
     expect(update.notes).toEqual(["عود"]);
   });
 
-  it("never lets AI content reach a protected matching axis", async () => {
+  it("stores deterministically derived axes with AI provenance for a brand-new profile", async () => {
     seedPendingItems(1);
-    storedProfile = { sweet: 0, woody: 0, spicy: 0, floral: 0, citrus: 0, aquatic: 0, smoky: 0, clean: 0, longevity: 0, projection: 0, family: null, notes: [] };
-    // The validator rejects axes outright, so a valid reply cannot contain one;
-    // assert the structural guarantee on the applied shapes.
+    // A brand-new profile: derivation writes its axes; provenance = AI.
+    storedProfile = null;
     profileReplies.push(validReply({ woody: 50 }));
 
     const result = await chunk();
@@ -506,12 +518,165 @@ describe("processBulkProfileChunk — fill-only AI success semantics", () => {
       update: Record<string, unknown>;
     };
     for (const axis of MATCHING_DIMENSIONS) {
-      expect(upsertArgs.update[axis]).toBeUndefined();
+      const value = upsertArgs.create[axis] as number;
+      expect(Number.isInteger(value)).toBe(true);
+      expect(value).toBeGreaterThanOrEqual(0);
+      expect(value).toBeLessThanOrEqual(100);
     }
-    // create stamps documented 0 defaults (not AI values).
+    expect(upsertArgs.create.warm).toBe(65); // woody 50 → woody mapping
+    expect(upsertArgs.create.profileSource).toBe("AI");
+    expect(upsertArgs.update.profileSource).toBe("AI");
+  });
+
+  it("preserves valid stored matching axes over derivation (merchant data wins)", async () => {
+    seedPendingItems(1);
+    storedProfile = {
+      sweet: 0,
+      woody: 0,
+      spicy: 0,
+      floral: 0,
+      citrus: 0,
+      aquatic: 0,
+      smoky: 0,
+      clean: 0,
+      longevity: 0,
+      projection: 0,
+      family: null,
+      notes: [],
+      social: 70,
+      adventurous: 65,
+      expressive: 60,
+      mysterious: 55,
+      fresh: 50,
+      warm: 45,
+      experimental: 40,
+      elegant: 35,
+      bold: 30,
+    };
+    profileReplies.push(validReply({ woody: 80 }));
+
+    const result = await chunk();
+
+    expect(result.ok).toBe(true);
+    const update = (mocks.profileUpsert.mock.calls[0][0] as { update: Record<string, unknown> }).update;
+    // Every stored axis stays untouched — structurally absent from the write.
     for (const axis of MATCHING_DIMENSIONS) {
-      expect(upsertArgs.create[axis]).toBe(0);
+      expect(update[axis]).toBeUndefined();
     }
+    expect(update.woody).toBe(80);
+  });
+
+  it("repairs a legacy all-nine-zero profile from AI-derived axes", async () => {
+    seedPendingItems(1);
+    storedProfile = {
+      sweet: 0,
+      woody: 0,
+      spicy: 0,
+      floral: 0,
+      citrus: 0,
+      aquatic: 0,
+      smoky: 0,
+      clean: 0,
+      longevity: 0,
+      projection: 0,
+      family: null,
+      notes: [],
+      social: 0,
+      adventurous: 0,
+      expressive: 0,
+      mysterious: 0,
+      fresh: 0,
+      warm: 0,
+      experimental: 0,
+      elegant: 0,
+      bold: 0,
+    };
+    profileReplies.push(validReply({ woody: 80 }));
+
+    const result = await chunk();
+
+    expect(result.ok).toBe(true);
+    const update = (mocks.profileUpsert.mock.calls[0][0] as { update: Record<string, unknown> }).update;
+    // woody 80 → warm = 65 (the derivation is written, not the legacy 0s).
+    expect(update.warm).toBe(65);
+    expect(update.bold).toBe(55);
+  });
+
+  it("keeps an existing MANUAL provenance during automatic AI fill-only enrichment", async () => {
+    seedPendingItems(1);
+    storedProfile = {
+      sweet: 0,
+      woody: 0,
+      spicy: 0,
+      floral: 0,
+      citrus: 0,
+      aquatic: 0,
+      smoky: 0,
+      clean: 0,
+      longevity: 0,
+      projection: 0,
+      family: null,
+      notes: [],
+      profileSource: "MANUAL",
+    };
+    profileReplies.push(validReply({ woody: 80 }));
+
+    const result = await chunk();
+
+    expect(result.ok).toBe(true);
+    const update = (mocks.profileUpsert.mock.calls[0][0] as { update: Record<string, unknown> }).update;
+    expect(update.profileSource).toBe("MANUAL");
+  });
+
+  it("resolves a reference-catalog HIT without invoking the AI fallback", async () => {
+    seedPendingItems(1);
+    perfumeName = "Sauvage";
+    perfumeBrand = "Dior";
+    storedProfile = null;
+
+    const result = await chunk();
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.chunk.succeeded).toBe(1);
+      expect(result.chunk.failed).toBe(0);
+    }
+    // THE core guarantee: the injected AI provider was never called.
+    expect(profileCalls).toHaveLength(0);
+
+    const upsertArgs = mocks.profileUpsert.mock.calls[0][0] as {
+      create: Record<string, unknown>;
+      update: Record<string, unknown>;
+    };
+    expect(upsertArgs.create.profileSource).toBe("REFERENCE");
+    for (const axis of MATCHING_DIMENSIONS) {
+      const value = upsertArgs.create[axis] as number;
+      expect(Number.isInteger(value)).toBe(true);
+      expect(value).toBeGreaterThanOrEqual(0);
+      expect(value).toBeLessThanOrEqual(100);
+    }
+  });
+
+  it("fails the item WITHOUT persisting when the AI data cannot yield a valid 9-axis profile", async () => {
+    seedPendingItems(1);
+    storedProfile = null;
+    // clean/longevity are not scent-identity signals: no derivation possible.
+    profileReplies.push(validReply({ clean: 60, longevity: 50 }));
+
+    const result = await chunk();
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.chunk.failed).toBe(1);
+      expect(result.chunk.succeeded).toBe(0);
+      expect(result.chunk.status).toBe("COMPLETED_WITH_ERRORS");
+    }
+    expect(mocks.profileUpsert).not.toHaveBeenCalled(); // no fake profile persisted
+    const failFlip = mocks.itemUpdateMany.mock.calls.find(
+      (call: CallView[]) => call[0]?.data?.status === "FAILED",
+    );
+    expect(failFlip).toBeDefined();
+    expect(failFlip?.[0].data.errorCode).toBe("invalid_output");
   });
 });
 
