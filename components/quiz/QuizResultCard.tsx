@@ -1,12 +1,10 @@
 import Link from "next/link";
 
+import TraitBars from "@/components/results/TraitBars";
 import { BottleMark } from "@/components/ui-icons";
 
 import { resetAnalyticsFlow } from "@/lib/analytics/flow-tracker";
 import { serializeResultsParams } from "@/lib/results/params";
-import { PERSONALITY_LABELS } from "@/lib/personality/labels";
-import { formatPersianPercent } from "@/lib/persian";
-import { PERSONALITY_DIMENSIONS } from "@/types/personality";
 import type { CSSProperties } from "react";
 import type { QuizResult } from "@/types/personality";
 
@@ -75,27 +73,9 @@ export default function QuizResultCard({
         </Link>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6">
-        <h2 className="font-semibold">پروفایل شخصیتی تو</h2>
-        <ul className="flex flex-col gap-3">
-          {PERSONALITY_DIMENSIONS.map((dimension) => (
-            <li key={dimension} className="flex flex-col gap-1">
-              <div className="flex items-center justify-between text-sm">
-                <span>{PERSONALITY_LABELS[dimension]}</span>
-                <span className="tnum text-muted">
-                  {formatPersianPercent(vector[dimension])}
-                </span>
-              </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-                <div
-                  className="h-full rounded-full bg-accent"
-                  style={{ width: `${vector[dimension]}%` }}
-                />
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* Same shared animated trait bars as the recommendations screen —
+          one implementation, identical duration/stagger/reduced-motion. */}
+      <TraitBars vector={vector} />
 
       {notice ? (
         <p className="rounded-2xl border border-border-soft bg-surface-2 p-4 text-xs leading-7 text-muted">

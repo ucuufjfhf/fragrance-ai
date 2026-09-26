@@ -41,7 +41,13 @@ afterAll(async () => {
   await getPrisma().$disconnect();
 });
 
-describe("matching test matrix — 100-perfume dataset (live DB, read-only)", () => {
+// Live-DB tests against a remote Supabase pooler can legitimately exceed the
+// 5,000 ms default under network jitter (this file flaked that way before);
+// a generous per-file timeout keeps the suite deterministic without touching
+// any global config.
+const LIVE_DB_TIMEOUT_MS = 15_000;
+
+describe("matching test matrix — 100-perfume dataset (live DB, read-only)", { timeout: LIVE_DB_TIMEOUT_MS }, () => {
   it("dataset sanity: 100 perfumes, 100 profiles, expected stock split", async () => {
     const prisma = getPrisma();
     expect(await prisma.perfume.count({ where: { storeId: STORE } })).toBe(100);

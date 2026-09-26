@@ -7,7 +7,11 @@ import { PERSONALITY_DIMENSIONS } from "@/types/personality";
 import type { PersonalityVector } from "@/types/personality";
 
 /**
- * Trait bars for the results screen.
+ * Animated trait bars for the personality-profile sections of BOTH results
+ * screens:
+ *
+ *  - Screen 1 (profile/archetype reveal): `components/quiz/QuizResultCard.tsx`
+ *  - Screen 2 (recommendations): `components/results/ResultsView.tsx`
  *
  * Three layered, dependency-free animations (Decision #7):
  *  1. the bar fill grows via a CSS width transition (scroll-triggered),
@@ -19,16 +23,30 @@ import type { PersonalityVector } from "@/types/personality";
  * rendered directly.
  */
 
-/** Shared fill/count-up duration in milliseconds (matches `duration-1000`). */
-const ANIMATION_DURATION_MS = 1000;
+/** Shared fill/count-up duration in milliseconds (deliberately slow, ~2s). */
+export const TRAIT_ANIMATION_DURATION_MS = 2000;
 /** Per-bar stagger so the bars cascade instead of filling in unison. */
-const ANIMATION_STAGGER_MS = 90;
+export const TRAIT_ANIMATION_STAGGER_MS = 120;
 
-/** Approximates the CSS `ease-out` curve for the numeric count-up. */
-function easeOutCubic(progress: number): number {
-  return 1 - Math.pow(1 - progress, 3);
+const ANIMATION_DURATION_MS = TRAIT_ANIMATION_DURATION_MS;
+const ANIMATION_STAGGER_MS = TRAIT_ANIMATION_STAGGER_MS;
+/** The exact CSS easing used for the fill; mirrored by the JS count-up. */
+const EASING_BEZIER = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+/**
+ * Mirrors `EASING_BEZIER` for the JS count-up so digits and bars stay in sync.
+ * This curve rises fast and settles slowly — the "measuring" feel.
+ */
+function easeOutSettle(progress: number): number {
+  const t = Math.min(1, Math.max(0, progress));
+  return 1 - Math.pow(1 - t, 3);
 }
 
+/**
+ * One shared animated trait-bar list. Purely presentational: the parent
+ * provides the accent context (`--accent` custom properties); the animation
+ * is self-governed.
+ */
 export default function TraitBars({ vector }: { vector: PersonalityVector }) {
   const sectionRef = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
@@ -92,7 +110,7 @@ export default function TraitBars({ vector }: { vector: PersonalityVector }) {
         targets.map((target, index) => {
           const local = (elapsed - index * ANIMATION_STAGGER_MS) / ANIMATION_DURATION_MS;
           const progress = Math.min(1, Math.max(0, local));
-          return Math.round(target * easeOutCubic(progress));
+          return Math.round(target * easeOutSettle(progress));
         }),
       );
       if (elapsed < totalDuration) frame = requestAnimationFrame(step);
@@ -135,10 +153,13 @@ export default function TraitBars({ vector }: { vector: PersonalityVector }) {
                   aria-valuenow={target}
                 >
                   <div
-                    className="relative h-full rounded-full transition-[width] duration-1000 ease-out motion-reduce:transition-none"
+                    className="relative h-full rounded-full motion-reduce:transition-none"
                     style={{
                       width: visible ? `${target}%` : "0%",
-                      transitionDelay: visible ? `${index * ANIMATION_STAGGER_MS}ms` : "0ms",
+                      transitionProperty: "width",
+                      transitionDuration: `${ANIMATION_DURATION_MS}ms`,
+                      transitionTimingFunction: EASING_BEZIER,
+                      transitionDelay: `${index * ANIMATION_STAGGER_MS}ms`,
                       backgroundImage:
                         "linear-gradient(to left, var(--accent) 0%, var(--accent) 60%, color-mix(in srgb, var(--accent) 60%, white) 100%)",
                     }}
