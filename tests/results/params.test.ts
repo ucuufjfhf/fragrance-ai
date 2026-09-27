@@ -52,6 +52,68 @@ describe("serializeResultsParams", () => {
       expect(parsed.value.storeId).toBe("store-other");
     }
   });
+
+  it("omits the default REFERENCE_CATALOG source (demo URLs stay short)", () => {
+    const query = serializeResultsParams(makeVector(), "romantic", undefined, "REFERENCE_CATALOG");
+
+    expect(query).not.toContain("source=");
+
+    const parsed = parseResultsParams(
+      Object.fromEntries(new URLSearchParams(query).entries()),
+    );
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.value.source).toBe("REFERENCE_CATALOG");
+    }
+  });
+
+  it("serializes an explicit MERCHANT_INVENTORY source and round-trips it", () => {
+    const query = serializeResultsParams(
+      makeVector(),
+      "romantic",
+      "store-other",
+      "MERCHANT_INVENTORY",
+    );
+
+    expect(query).toContain("source=MERCHANT_INVENTORY");
+
+    const parsed = parseResultsParams(
+      Object.fromEntries(new URLSearchParams(query).entries()),
+    );
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.value.source).toBe("MERCHANT_INVENTORY");
+    }
+  });
+
+  it("an explicit source survives even when it contradicts store presence", () => {
+    // Storeless URL pinned to MERCHANT_INVENTORY: the explicit param wins.
+    const query = serializeResultsParams(makeVector(), "romantic", undefined, "MERCHANT_INVENTORY");
+    expect(query).toContain("source=MERCHANT_INVENTORY");
+
+    const parsed = parseResultsParams(
+      Object.fromEntries(new URLSearchParams(query).entries()),
+    );
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.value.source).toBe("MERCHANT_INVENTORY");
+    }
+  });
+
+  it("omits source for a store URL, whose store-aware default is MERCHANT_INVENTORY", () => {
+    // No explicit source is emitted, but parsing a store-bearing URL defaults
+    // to merchant inventory (store-presence aware default).
+    const query = serializeResultsParams(makeVector(), "romantic", "store-other");
+    expect(query).not.toContain("source=");
+
+    const parsed = parseResultsParams(
+      Object.fromEntries(new URLSearchParams(query).entries()),
+    );
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.value.source).toBe("MERCHANT_INVENTORY");
+    }
+  });
 });
 
 describe("parseResultsParams", () => {
@@ -101,6 +163,61 @@ describe("parseResultsParams", () => {
     expect(withEmpty.ok).toBe(true);
     if (withEmpty.ok) {
       expect(withEmpty.value.storeId).toBe(DEFAULT_RESULTS_STORE_ID);
+    }
+  });
+
+  it("defaults the source to REFERENCE_CATALOG when no store context exists", () => {
+    const base = Object.fromEntries(
+      MATCHING_DIMENSIONS.map((d) => [`v_${d}`, "50"]),
+    );
+
+    const parsed = parseResultsParams({ ...base, archetype: "romantic" });
+
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.value.source).toBe("REFERENCE_CATALOG");
+    }
+  });
+
+  it("defaults the source to MERCHANT_INVENTORY when a store context exists", () => {
+    const base = Object.fromEntries(
+      MATCHING_DIMENSIONS.map((d) => [`v_${d}`, "50"]),
+    );
+
+    const parsed = parseResultsParams({ ...base, archetype: "romantic", store: "store-real-merchant" });
+
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.value.source).toBe("MERCHANT_INVENTORY");
+    }
+  });
+
+  it("an explicit source param wins over the store-presence default", () => {
+    const base = Object.fromEntries(
+      MATCHING_DIMENSIONS.map((d) => [`v_${d}`, "50"]),
+    );
+
+    const pinnedDemo = parseResultsParams({
+      ...base,
+      archetype: "romantic",
+      store: "store-real-merchant",
+      source: "REFERENCE_CATALOG",
+    });
+    expect(pinnedDemo.ok).toBe(true);
+    if (pinnedDemo.ok) {
+      expect(pinnedDemo.value.source).toBe("REFERENCE_CATALOG");
+    }
+  });
+
+  it("an unknown source value falls back to the store-presence default", () => {
+    const base = Object.fromEntries(
+      MATCHING_DIMENSIONS.map((d) => [`v_${d}`, "50"]),
+    );
+
+    const bogus = parseResultsParams({ ...base, archetype: "romantic", source: "SOMETHING_ELSE" });
+    expect(bogus.ok).toBe(true);
+    if (bogus.ok) {
+      expect(bogus.value.source).toBe("REFERENCE_CATALOG");
     }
   });
 });

@@ -3,7 +3,10 @@ import {
   generateExplanations,
   selectUserTraits,
 } from "@/lib/ai/explanation";
-import { getRecommendations } from "@/lib/matching/service";
+import {
+  getRecommendations,
+  type RecommendationSource,
+} from "@/lib/matching/service";
 import { RESULTS_TOP_N } from "@/lib/results/params";
 import { recordAnalyticsEvent } from "@/lib/analytics/service";
 import type { AiExplanationInput } from "@/lib/ai/provider";
@@ -81,21 +84,36 @@ export function buildExplanationInputs(
  */
 export async function getResultsViewData(
   params: ResultsParams,
+  sourceOverride?: RecommendationSource,
 ): Promise<ResultsViewData> {
   const { vector, archetype, storeId } = params;
+
+  // Mode selection: an explicit `source` query param wins (demo links can pin
+  // REFERENCE_CATALOG); otherwise a real store context means merchant
+  // inventory, and the storeless default demo experience uses the catalog.
+  // Mode selection lives entirely in the parsed params (`lib/results/params.ts`):
+  // an explicit `?source=` wins; otherwise a store context means merchant
+  // inventory and the storeless default experience uses the demo catalog.
+  const source: RecommendationSource = sourceOverride ?? params.source;
 
   const matchResult: MatchResult = await getRecommendations({
     storeId,
     personalityVector: vector,
     topN: RESULTS_TOP_N,
+    source,
   });
 
   const recommendations = matchResult.recommendations;
 
+  // Reference-catalog mode is a demo: no real store context exists, so no
+  // store-scoped analytics are recorded (unknown store ids are rejected by
+  // the analytics service anyway — skipping avoids the wasted DB round-trip).
+  const isDemo = source === "REFERENCE_CATALOG";
+
   if (recommendations.length === 0) {
     // A valid profile rendered with zero eligible perfumes still counts as a
     // result view — but there is no recommendation list to count.
-    await recordAnalyticsEvent({ eventType: "RESULT_VIEWED", storeId });
+    if (!isDemo) await recordAnalyticsEvent({ eventType: "RESULT_VIEWED", storeId });
 
     return {
       recommendations: [],
@@ -105,25 +123,39 @@ export async function getResultsViewData(
     };
   }
 
-  const provider = createAIProvider();
-  const aiAvailable = provider.isAvailable();
+  // Reference-catalog mode is a demo and must NEVER trigger a paid AI
+  // explanation call: no provider is even constructed, and the deterministic
+  // list renders with no AI copy at all (the existing non-AI fallback).
+  // Merchant mode keeps the existing Phase 4 behaviour unchanged.
+  let explanations = new Map<string, string>();
+  let aiAvailable = false;
 
-  const inputs = buildExplanationInputs(
-    recommendations,
-    vector,
-    archetype.label,
-  );
+  if (!isDemo) {
+    const provider = createAIProvider();
+    // Reference-catalog cards have no real merchant context (no storeId, no
+    // product URL), so the AI explanation layer stays merchant-only — the
+    // deterministic ranking is identical either way.
+    aiAvailable = provider.isAvailable();
 
-  const explanations = await generateExplanations(provider, inputs);
+    const inputs = buildExplanationInputs(
+      recommendations,
+      vector,
+      archetype.label,
+    );
 
-  await recordAnalyticsEvent({ eventType: "RESULT_VIEWED", storeId });
-  // One event per result page with the list size in metadata (§6) — the
-  // per-perfume counts are derived in the dashboard roll-up.
-  await recordAnalyticsEvent({
-    eventType: "RECOMMENDATIONS_SHOWN",
-    storeId,
-    metadata: { count: recommendations.length },
-  });
+    explanations = await generateExplanations(provider, inputs);
+  }
+
+  if (!isDemo) {
+    await recordAnalyticsEvent({ eventType: "RESULT_VIEWED", storeId });
+    // One event per result page with the list size in metadata (§6) — the
+    // per-perfume counts are derived in the dashboard roll-up.
+    await recordAnalyticsEvent({
+      eventType: "RECOMMENDATIONS_SHOWN",
+      storeId,
+      metadata: { count: recommendations.length },
+    });
+  }
 
   return {
     recommendations,

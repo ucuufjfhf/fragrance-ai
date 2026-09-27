@@ -23,15 +23,36 @@ export const DEFAULT_RESULTS_STORE_ID = "store-demo-perfume-shop";
 /** Upper bound on candidates shown, matching the engine's default Top-N. */
 export const RESULTS_TOP_N = 5;
 
-export interface ResultsParams {
-  vector: PersonalityVector;
-  archetype: Archetype;
-  storeId: string;
+/** Query-string key for the recommendation source (demo vs merchant). */
+const SOURCE_KEY = "source";
+/** The two candidate sources the results page can render from. */
+const VALID_SOURCES = ["REFERENCE_CATALOG", "MERCHANT_INVENTORY"] as const;
+
+export type ResultsRecommendationSource = (typeof VALID_SOURCES)[number];
+
+/** The default is the demo experience. */
+export const DEFAULT_RESULTS_SOURCE: ResultsRecommendationSource = "REFERENCE_CATALOG";
+
+function parseSource(raw: string | undefined): ResultsRecommendationSource | null {
+  if (raw === undefined || raw.trim() === "") {
+    return null;
+  }
+  return (VALID_SOURCES as readonly string[]).includes(raw)
+    ? (raw as ResultsRecommendationSource)
+    : null;
 }
 
 export type ResultsParamsParse =
   | { ok: true; value: ResultsParams }
   | { ok: false; reason: string };
+
+export interface ResultsParams {
+  vector: PersonalityVector;
+  archetype: Archetype;
+  storeId: string;
+  /** Where the ranked candidates come from; defaults to the demo catalog. */
+  source: ResultsRecommendationSource;
+}
 
 /** Query-string keys, kept in one place so both sides can never drift. */
 const VECTOR_KEY_PREFIX = "v_";
@@ -61,6 +82,7 @@ export function serializeResultsParams(
   vector: PersonalityVector,
   archetypeId: string,
   storeId?: string,
+  source?: ResultsRecommendationSource,
 ): string {
   const search = new URLSearchParams();
 
@@ -72,6 +94,11 @@ export function serializeResultsParams(
 
   if (storeId !== undefined && storeId !== DEFAULT_RESULTS_STORE_ID) {
     search.set(STORE_KEY, storeId);
+  }
+
+  // The default source is omitted to keep demo URLs short and unchanged.
+  if (source !== undefined && source !== DEFAULT_RESULTS_SOURCE) {
+    search.set(SOURCE_KEY, source);
   }
 
   return search.toString();
@@ -119,7 +146,16 @@ export function parseResultsParams(
     return { ok: false, reason: `unknown archetype "${archetypeId}".` };
   }
 
-  const storeId = firstValue(input, STORE_KEY)?.trim() || DEFAULT_RESULTS_STORE_ID;
+  const rawStore = firstValue(input, STORE_KEY)?.trim() || "";
+  const storeId = rawStore || DEFAULT_RESULTS_STORE_ID;
+
+  // Source default is store-presence aware: a URL that carries a real store
+  // context is a merchant embed (MERCHANT_INVENTORY), while the storeless
+  // default experience is the demo catalog (REFERENCE_CATALOG). An explicit
+  // valid `source` param always wins.
+  const source =
+    parseSource(firstValue(input, SOURCE_KEY)) ??
+    (rawStore ? "MERCHANT_INVENTORY" : DEFAULT_RESULTS_SOURCE);
 
   return {
     ok: true,
@@ -127,6 +163,7 @@ export function parseResultsParams(
       vector: Object.fromEntries(vectorEntries) as PersonalityVector,
       archetype,
       storeId,
+      source,
     },
   };
 }

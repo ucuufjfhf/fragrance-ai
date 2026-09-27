@@ -37,7 +37,7 @@ export default async function ResultPage({ searchParams }: ResultPageProps) {
     return <ResultErrorState />;
   }
 
-  const data = await getResultsViewData(params.value);
+  const data = await getResultsViewData(params.value, params.value.source);
 
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">

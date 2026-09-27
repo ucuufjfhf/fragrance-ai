@@ -11,7 +11,7 @@ import {
   type BulkItemStatus,
   type BulkJobStatus,
 } from "@/lib/admin/bulk/contract";
-import { DESCRIPTOR_DIMENSIONS } from "@/lib/fragrance/profile";
+import { DESCRIPTOR_DIMENSIONS, MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
 
 /**
  * Pure helpers for the Phase 12 bulk AI profiling layer.
@@ -172,16 +172,48 @@ export function canTransitionItemStatus(from: BulkItemStatus, to: BulkItemStatus
 /** The descriptor-only fragrance dimensions AI may write (never the 9 axes). */
 export type DescriptorDimension = (typeof DESCRIPTOR_DIMENSIONS)[number];
 
+/** Persisted provenance of a profile (mirrors the Prisma `ProfileSource` enum). */
+export type ProfileProvenance = "REFERENCE" | "AI" | "MANUAL";
+
+/** Where a bulk profile write's data came from (persisted provenance). */
+export type BulkProfileWriteSource = ProfileProvenance;
+
+/**
+ * The nine matching axes a derivation produced, carried separately from the
+ * fill-only fields: they are only ever present when the reference lookup or
+ * the deterministic axis derivation PRODUCED them — never filled with 0/50 to
+ * satisfy the schema. Structurally optional for that reason.
+ */
+export interface DerivedMatchingAxes {
+  social: number;
+  adventurous: number;
+  expressive: number;
+  mysterious: number;
+  fresh: number;
+  warm: number;
+  experimental: number;
+  elegant: number;
+  bold: number;
+}
+
 /**
  * Plain-data profile write computed by `computeBulkProfileWrite` and applied
  * atomically by the bulk service inside the winning transaction. It contains
- * ONLY eligible AI-eligible fields — never a matching axis, never a
- * merchant-provided non-zero value.
+ * ONLY eligible fields — never a merchant-provided non-zero value.
+ *
+ * `matching` (when present) is a DETERMINISTICALLY DERIVED nine-axis vector
+ * from the reference catalog or the axis-derivation utility — the only way a
+ * matching axis ever enters a bulk write. When absent (no derivation), the
+ * service persists the documented 0 default and the profile stays explicitly
+ * incomplete rather than fabricated.
  */
 export interface BulkProfileWrite {
   descriptors: Partial<Record<DescriptorDimension, number>>;
   family?: string;
   notes?: string[];
+  /** Deterministically derived nine axes + the provenance of this write. */
+  matching?: DerivedMatchingAxes;
+  source: BulkProfileWriteSource;
 }
 
 /** The stored descriptor/family/notes facts of an existing profile (or absence). */
@@ -189,6 +221,29 @@ export interface ExistingProfileFacts {
   descriptors: Partial<Record<DescriptorDimension, number | null>>;
   family?: string | null;
   notes?: string[] | null;
+  /** Stored matching axes, when the profile row has them (merchant data). */
+  matchingAxes?: Partial<Record<(typeof MATCHING_DIMENSIONS)[number], number>> | null;
+  /**
+   * Stored provenance, when the profile row has one. Automatic fill-only
+   * enrichment must NEVER relabel a non-null value (see `computeBulkProfileWrite`).
+   */
+  profileSource?: ProfileProvenance | null;
+}
+
+/**
+ * True for the legacy repairable state: EVERY one of the nine matching axes is
+ * present and exactly 0. Older profiles were stamped with the schema's 0
+ * default before deterministic derivation existed. Individual zeros stay VALID
+ * merchant data — only the all-nine-zero row is treated as missing.
+ */
+function isLegacyAllZeroAxes(
+  storedAxis: ExistingProfileFacts["matchingAxes"],
+): boolean {
+  return (
+    storedAxis !== null &&
+    storedAxis !== undefined &&
+    MATCHING_DIMENSIONS.every((axis) => storedAxis[axis] === 0)
+  );
 }
 
 /** True when a descriptor's stored value is absent or explicitly 0 — fillable. */
@@ -197,54 +252,87 @@ function isFillableDescriptor(value: number | null | undefined): boolean {
 }
 
 /**
- * Fill-only merge of a validated AI result with the stored profile (Phase 12.4).
+ * Fill-only merge of a validated structured result (reference-derived or AI)
+ * with the stored profile (Phase 12.4 + the reference-first extension).
  *
  * Non-negotiable rules:
  *  - an EXISTING non-zero descriptor value (CSV / manual / admin data) always
  *    wins — AI never overwrites merchant data, and the preserved value is
  *    structurally absent from the applied write;
- *  - absent (`null`) or zero descriptors may be filled from the AI result;
+ *  - absent (`null`) or zero descriptors may be filled from the result;
  *  - an existing non-empty `family` always wins and stays structurally absent
  *    from the write; AI may fill an empty one;
  *  - existing non-empty `notes` always win and stay structurally absent from
  *    the write; AI may fill empty ones;
- *  - the nine protected matching axes are structurally absent from this type —
- *    they cannot be merged, let alone overwritten.
+ *  - derived `matching` axes (reference or deterministic AI derivation) are
+ *    carried through ONLY when the caller produced them — they are never
+ *    invented here and never overwrite a stored axis; a stored axis value
+ *    always wins structurally (see `existingAxes`).
  *
  * Pure and deterministic: same inputs always produce the same write, which the
  * service applies inside the winning per-item transaction.
  */
 export function computeBulkProfileWrite(
   existing: ExistingProfileFacts,
-  ai: { descriptors: Partial<Record<DescriptorDimension, number>>; family?: string; notes?: string[] },
+  result: {
+    descriptors: Partial<Record<DescriptorDimension, number>>;
+    family?: string;
+    notes?: string[];
+    /** Deterministically derived axes from the reference/AI path, if any. */
+    matching?: DerivedMatchingAxes;
+    source: BulkProfileWriteSource;
+  },
 ): BulkProfileWrite {
   const descriptors: Partial<Record<DescriptorDimension, number>> = {};
 
   for (const dimension of DESCRIPTOR_DIMENSIONS) {
-    const aiValue = ai.descriptors[dimension];
-    if (typeof aiValue !== "number") {
+    const resultValue = result.descriptors[dimension];
+    if (typeof resultValue !== "number") {
       continue;
     }
 
     const currentValue = existing.descriptors[dimension];
     if (isFillableDescriptor(currentValue)) {
-      descriptors[dimension] = aiValue;
+      descriptors[dimension] = resultValue;
     }
   }
 
-  const write: BulkProfileWrite = { descriptors };
+  // Provenance is fill-only as well: a brand-new profile takes the write's true
+  // source, but automatic enrichment must NEVER downgrade/relabel an existing
+  // non-null value (MANUAL stays MANUAL, REFERENCE stays REFERENCE, AI stays AI).
+  const existingSource = existing.profileSource ?? null;
+  const write: BulkProfileWrite = {
+    descriptors,
+    source: existingSource ?? result.source,
+  };
 
-  // Preserved merchant values are structurally ABSENT: only fields the AI
+  // Preserved merchant values are structurally ABSENT: only fields the result
   // actually fills travel in the write, so the applied update can never touch
   // them — the "cannot be overwritten" guarantee is structural, not incidental.
   const existingFamily = existing.family?.trim() ?? "";
-  if (existingFamily === "" && ai.family !== undefined && ai.family.trim() !== "") {
-    write.family = ai.family.trim();
+  if (existingFamily === "" && result.family !== undefined && result.family.trim() !== "") {
+    write.family = result.family.trim();
   }
 
   const existingNotes = existing.notes ?? [];
-  if (existingNotes.length === 0 && ai.notes !== undefined && ai.notes.length > 0) {
-    write.notes = ai.notes;
+  if (existingNotes.length === 0 && result.notes !== undefined && result.notes.length > 0) {
+    write.notes = result.notes;
+  }
+
+  // Derived axes travel ONLY when the caller actually produced them AND either
+  // no stored axis value exists (merchant data always wins) or the stored row
+  // is the legacy all-nine-zero state — a known, repairable absence of data.
+  // Individual zeros never trigger repair: only ALL NINE being exactly 0 does.
+  const storedAxis = existing.matchingAxes;
+  const hasStoredAxes =
+    storedAxis !== null &&
+    storedAxis !== undefined &&
+    MATCHING_DIMENSIONS.some((axis) => typeof storedAxis[axis] === "number");
+  if (
+    result.matching !== undefined &&
+    (!hasStoredAxes || isLegacyAllZeroAxes(storedAxis))
+  ) {
+    write.matching = result.matching;
   }
 
   return write;

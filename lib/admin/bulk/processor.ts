@@ -1,6 +1,8 @@
 import { getPrisma } from "@/lib/db";
 import { createAIProvider, type AIProvider, type AiPerfumeProfileResult } from "@/lib/ai/provider";
 import { AiUnavailableError, AiRequestError } from "@/lib/ai/errors";
+import { enrichPerfumeProfileReferenceFirst } from "@/lib/fragrance/profile-enrichment";
+import { deriveAxesFromAiStructuredData } from "@/lib/fragrance/axis-derivation";
 import { validateAiProfileResult } from "@/lib/ai/perfume-profile";
 import {
   BULK_AI_CHUNK_SIZE,
@@ -15,8 +17,10 @@ import {
   isRetryableBulkError,
   bulkBackoffDelayMs,
   type BulkProfileWrite,
+  type DerivedMatchingAxes,
   type ExistingProfileFacts,
   type DescriptorDimension,
+  type ProfileProvenance,
 } from "@/lib/admin/bulk/helpers";
 import {
   claimNextBulkProfileItem,
@@ -76,6 +80,10 @@ const SAFE_FAILURE_MESSAGES: Record<BulkAiErrorCode, string> = {
   http_other: "درخواست هوش مصنوعی با خطا مواجه شد.",
   invalid_output: "خروجی هوش مصنوعی نامعتبر بود.",
 };
+
+/** Safe message for the INSUFFICIENT-AI-DATA failure (never a fake profile). */
+const INSUFFICIENT_AI_DATA_MESSAGE =
+  "اطلاعات ساختاریافتهٔ هوش مصنوعی برای ساخت پروفایل معتبر کافی نبود.";
 
 /** Structured classification of one AI failure — properties, never messages. */
 interface AiFailure {
@@ -154,7 +162,67 @@ interface ScopedPerfumeFacts {
 type ScopedStoredProfile = Record<DescriptorDimension, number | null> & {
   family: string | null;
   notes: string[];
+  profileSource?: ProfileProvenance | null;
 } & Partial<Record<(typeof MATCHING_DIMENSIONS)[number], number | null>>;
+
+/**
+ * Reference-first probe for one bulk item: resolves the perfume's identity
+ * against the conservative catalog lookup. On a HIT the profile carries the
+ * DETERMINISTICALLY DERIVED nine axes (shared axis-derivation utility) plus
+ * the descriptor/family/notes context, so the write persists real axes with
+ * `REFERENCE` provenance and NO AI call happens.
+ *
+ * Returns `null` on MISS (the AI path proceeds) or on any lookup error
+ * (enrichment must never break the bulk loop).
+ */
+async function enrichReferenceProfileForBulk(
+  perfume: ScopedPerfumeFacts,
+): Promise<
+  | {
+      descriptors: Partial<Record<DescriptorDimension, number>>;
+      family?: string;
+      notes?: string[];
+      matching: DerivedMatchingAxes;
+      source: "REFERENCE";
+    }
+  | null
+> {
+  try {
+    const outcome = await enrichPerfumeProfileReferenceFirst(
+      { name: perfume.name, brand: perfume.brand, description: perfume.description, perfumeId: perfume.id },
+      // The provider is never called on a HIT; on a MISS the AI path below
+      // runs its own genuine call, so a stub here is intentionally unreachable.
+      createUnavailableStubProvider(),
+    );
+    if (!outcome.ok || outcome.profile.provenance !== "REFERENCE") {
+      return null;
+    }
+    return {
+      descriptors: outcome.profile.descriptors,
+      ...(outcome.profile.family !== undefined ? { family: outcome.profile.family } : {}),
+      notes: outcome.profile.notes,
+      matching: { ...outcome.profile.matching } as DerivedMatchingAxes,
+      source: "REFERENCE",
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Placeholder provider — structurally unreachable on reference HITs. */
+function createUnavailableStubProvider(): AIProvider {
+  return {
+    id: "reference-only",
+    isAvailable: () => false,
+    unavailableReason: () => "reference-first lookup only",
+    generatePerfumeProfile: async () => {
+      throw new AiUnavailableError("reference-first lookup only");
+    },
+    generateRecommendationExplanation: async () => {
+      throw new AiUnavailableError("reference-first lookup only");
+    },
+  };
+}
 
 /** Builds the genuine Phase 4 enrichment input from scoped probes only. */
 function toAiInput(
@@ -194,6 +262,14 @@ function toExistingFacts(stored: ScopedStoredProfile | null): ExistingProfileFac
     ) as Partial<Record<DescriptorDimension, number | null>>,
     family: stored.family,
     notes: stored.notes,
+    // Stored axes are merchant data: when any exists, the derivation must not
+    // overwrite them (structurally absent from the write) — except the legacy
+    // all-nine-zero row, which the write helper treats as repairable.
+    matchingAxes: Object.fromEntries(
+      MATCHING_DIMENSIONS.map((axis) => [axis, stored[axis] ?? null]),
+    ),
+    // Stored provenance is preserved by the fill-only merge (never auto-relabelled).
+    profileSource: stored.profileSource ?? null,
   };
 }
 
@@ -268,6 +344,29 @@ async function executeClaimedItem(
       where: { perfumeId: claim.perfumeId, perfume: { storeId } },
     })) as ScopedStoredProfile | null;
 
+    // --- Reference-first: a confident catalog identity costs NO AI call.
+    // The derived axes/descriptors travel through the SAME fill-only write
+    // contract (`computeBulkProfileWrite`), so merchant-supplied values still
+    // always win and the persisted provenance reflects the true source.
+    const referenceAttempt = await enrichReferenceProfileForBulk(perfume);
+    if (referenceAttempt) {
+      const write: BulkProfileWrite = computeBulkProfileWrite(
+        toExistingFacts(stored),
+        referenceAttempt,
+      );
+      const persisted = await persistBulkProfileItemSuccess(
+        claim.itemId,
+        storeId,
+        write,
+        claim.perfumeId,
+      );
+      if (persisted.ok) {
+        return { kind: "done", done: "succeeded" };
+      }
+      await releaseBulkProfileItemForRetry(claim.itemId, storeId);
+      return { kind: "pending", releasedItemId: claim.itemId };
+    }
+
     // --- THE AI CALL: outside any transaction, through the genuine abstraction.
     const aiInput = toAiInput(perfume, stored);
     let failure: AiFailure | null = null;
@@ -288,7 +387,34 @@ async function executeClaimedItem(
 
     // --- success boundary: fill-only write, atomic with the SUCCEEDED flip.
     if (!failure && value) {
-      const write: BulkProfileWrite = computeBulkProfileWrite(toExistingFacts(stored), value);
+      // Deterministic axis derivation from the AI's STRUCTURED data — the
+      // model never writes axes; this mapping does. When the structured data
+      // carries no usable scent signal the item FAILS instead of persisting
+      // a fabricated (0/50/neutral-filled) profile.
+      const derivation = deriveAxesFromAiStructuredData({
+        descriptors: value.descriptors,
+        ...(value.family !== undefined ? { family: value.family } : {}),
+      });
+
+      if (!derivation.ok) {
+        const flip = await markBulkProfileItemFailed(claim.itemId, storeId, {
+          code: "invalid_output",
+          message: INSUFFICIENT_AI_DATA_MESSAGE,
+        });
+        if (flip.ok) {
+          return { kind: "done", done: "failed" };
+        }
+        await releaseBulkProfileItemForRetry(claim.itemId, storeId);
+        return { kind: "pending", releasedItemId: claim.itemId };
+      }
+
+      const write: BulkProfileWrite = computeBulkProfileWrite(toExistingFacts(stored), {
+        descriptors: value.descriptors,
+        ...(value.family !== undefined ? { family: value.family } : {}),
+        ...(value.notes !== undefined && value.notes.length > 0 ? { notes: value.notes } : {}),
+        matching: { ...derivation.axes },
+        source: "AI",
+      });
       const persisted = await persistBulkProfileItemSuccess(claim.itemId, storeId, write, claim.perfumeId);
       if (persisted.ok) {
         return { kind: "done", done: "succeeded" };

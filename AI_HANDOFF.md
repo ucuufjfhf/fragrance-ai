@@ -650,6 +650,17 @@ Important behavior:
 
 AI profiling after CSV import is an explicit follow-up action.
 
+**Provenance contract (reviewer decision, deliberate):** CSV import is a
+MANUAL-authoritative path. Every profile column — including the nine required
+matching axes — is an explicit CSV column (`lib/admin/csv/contract.ts`), so each
+row is the merchant's authored data, submitted intentionally, and is stamped
+`profileSource: "MANUAL"`. Reference-first enrichment is deliberately NOT
+triggered per-row: no AI call may run inside the all-or-nothing import
+transaction, and a conservative reference HIT could silently override values
+the merchant typed. Enrichment for imported rows is the explicit bulk profiling
+workflow (Phase 12 / reference-first), whose fill-only merge preserves all
+authored CSV values.
+
 ---
 
 # 14. Bulk AI Profiling — Phase 12
@@ -1532,6 +1543,11 @@ CSV import does not silently invoke AI.
 
 Bulk profiling is an explicit Admin action.
 
+This is a deliberate provenance decision, not an integration gap: CSV rows are
+manual-authoritative (all nine axes are required CSV columns), so imported
+profiles are stamped `profileSource: "MANUAL"`. Enrichment for imported rows is
+the explicit bulk profiling workflow, not an automatic step.
+
 ---
 
 # 26. Files Most Relevant to Future Work
@@ -1988,3 +2004,59 @@ changes to any deterministic logic, contract or database schema:
 Tests 556/556 across 49 files, lint 0 errors / 6 pre-existing warnings, typecheck pass,
 production build (webpack) pass — measured with this redesign and the Fragrantica
 reference-grounding feature combined in one working tree (see the entry below).
+
+---
+
+# Current working-tree update — Reference-first enrichment wired into Admin Create (2026-09-27)
+
+## What this is
+
+The second reviewer found that the reference-first enrichment lifecycle
+(`enrichPerfumeProfileReferenceFirst` in `lib/fragrance/profile-enrichment.ts`)
+was wired into the bulk profiling processor only, while the Admin Create path
+silently stamped `profileSource: "MANUAL"`. This closes that gap for Admin
+Create and documents the deliberate contract split for the other paths.
+
+## The three perfume-entry paths — final state
+
+| Path | Enrichment | Provenance | Why |
+| --- | --- | --- | --- |
+| Admin **Create** (`createPerfumeForStore`) | Reference-first, automatic: HIT → deterministic axes, zero AI; MISS → AI fallback + `deriveAxesFromAiStructuredData`; failure/unavailable AI → merchant's form values | `REFERENCE` / `AI` / `MANUAL` (true source, fill-only resolved) | Option A: `profile-enrichment.ts` was designed for "every merchant path"; a fresh profile with untouched form defaults (50s) is not authored data |
+| Admin **Edit** (`updatePerfumeForStore`) | None (no silent re-enrichment) | Preserved — never relabelled | Manual authority: the form is pre-filled with stored values, so every save is the merchant's explicit choice; re-enrichment stays an explicit action |
+| **CSV Import** (`confirmCsvImport`) | None (per-row AI is forbidden inside the all-or-nothing transaction) | `MANUAL` — manual-authoritative | Option B: all nine axes are REQUIRED CSV columns (`lib/admin/csv/contract.ts`), so each row is authored data; §13/§25 contract. Enrichment for imported rows = explicit bulk workflow |
+| Bulk profiling (unchanged reference) | Reference-first per item, AI between claim and persist | Fill-only merged, never auto-relabelled | Existing Phase 12.4 + reference-first behavior |
+
+## Admin Create semantics (`lib/admin/repository.ts`)
+
+* `buildEnrichedProfilePayload` runs the SAME single entry point as bulk
+  (`enrichPerfumeProfileReferenceFirst` with the real `createAIProvider()`).
+  It runs BEFORE the DB write — an AI call is never inside a transaction.
+* The enrichment result is merged through the existing fill-only contract
+  (`computeBulkProfileWrite` from `lib/admin/bulk/helpers.ts` — no forked
+  logic): merchant non-zero descriptors / non-empty family / notes always win.
+* Untouched-form detection: if ALL nine submitted axes are still the
+  ProfileEditor default (50), the axes are treated as not-authored and the
+  deterministic derived axes + REFERENCE/AI provenance are persisted. If the
+  merchant authored ANY axis, `profileSource` stays `MANUAL` and all nine
+  authored axes win (fill-only, structurally).
+* Enrichment failure or unavailable AI → the merchant's own form values are
+  persisted as `MANUAL`. No fake 0/50 axes are ever fabricated.
+* Update/Edit keeps the stored `profileSource` (MANUAL stays MANUAL,
+  REFERENCE/AI stays REFERENCE/AI) — no silent relabel on edit.
+
+## Tests
+
+`tests/admin/repository-enrichment.test.ts` (entry-point level): reference HIT
+persisted REFERENCE with zero AI calls; MISS + available AI persisted AI with
+deterministic axes (no fake 50s); MISS + unavailable AI kept the merchant's
+MANUAL payload; merchant-authored axes kept MANUAL even on a HIT identity;
+merchant descriptors/family/notes fill-only preserved; update keeps
+MANUAL/REFERENCE/AI provenance and never relabels. CSV MANUAL provenance is
+asserted in `tests/admin/csv-service.test.ts`.
+
+## Invariants preserved
+
+Zero AI on HIT; validated AI fallback on MISS; axes always deterministic
+(the model never writes them); no fabricated 0/50; fill-only merchant
+authority; store isolation; matching engine untouched; no new dependencies,
+infrastructure or UI changes.
