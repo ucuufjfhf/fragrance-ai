@@ -127,6 +127,23 @@ describe("confirmCsvImport — atomicity and re-validation (§11/§16/§17)", ()
     expect(data.profile.create.sweet).toBe(0);
   });
 
+  it("stamps imported profiles MANUAL — CSV is manual-authoritative (deliberate Option B)", async () => {
+    const csv = makeCsv(ROW);
+    const result = await confirmCsvImport(csv, "store-1");
+
+    expect(result.ok).toBe(true);
+
+    const profile = mocks.perfumeCreate.mock.calls[0][0].data.profile.create;
+    // The nine matching axes are REQUIRED CSV columns (lib/admin/csv/contract.ts),
+    // so every row is the merchant's authored data, submitted intentionally.
+    // Automatic reference/AI enrichment is deliberately NOT triggered: no AI
+    // call may run inside the import transaction, and the provenance must
+    // reflect the true source (MANUAL). Merchants who want enrichment for
+    // imported rows run the dedicated bulk profiling workflow afterwards.
+    expect(profile.profileSource).toBe("MANUAL");
+    expect(profile.social).toBe(60); // authored CSV value, untouched
+  });
+
   it("creates exactly one profile per perfume (§13)", async () => {
     const csv = makeCsv(ROW);
     await confirmCsvImport(csv, "store-1");

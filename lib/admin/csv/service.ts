@@ -19,6 +19,18 @@ import { getPrisma } from "@/lib/db";
  *
  * No AI provider is touched (§21): CSV values are authoritative.
  * Must never be imported from a client component (Prisma + DATABASE_URL).
+ *
+ * PROVENANCE CONTRACT (reviewer decision, deliberate Option B): CSV import is
+ * a MANUAL-authoritative path and stays one. Every profile column is an
+ * explicit CSV column (the nine matching axes are REQUIRED — see
+ * `lib/admin/csv/contract.ts`), so each row is the merchant's authored data,
+ * submitted intentionally and stamped `profileSource: "MANUAL"`. Automatic
+ * reference/AI enrichment is deliberately NOT triggered here (AI_HANDOFF
+ * §13/§16.3/§25): no AI call may run inside the import transaction, and the
+ * reviewed UX keeps CSV import deterministic and instant. A merchant who
+ * wants reference/AI enrichment for imported rows runs the dedicated bulk
+ * profiling workflow (Phase 12 / reference-first processor), whose fill-only
+ * merge preserves all authored CSV values.
  */
 
 export interface CsvPreviewRow {
