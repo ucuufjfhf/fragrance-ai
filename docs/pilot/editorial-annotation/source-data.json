@@ -1,0 +1,555 @@
+[
+  {
+    "id": "demo-01",
+    "brand": "Dior",
+    "name": "Sauvage Eau de Toilette",
+    "referenceBrandSlug": "dior",
+    "referencePerfumeSlug": "sauvage",
+    "accords": [
+      "fresh spicy",
+      "amber",
+      "citrus",
+      "aromatic",
+      "musky"
+    ],
+    "notes": [
+      "calabrian bergamot",
+      "pepper",
+      "sichuan pepper",
+      "lavender",
+      "pink pepper",
+      "vetiver",
+      "patchouli",
+      "geranium",
+      "elemi",
+      "ambroxan",
+      "cedar",
+      "labdanum"
+    ],
+    "noteCount": 12
+  },
+  {
+    "id": "demo-05",
+    "brand": "Giorgio Armani",
+    "name": "Acqua di Giò Pour Homme",
+    "referenceBrandSlug": "giorgio-armani",
+    "referencePerfumeSlug": "acqua-di-gio",
+    "accords": [
+      "citrus",
+      "aromatic",
+      "marine",
+      "fresh spicy",
+      "floral"
+    ],
+    "notes": [
+      "lime",
+      "lemon",
+      "bergamot",
+      "jasmine",
+      "orange",
+      "mandarin orange",
+      "neroli",
+      "sea notes",
+      "calone",
+      "rosemary",
+      "peach",
+      "freesia",
+      "hiacynth",
+      "cyclamen",
+      "violet",
+      "coriander",
+      "rose",
+      "nutmeg",
+      "mignonette",
+      "white musk",
+      "cedar",
+      "oakmoss",
+      "patchouli",
+      "amber"
+    ],
+    "noteCount": 24
+  },
+  {
+    "id": "demo-11",
+    "brand": "Paco Rabanne",
+    "name": "1 Million",
+    "referenceBrandSlug": "paco-rabanne",
+    "referencePerfumeSlug": "1-million",
+    "accords": [
+      "warm spicy",
+      "cinnamon",
+      "citrus",
+      "amber",
+      "woody"
+    ],
+    "notes": [
+      "blood mandarin",
+      "grapefruit",
+      "mint",
+      "cinnamon",
+      "spicy notes",
+      "rose",
+      "amber",
+      "leather",
+      "woody notes",
+      "indian patchouli"
+    ],
+    "noteCount": 10
+  },
+  {
+    "id": "demo-14",
+    "brand": "Creed",
+    "name": "Aventus",
+    "referenceBrandSlug": "creed",
+    "referencePerfumeSlug": "aventus",
+    "accords": [
+      "fruity",
+      "sweet",
+      "leather",
+      "woody",
+      "smoky"
+    ],
+    "notes": [
+      "bergamot",
+      "black currant",
+      "apple",
+      "lemon",
+      "pink pepper",
+      "pineapple",
+      "patchouli",
+      "moroccan jasmine",
+      "birch",
+      "musk",
+      "oak moss",
+      "ambroxan",
+      "cedarwood"
+    ],
+    "noteCount": 13
+  },
+  {
+    "id": "demo-15",
+    "brand": "Tom Ford",
+    "name": "Oud Wood Parfum",
+    "referenceBrandSlug": "tom-ford",
+    "referencePerfumeSlug": "oud-wood-parfum",
+    "accords": [
+      "warm spicy",
+      "woody",
+      "vanilla",
+      "powdery",
+      "aromatic"
+    ],
+    "notes": [
+      "cardamom",
+      "pink pepper",
+      "rosemary",
+      "sandalwood",
+      "patchouli",
+      "agarwood (oud)",
+      "vetiver",
+      "vanilla",
+      "tonka",
+      "amber"
+    ],
+    "noteCount": 10
+  },
+  {
+    "id": "demo-16",
+    "brand": "Tom Ford",
+    "name": "Tobacco Vanille",
+    "referenceBrandSlug": "tom-ford",
+    "referencePerfumeSlug": "tobacco-vanille",
+    "accords": [
+      "vanilla",
+      "sweet",
+      "tobacco",
+      "warm spicy",
+      "fruity"
+    ],
+    "notes": [
+      "tobacco leaf",
+      "spicy notes",
+      "vanilla",
+      "cacao",
+      "tonka bean",
+      "tobacco blossom",
+      "dried fruits",
+      "woody notes"
+    ],
+    "noteCount": 8
+  },
+  {
+    "id": "demo-17",
+    "brand": "Dior",
+    "name": "Homme Intense",
+    "referenceBrandSlug": "dior",
+    "referencePerfumeSlug": "dior-homme-intense-2011",
+    "accords": [
+      "iris",
+      "woody",
+      "powdery",
+      "earthy",
+      "violet"
+    ],
+    "notes": [
+      "lavender",
+      "iris",
+      "ambrette (musk mallow)",
+      "pear",
+      "virginia cedar",
+      "vetiver"
+    ],
+    "noteCount": 6
+  },
+  {
+    "id": "demo-18",
+    "brand": "Dior",
+    "name": "Homme",
+    "referenceBrandSlug": "dior",
+    "referencePerfumeSlug": "dior-homme",
+    "accords": [
+      "iris",
+      "cacao",
+      "powdery",
+      "earthy",
+      "aromatic"
+    ],
+    "notes": [
+      "lavender",
+      "bergamot",
+      "sage",
+      "iris",
+      "cacao",
+      "amber",
+      "leather",
+      "vetiver",
+      "patchouli"
+    ],
+    "noteCount": 9
+  },
+  {
+    "id": "demo-26",
+    "brand": "Chanel",
+    "name": "Coco Mademoiselle",
+    "referenceBrandSlug": "chanel",
+    "referencePerfumeSlug": "coco-mademoiselle",
+    "accords": [
+      "citrus",
+      "woody",
+      "patchouli",
+      "sweet",
+      "white floral"
+    ],
+    "notes": [
+      "orange",
+      "mandarin orange",
+      "bergamot",
+      "orange blossom",
+      "turkish rose",
+      "jasmine",
+      "mimosa",
+      "ylang-ylang",
+      "patchouli",
+      "white musk",
+      "vanilla",
+      "vetiver",
+      "tonka bean",
+      "opoponax"
+    ],
+    "noteCount": 14
+  },
+  {
+    "id": "demo-28",
+    "brand": "Chanel",
+    "name": "N°5 Eau de Parfum",
+    "referenceBrandSlug": "chanel",
+    "referencePerfumeSlug": "chanel-no-5-eau-de-parfum",
+    "accords": [
+      "woody",
+      "aldehydic",
+      "fresh",
+      "white floral",
+      "powdery"
+    ],
+    "notes": [
+      "aldehydes",
+      "ylang-ylang",
+      "neroli",
+      "bergamot",
+      "peach",
+      "iris",
+      "jasmine",
+      "rose",
+      "lily-of-the-valley",
+      "sandalwood",
+      "vanilla",
+      "oakmoss",
+      "vetiver",
+      "patchouli"
+    ],
+    "noteCount": 14
+  },
+  {
+    "id": "demo-42",
+    "brand": "Dolce & Gabbana",
+    "name": "Light Blue",
+    "referenceBrandSlug": "dolce-gabbana",
+    "referencePerfumeSlug": "light-blue",
+    "accords": [
+      "citrus",
+      "woody",
+      "fresh",
+      "fruity",
+      "aromatic"
+    ],
+    "notes": [
+      "sicilian lemon",
+      "apple",
+      "cedar",
+      "bellflower",
+      "bamboo",
+      "jasmine",
+      "white rose",
+      "musk",
+      "amber"
+    ],
+    "noteCount": 9
+  },
+  {
+    "id": "demo-43",
+    "brand": "Mugler",
+    "name": "Alien",
+    "referenceBrandSlug": "mugler",
+    "referencePerfumeSlug": "alien",
+    "accords": [
+      "white floral",
+      "amber",
+      "floral"
+    ],
+    "notes": [
+      "jasmine sambac",
+      "cashmeran",
+      "amber"
+    ],
+    "noteCount": 3
+  },
+  {
+    "id": "demo-44",
+    "brand": "Mugler",
+    "name": "Angel",
+    "referenceBrandSlug": "mugler",
+    "referencePerfumeSlug": "angel",
+    "accords": [
+      "sweet",
+      "patchouli",
+      "fruity",
+      "warm spicy",
+      "caramel"
+    ],
+    "notes": [
+      "cotton candy",
+      "coconut",
+      "cassis",
+      "melon",
+      "jasmine",
+      "bergamot",
+      "pineapple",
+      "mandarin orange",
+      "honey",
+      "red berries",
+      "blackberry",
+      "plum",
+      "apricot",
+      "peach",
+      "nutmeg",
+      "orchid",
+      "caraway",
+      "rose",
+      "lily-of-the-valley",
+      "patchouli",
+      "chocolate",
+      "caramel",
+      "vanilla",
+      "tonka bean",
+      "amber",
+      "musk",
+      "sandalwood"
+    ],
+    "noteCount": 27
+  },
+  {
+    "id": "demo-48",
+    "brand": "Narciso Rodriguez",
+    "name": "For Her",
+    "referenceBrandSlug": "narciso-rodriguez",
+    "referencePerfumeSlug": "narciso-rodriguez-for-her",
+    "accords": [
+      "musky",
+      "powdery",
+      "white floral",
+      "citrus",
+      "floral"
+    ],
+    "notes": [
+      "african orange flower",
+      "osmanthus",
+      "bergamot",
+      "musk",
+      "amber",
+      "vetiver",
+      "vanille",
+      "patchouli"
+    ],
+    "noteCount": 8
+  },
+  {
+    "id": "demo-50",
+    "brand": "Jean Paul Gaultier",
+    "name": "Scandal",
+    "referenceBrandSlug": "jean-paul-gaultier",
+    "referencePerfumeSlug": "scandal",
+    "accords": [
+      "honey",
+      "sweet",
+      "white floral",
+      "citrus",
+      "caramel"
+    ],
+    "notes": [
+      "blood orange",
+      "mandarin orange",
+      "honey",
+      "gardenia",
+      "orange blossom",
+      "jasmine",
+      "peach",
+      "beeswax",
+      "caramel",
+      "patchouli",
+      "licorice"
+    ],
+    "noteCount": 11
+  },
+  {
+    "id": "demo-51",
+    "brand": "Maison Francis Kurkdjian",
+    "name": "Baccarat Rouge 540",
+    "referenceBrandSlug": "maison-francis-kurkdjian",
+    "referencePerfumeSlug": "baccarat-rouge-540",
+    "accords": [
+      "woody",
+      "amber",
+      "warm spicy",
+      "fresh spicy",
+      "aromatic"
+    ],
+    "notes": [
+      "saffron",
+      "jasmine",
+      "amberwood",
+      "ambergris",
+      "fir resin",
+      "cedar"
+    ],
+    "noteCount": 6
+  },
+  {
+    "id": "demo-54",
+    "brand": "Tom Ford",
+    "name": "Black Orchid",
+    "referenceBrandSlug": "tom-ford",
+    "referencePerfumeSlug": "black-orchid",
+    "accords": [
+      "warm spicy",
+      "earthy",
+      "woody",
+      "sweet",
+      "amber"
+    ],
+    "notes": [
+      "truffle",
+      "gardenia",
+      "black currant",
+      "ylang-ylang",
+      "jasmine",
+      "bergamot",
+      "mandarin orange",
+      "amalfi lemon",
+      "orchid",
+      "spices",
+      "fruity notes",
+      "lotus",
+      "mexican chocolate",
+      "patchouli",
+      "vanille",
+      "incense",
+      "amber",
+      "sandalwood",
+      "vetiver",
+      "white musk"
+    ],
+    "noteCount": 20
+  },
+  {
+    "id": "demo-55",
+    "brand": "Tom Ford",
+    "name": "Lost Cherry",
+    "referenceBrandSlug": "tom-ford",
+    "referencePerfumeSlug": "lost-cherry",
+    "accords": [
+      "cherry",
+      "sweet",
+      "almond",
+      "nutty",
+      "fruity"
+    ],
+    "notes": [
+      "bitter almond",
+      "black cherry",
+      "cherry liqueur",
+      "sour cherry",
+      "plum",
+      "turkish rose",
+      "jasmine sambac",
+      "vanilla",
+      "tonka bean",
+      "cinnamon",
+      "peru balsam",
+      "benzoin",
+      "sandalwood",
+      "cloves",
+      "cedar",
+      "patchouli",
+      "vetiver"
+    ],
+    "noteCount": 17
+  },
+  {
+    "id": "demo-59",
+    "brand": "Amouage",
+    "name": "Reflection Man",
+    "referenceBrandSlug": "amouage",
+    "referencePerfumeSlug": "reflection-man",
+    "accords": [
+      "woody",
+      "white floral",
+      "aromatic",
+      "powdery",
+      "fresh spicy"
+    ],
+    "notes": [
+      "rosemary",
+      "pink pepper",
+      "petitgrain",
+      "jasmine",
+      "neroli",
+      "orris root",
+      "ylang-ylang",
+      "sandalwood",
+      "vetiver",
+      "cedar",
+      "patchouli"
+    ],
+    "noteCount": 11
+  }
+]
