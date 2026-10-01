@@ -5,6 +5,7 @@ import {
   getRecommendations,
 } from "@/lib/matching/service";
 import { getReferenceCatalogCandidates } from "@/lib/matching/reference-catalog";
+import { CURATED_DEMO_COUNT } from "@/lib/matching/curated-catalog";
 import { makeVector } from "@/tests/ai/fixtures";
 import type { PersonalityVector } from "@/types/personality";
 
@@ -20,18 +21,36 @@ import type { PersonalityVector } from "@/types/personality";
 const MIXED: PersonalityVector = makeVector(50);
 
 describe("reference catalog candidates", () => {
-  it("provides a large candidate set without touching any store", () => {
+  it("provides the curated demo pool — not the raw reference dump — without touching any store", () => {
     const candidates = getReferenceCatalogCandidates();
 
-    expect(candidates.length).toBeGreaterThan(1000);
+    // Curated pool, NOT the raw 23,846-row reference dump: the demo must show
+    // only the hand-audited perfumes.
+    expect(candidates.length).toBe(CURATED_DEMO_COUNT);
+    expect(candidates.length).toBeLessThan(1000);
 
     const storeIds = new Set(candidates.map((c) => c.storeId));
     expect(storeIds.size).toBe(1);
     expect(storeIds.has("reference-catalog")).toBe(true);
   });
 
+  it("uses the curated merchandising names, not slug-derived ones", () => {
+    const names = new Set(getReferenceCatalogCandidates().map((c) => c.name));
+
+    expect(names.has("Sauvage Eau de Toilette")).toBe(true);
+    expect(names.has("N°5 Eau de Parfum")).toBe(true);
+    expect(names.has("Sauvage")).toBe(false);
+  });
+
+  it("still covers every curated id exactly once", () => {
+    const ids = getReferenceCatalogCandidates().map((c) => c.perfumeId);
+
+    expect(ids).toHaveLength(CURATED_DEMO_COUNT);
+    expect(new Set(ids).size).toBe(CURATED_DEMO_COUNT);
+  });
+
   it("every candidate is engine-eligible: active, in stock, fully profiled", () => {
-    for (const candidate of getReferenceCatalogCandidates().slice(0, 500)) {
+    for (const candidate of getReferenceCatalogCandidates()) {
       expect(candidate.active).toBe(true);
       expect(candidate.inStock).toBe(true);
       for (const axis of Object.values(candidate.profile ?? {})) {
@@ -44,7 +63,7 @@ describe("reference catalog candidates", () => {
   });
 
   it("NEVER fabricates product URLs or images", () => {
-    for (const candidate of getReferenceCatalogCandidates().slice(0, 500)) {
+    for (const candidate of getReferenceCatalogCandidates()) {
       expect(candidate.productUrl).toBeNull();
       expect(candidate.imageUrl).toBeNull();
     }
@@ -55,8 +74,8 @@ describe("reference catalog candidates", () => {
     // themselves are stable across independent derivations of the same entry.
     const first = getReferenceCatalogCandidates();
     const again = getReferenceCatalogCandidates();
-    expect(JSON.stringify(first.slice(0, 50).map((c) => c.profile))).toBe(
-      JSON.stringify(again.slice(0, 50).map((c) => c.profile)),
+    expect(JSON.stringify(first.map((c) => c.profile))).toBe(
+      JSON.stringify(again.map((c) => c.profile)),
     );
   });
 });

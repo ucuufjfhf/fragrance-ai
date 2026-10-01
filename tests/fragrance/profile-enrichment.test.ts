@@ -38,14 +38,33 @@ function fakeProvider(result?: Partial<AiPerfumeProfileResult>) {
   return { provider, calls };
 }
 
+/**
+ * A curated demo perfume whose display name resolves through the CONSERVATIVE
+ * name-based ladder.
+ *
+ * The curated catalog deliberately contains merchandising display names that
+ * CANNOT be resolved by name (22 of 59 — brand "&" tokens, brand-repeated name
+ * slugs, "Replica" line prefixes, XJ catalogue codes, year suffixes). Those are
+ * pinned to explicit reference slugs instead. This suite exercises the
+ * ENRICHMENT lookup, which is name-based, so it needs an entry that round-trips
+ * through it — hence an explicit, stable choice rather than "the first entry".
+ */
+const ROUND_TRIPPING = "Bleu de Chanel Eau de Parfum";
+
+function pickRoundTrippingCandidate() {
+  const candidate = getReferenceCatalogCandidates().find(
+    (c) => c.name === ROUND_TRIPPING,
+  );
+  expect(candidate, `curated catalog must contain ${ROUND_TRIPPING}`).toBeDefined();
+  return candidate!;
+}
+
 describe("reference identity lookup (conservative)", () => {
   it("finds an exact brand+name entry from the bundled catalog", () => {
-    // Pick a real entry from the dataset for a stable test target.
-    const candidate = getReferenceCatalogCandidates().find((c) => c.name.length > 3);
-    expect(candidate).toBeDefined();
+    const candidate = pickRoundTrippingCandidate();
 
-    const identity = normalizePerfumeIdentity(`${candidate!.brand} ${candidate!.name}`);
-    const brandIdentity = normalizePerfumeIdentity(candidate!.brand);
+    const identity = normalizePerfumeIdentity(`${candidate.brand} ${candidate.name}`);
+    const brandIdentity = normalizePerfumeIdentity(candidate.brand);
 
     const lookup = findReferenceIdentityMatch(identity, brandIdentity);
     expect(lookup.ok).toBe(true);
@@ -88,7 +107,7 @@ describe("reference identity lookup (conservative)", () => {
 
 describe("enrichPerfumeProfileReferenceFirst — reference HIT", () => {
   it("uses the reference profile and NEVER calls the AI", async () => {
-    const candidate = getReferenceCatalogCandidates().find((c) => c.name.length > 3)!;
+    const candidate = pickRoundTrippingCandidate();
     const { provider, calls } = fakeProvider();
 
     const outcome = await enrichPerfumeProfileReferenceFirst(
