@@ -22,9 +22,9 @@ import { getPrisma } from "@/lib/db";
 import { processBulkProfileChunk } from "@/lib/admin/bulk/processor";
 import { createBulkProfileJob } from "@/lib/admin/bulk/service";
 import { createAIProvider, type AIProvider } from "@/lib/ai/provider";
-import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { PROFILE_AXES } from "@/lib/fragrance/profile";
 
-const AXES = [...MATCHING_DIMENSIONS] as const;
+const AXES = [...PROFILE_AXES] as const;
 
 function fmtAxes(row: Record<string, unknown>): string {
   return AXES.map((axis) => `${axis}=${row[axis]}`).join(", ");

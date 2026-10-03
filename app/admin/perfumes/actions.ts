@@ -10,7 +10,7 @@ import {
   updatePerfumeForStore,
 } from "@/lib/admin/repository";
 import {
-  MATCHING_DIMENSIONS,
+  PROFILE_AXES,
   DESCRIPTOR_DIMENSIONS,
 } from "@/lib/fragrance/profile";
 import { validatePerfumePayload } from "@/lib/admin/validation";
@@ -96,7 +96,7 @@ function formDataToPayload(formData: FormData): Record<string, unknown> {
   // converter). Empty matching-axis strings must become numbers before the
   // validator sees them; empty descriptors stay absent (optional).
   const profile: Record<string, unknown> = {};
-  for (const dimension of MATCHING_DIMENSIONS) {
+  for (const dimension of PROFILE_AXES) {
     profile[dimension] = Number(payload[dimension]);
     delete payload[dimension];
   }
@@ -263,7 +263,7 @@ export async function generateProfileAction(
   // send its stored ones, for a new one the neutral 50 vector (context only —
   // the AI is forbidden from returning them).
   const neutral = Object.fromEntries(
-    MATCHING_DIMENSIONS.map((dimension) => [dimension, 50]),
+    PROFILE_AXES.map((dimension) => [dimension, 50]),
   ) as AiPerfumeProfileInput["matchingProfile"];
 
   let facts: AiPerfumeProfileInput;

@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   DESCRIPTOR_DIMENSIONS,
   MATCHING_DIMENSIONS,
+  NON_MATCHING_PROFILE_AXES,
+  PROFILE_AXES,
   PROFILE_MAX,
   PROFILE_MIN,
   SHARED_DIMENSIONS,
@@ -10,14 +12,33 @@ import {
   isProfileValue,
   isSharedDimension,
   toFragranceProfileView,
-  toMatchingVector,
+  toMatchingProfile,
+  toPersonalityVector,
 } from "@/lib/fragrance/profile";
 import { FRAGRANCE_DIMENSIONS } from "@/types/fragrance";
 import { PERSONALITY_DIMENSIONS } from "@/types/personality";
 
 describe("fragrance profile helpers", () => {
-  it("defines the 9 matching axes exactly as the personality dimensions", () => {
-    expect(MATCHING_DIMENSIONS).toEqual(PERSONALITY_DIMENSIONS);
+  it("defines exactly 5 explicit matching dimensions", () => {
+    expect([...MATCHING_DIMENSIONS]).toEqual([
+      "fresh",
+      "warm",
+      "mysterious",
+      "elegant",
+      "bold",
+    ]);
+  });
+
+  it("no longer derives the matching set from the personality dimensions", () => {
+    // The stored profile keeps all nine; the metric is a strict subset.
+    expect(PROFILE_AXES).toEqual(PERSONALITY_DIMENSIONS);
+    expect(MATCHING_DIMENSIONS).not.toEqual(PERSONALITY_DIMENSIONS);
+    expect([...NON_MATCHING_PROFILE_AXES].sort()).toEqual([
+      "adventurous",
+      "experimental",
+      "expressive",
+      "social",
+    ]);
   });
 
   it("lists the 5 shared dimensions that overlap with fragrance descriptors", () => {
@@ -73,7 +94,7 @@ describe("fragrance profile helpers", () => {
     expect(clampProfileValue(Number.NaN)).toBe(PROFILE_MIN);
   });
 
-  it("converts a complete matching row to a personality vector", () => {
+  it("converts a complete stored row to a personality vector", () => {
     const row = {
       social: 10,
       adventurous: 20,
@@ -86,11 +107,45 @@ describe("fragrance profile helpers", () => {
       bold: 90,
     };
 
-    const vector = toMatchingVector(row);
+    const vector = toPersonalityVector(row);
 
     expect(vector).not.toBeNull();
     expect(vector?.social).toBe(10);
     expect(vector?.bold).toBe(90);
+  });
+
+  it("projects a stored row onto only the 5 matching axes", () => {
+    const row = {
+      social: 10,
+      adventurous: 20,
+      expressive: 30,
+      mysterious: 40,
+      fresh: 50,
+      warm: 60,
+      experimental: 70,
+      elegant: 80,
+      bold: 90,
+    };
+
+    const matching = toMatchingProfile(row);
+
+    expect(matching).toEqual({
+      fresh: 50,
+      warm: 60,
+      mysterious: 40,
+      elegant: 80,
+      bold: 90,
+    });
+    // The four personality-only axes are not part of the metric.
+    expect(matching).not.toHaveProperty("social");
+    expect(matching).not.toHaveProperty("adventurous");
+    expect(matching).not.toHaveProperty("expressive");
+    expect(matching).not.toHaveProperty("experimental");
+  });
+
+  it("returns null from the matching projection when a scored axis is missing", () => {
+    const row = { fresh: 50, warm: 60, mysterious: 40, elegant: 80 } as never;
+    expect(toMatchingProfile(row)).toBeNull();
   });
 
   it("returns null when a matching axis is missing or out of range", () => {
@@ -106,7 +161,7 @@ describe("fragrance profile helpers", () => {
       // bold missing
     };
 
-    expect(toMatchingVector(incomplete as never)).toBeNull();
+    expect(toPersonalityVector(incomplete as never)).toBeNull();
 
     const outOfRange = {
       social: 10,
@@ -120,13 +175,16 @@ describe("fragrance profile helpers", () => {
       bold: 999,
     };
 
-    expect(toMatchingVector(outOfRange)).toBeNull();
+    expect(toPersonalityVector(outOfRange)).toBeNull();
   });
 
   it("returns null for missing or non-object rows instead of crashing", () => {
-    expect(toMatchingVector(null)).toBeNull();
-    expect(toMatchingVector(undefined)).toBeNull();
-    expect(toMatchingVector("nope" as never)).toBeNull();
+    expect(toPersonalityVector(null)).toBeNull();
+    expect(toPersonalityVector(undefined)).toBeNull();
+    expect(toPersonalityVector("nope" as never)).toBeNull();
+    expect(toMatchingProfile(null)).toBeNull();
+    expect(toMatchingProfile(undefined)).toBeNull();
+    expect(toMatchingProfile("nope" as never)).toBeNull();
   });
 
   it("builds the full view with matching axes and descriptors", () => {

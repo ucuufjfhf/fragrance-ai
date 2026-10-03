@@ -6,7 +6,7 @@ import {
 } from "@/lib/ai/errors";
 import type { AIProvider } from "@/lib/ai/provider";
 import { processBulkProfileChunk } from "@/lib/admin/bulk/processor";
-import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { PROFILE_AXES } from "@/lib/fragrance/profile";
 
 /**
  * Phase 12.4 bulk processor tests (mocked Prisma — no live database), following
@@ -434,7 +434,7 @@ describe("processBulkProfileChunk — fill-only AI success semantics", () => {
     expect(upsertArgs.create.longevity).toBe(70);
     expect(upsertArgs.create.family).toBe("woody amber");
     expect(upsertArgs.create.notes).toEqual(["عود", "چرم"]);
-    for (const axis of MATCHING_DIMENSIONS) {
+    for (const axis of PROFILE_AXES) {
       const value = upsertArgs.create[axis] as number;
       expect(Number.isInteger(value)).toBe(true);
       expect(value).toBeGreaterThanOrEqual(0);
@@ -517,7 +517,7 @@ describe("processBulkProfileChunk — fill-only AI success semantics", () => {
       create: Record<string, unknown>;
       update: Record<string, unknown>;
     };
-    for (const axis of MATCHING_DIMENSIONS) {
+    for (const axis of PROFILE_AXES) {
       const value = upsertArgs.create[axis] as number;
       expect(Number.isInteger(value)).toBe(true);
       expect(value).toBeGreaterThanOrEqual(0);
@@ -560,7 +560,7 @@ describe("processBulkProfileChunk — fill-only AI success semantics", () => {
     expect(result.ok).toBe(true);
     const update = (mocks.profileUpsert.mock.calls[0][0] as { update: Record<string, unknown> }).update;
     // Every stored axis stays untouched — structurally absent from the write.
-    for (const axis of MATCHING_DIMENSIONS) {
+    for (const axis of PROFILE_AXES) {
       expect(update[axis]).toBeUndefined();
     }
     expect(update.woody).toBe(80);
@@ -649,7 +649,7 @@ describe("processBulkProfileChunk — fill-only AI success semantics", () => {
       update: Record<string, unknown>;
     };
     expect(upsertArgs.create.profileSource).toBe("REFERENCE");
-    for (const axis of MATCHING_DIMENSIONS) {
+    for (const axis of PROFILE_AXES) {
       const value = upsertArgs.create[axis] as number;
       expect(Number.isInteger(value)).toBe(true);
       expect(value).toBeGreaterThanOrEqual(0);

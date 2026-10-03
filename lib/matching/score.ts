@@ -9,25 +9,31 @@ import type { PersonalityVector } from "@/types/personality";
 /**
  * Deterministic similarity scoring for the matching engine.
  *
- * Both vectors live in the same 9-dimensional space where every axis is
- * normalised to 0–100 (Phase 1 normalisation for the user, `FragranceProfile`
- * columns for the perfume). Nothing here reads the clock, uses randomness or
+ * The user vector carries nine personality axes; the comparison runs over the
+ * five `MATCHING_DIMENSIONS` where every axis is normalised to 0–100 (Phase 1
+ * normalisation for the user, `FragranceProfile` columns for the perfume). Nothing here reads the clock, uses randomness or
  * talks to any service, so identical inputs always produce identical output.
  *
  * Formula
  * -------
  *   difference           = userValue - perfumeValue          (per dimension)
- *   distance             = sqrt(Σ difference²)               (Euclidean, 9 dims)
- *   MAX_DISTANCE         = sqrt(9 × 100²) = 300              (maximal separation:
- *   similarity           = 100 × (1 - distance / MAX_DISTANCE)  every axis off by 100)
+ *   distance             = sqrt(Σ difference²)        (Euclidean, over
+ *   MAX_DISTANCE         = sqrt(5 × 100²) ≈ 223.6068  MATCHING_DIMENSIONS)
+ *   similarity           = 100 × (1 - distance / MAX_DISTANCE)
  *
  * Mathematically the similarity is exactly 100 for an exact match (distance 0)
- * and exactly 0 for the maximum possible distance (300); the clamp below only
+ * and exactly 0 for the maximum possible distance; the clamp below only
  * guards floating-point edge cases. There are no magic constants: 100 is the
- * axis scale (`PROFILE_MAX`) and 9 is the axis count (`MATCHING_DIMENSIONS`).
+ * axis scale (`PROFILE_MAX`) and the axis count is `MATCHING_DIMENSIONS.length`.
+ *
+ * DIMENSIONALITY: the denominator is dimension-count dependent. It was
+ * √(9 × 100²) = 300 while all nine axes were compared, and is now
+ * √(5 × 100²) because social/adventurous/expressive/experimental no longer
+ * take part. Raw score magnitudes therefore rise for an unchanged ranking —
+ * only the ORDER is comparable across that change.
  */
 
-/** Longest possible Euclidean distance in the 9-dimensional 0–100 space. */
+/** Longest possible Euclidean distance in the active matching space (0–100). */
 export const MAX_DISTANCE = Math.sqrt(
   MATCHING_DIMENSIONS.length * PROFILE_MAX ** 2,
 );

@@ -10,7 +10,7 @@ import {
   createUnavailableProvider,
   readAiConfig,
 } from "@/lib/ai/provider";
-import { DESCRIPTOR_DIMENSIONS, MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { DESCRIPTOR_DIMENSIONS, PROFILE_AXES } from "@/lib/fragrance/profile";
 import { makeExplanationInput, makeProfileInput } from "./fixtures";
 
 /** Valid configuration shape (fake credentials — never real keys). */
@@ -169,7 +169,7 @@ describe("AI write scope", () => {
   it("allows only descriptor dimensions and never a matching axis", () => {
     expect(AI_WRITABLE_DIMENSIONS).toEqual(DESCRIPTOR_DIMENSIONS);
 
-    for (const axis of MATCHING_DIMENSIONS) {
+    for (const axis of PROFILE_AXES) {
       expect(AI_WRITABLE_DIMENSIONS).not.toContain(axis);
     }
   });

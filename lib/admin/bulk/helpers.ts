@@ -11,7 +11,7 @@ import {
   type BulkItemStatus,
   type BulkJobStatus,
 } from "@/lib/admin/bulk/contract";
-import { DESCRIPTOR_DIMENSIONS, MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { DESCRIPTOR_DIMENSIONS, PROFILE_AXES } from "@/lib/fragrance/profile";
 
 /**
  * Pure helpers for the Phase 12 bulk AI profiling layer.
@@ -222,7 +222,7 @@ export interface ExistingProfileFacts {
   family?: string | null;
   notes?: string[] | null;
   /** Stored matching axes, when the profile row has them (merchant data). */
-  matchingAxes?: Partial<Record<(typeof MATCHING_DIMENSIONS)[number], number>> | null;
+  matchingAxes?: Partial<Record<(typeof PROFILE_AXES)[number], number>> | null;
   /**
    * Stored provenance, when the profile row has one. Automatic fill-only
    * enrichment must NEVER relabel a non-null value (see `computeBulkProfileWrite`).
@@ -242,7 +242,7 @@ function isLegacyAllZeroAxes(
   return (
     storedAxis !== null &&
     storedAxis !== undefined &&
-    MATCHING_DIMENSIONS.every((axis) => storedAxis[axis] === 0)
+    PROFILE_AXES.every((axis) => storedAxis[axis] === 0)
   );
 }
 
@@ -327,7 +327,7 @@ export function computeBulkProfileWrite(
   const hasStoredAxes =
     storedAxis !== null &&
     storedAxis !== undefined &&
-    MATCHING_DIMENSIONS.some((axis) => typeof storedAxis[axis] === "number");
+    PROFILE_AXES.some((axis) => typeof storedAxis[axis] === "number");
   if (
     result.matching !== undefined &&
     (!hasStoredAxes || isLegacyAllZeroAxes(storedAxis))

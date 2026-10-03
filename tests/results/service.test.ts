@@ -35,12 +35,12 @@ vi.mock("@/lib/analytics/service", () => ({
 
 import { getResultsViewData } from "@/lib/results/service";
 import { parseResultsParams } from "@/lib/results/params";
-import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { PROFILE_AXES } from "@/lib/fragrance/profile";
 import type { MatchedPerfume } from "@/types/recommendation";
 import type { ResultsParams } from "@/lib/results/params";
 
 const baseInput = (): Record<string, string> =>
-  Object.fromEntries(MATCHING_DIMENSIONS.map((d) => [`v_${d}`, "50"]));
+  Object.fromEntries(PROFILE_AXES.map((d) => [`v_${d}`, "50"]));
 
 function paramsWith(extra: Record<string, string> = {}): ResultsParams {
   const parsed = parseResultsParams({ ...baseInput(), archetype: "romantic", ...extra });

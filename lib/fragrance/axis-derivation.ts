@@ -1,6 +1,6 @@
 import { normalizeFragranceText } from "@/lib/ai/reference-lookup";
 import {
-  MATCHING_DIMENSIONS,
+  PROFILE_AXES,
   SHARED_DIMENSIONS,
   clampProfileValue,
 } from "@/lib/fragrance/profile";
@@ -29,10 +29,15 @@ import type { FragranceDimension } from "@/types/fragrance";
  * Pure and deterministic: same inputs, same axes, every run.
  */
 
-/** The nine matching axes (mirrors `types/personality.ts`). */
+/** One stored profile axis (mirrors `types/personality.ts`). */
 export type PersonalityAxis = PersonalityDimension;
 
-export const PERSONALITY_AXES: readonly PersonalityAxis[] = [...MATCHING_DIMENSIONS];
+/**
+ * The nine axes a derived profile row carries — NOT the matching metric. The
+ * derivation must still fill every stored column, so the four personality-only
+ * axes are emitted as `UNMAPPED_AXIS_NEUTRAL`; matching simply never reads them.
+ */
+export const PERSONALITY_AXES: readonly PersonalityAxis[] = [...PROFILE_AXES];
 
 /**
  * The documented calm neutral for an axis with no signal (REFERENCE and AI

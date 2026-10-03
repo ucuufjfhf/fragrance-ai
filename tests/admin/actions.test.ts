@@ -12,7 +12,7 @@ import {
   updatePerfumeAction,
 } from "@/app/admin/perfumes/actions";
 import { validatePerfumePayload } from "@/lib/admin/validation";
-import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { PROFILE_AXES } from "@/lib/fragrance/profile";
 
 /**
  * Regression tests for the Phase 6A admin action boundary.
@@ -49,7 +49,7 @@ function validFormData(): FormData {
     inStock: "on",
     active: "on",
   };
-  for (const dimension of MATCHING_DIMENSIONS) {
+  for (const dimension of PROFILE_AXES) {
     entries[dimension] = "50";
   }
   return formFromEntries(entries);

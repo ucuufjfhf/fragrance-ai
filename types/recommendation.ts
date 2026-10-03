@@ -57,8 +57,13 @@ export interface MatchCandidateInput {
   /** Out-of-stock perfumes are never eligible (documented inventory contract). */
   inStock: boolean;
   /**
-   * The 9 matching axes. `null`/incomplete/out-of-range values mean the perfume
-   * is excluded — never scored with substituted values.
+   * The perfume's stored profile. Type-wise this is the nine personality axes
+   * (what a `FragranceProfile` row carries); at scoring time the engine
+   * validates all nine but compares only `MATCHING_DIMENSIONS`
+   * (fresh, warm, mysterious, elegant, bold).
+   *
+   * `null`/incomplete/out-of-range values mean the perfume is excluded — never
+   * scored with substituted values.
    */
   profile?: Partial<Record<PersonalityDimension, number>> | null;
 }

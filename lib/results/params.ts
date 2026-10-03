@@ -1,5 +1,5 @@
 import { getArchetypeById } from "@/lib/personality/archetypes";
-import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { PROFILE_AXES } from "@/lib/fragrance/profile";
 import type { Archetype, PersonalityVector } from "@/types/personality";
 
 /**
@@ -86,7 +86,7 @@ export function serializeResultsParams(
 ): string {
   const search = new URLSearchParams();
 
-  for (const dimension of MATCHING_DIMENSIONS) {
+  for (const dimension of PROFILE_AXES) {
     search.set(`${VECTOR_KEY_PREFIX}${dimension}`, String(vector[dimension]));
   }
 
@@ -120,7 +120,7 @@ export function parseResultsParams(
 
   const vectorEntries: Array<[keyof PersonalityVector, number]> = [];
 
-  for (const dimension of MATCHING_DIMENSIONS) {
+  for (const dimension of PROFILE_AXES) {
     const raw = firstValue(input, `${VECTOR_KEY_PREFIX}${dimension}`);
 
     if (raw === undefined || raw.trim() === "") {

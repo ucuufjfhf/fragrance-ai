@@ -31,7 +31,14 @@ const clusterProfile = (over: Partial<PersonalityVector>): PersonalityVector => 
 // Strong cluster profiles — each sits deep inside one seeded cluster.
 const FRESH = clusterProfile({ fresh: 95, warm: 10, mysterious: 15, cleanLike: undefined } as Partial<PersonalityVector> & Record<string, unknown>);
 const WARM_WOODY = clusterProfile({ warm: 85, elegant: 90, fresh: 15, mysterious: 55 });
-const SWEET_FLORAL = clusterProfile({ warm: 60, expressive: 80, fresh: 35, bold: 30 });
+// `expressive` is no longer a matching axis, so this profile is expressed
+// through the five that are: warm/fresh/bold plus the low-`mysterious`,
+// high-`elegant` signature that actually defines the sweet-floral cluster.
+// Previously the fixture leaned on `expressive: 80` and left `mysterious`
+// and `elegant` at the flat 50, which made it ambiguous on the scored axes
+// (29.16 vs 26.93 for the balanced cluster). The assertion below is
+// unchanged; the profile it describes now matches the cluster it targets.
+const SWEET_FLORAL = clusterProfile({ warm: 60, expressive: 80, fresh: 35, bold: 30, mysterious: 25, elegant: 60 });
 const BOLD_SPICY = clusterProfile({ bold: 95, warm: 75, mysterious: 65, fresh: 10 });
 const MIXED = vector(); // exactly the balanced-versatile-unisex cluster
 
@@ -71,10 +78,10 @@ describe("matching test matrix — 100-perfume dataset (live DB, read-only)", { 
 
   it("B — fresh/clean/citrus profile biases the top toward the fresh clusters", async () => {
     const result = await getRecommendations({ storeId: STORE, personalityVector: FRESH_CLEAN, topN: 5 });
-    // Observed geometry: with `mysterious`/`social` also moved off 50, the
-    // aquatic-fresh cluster (d≈27.4) sits closer than fresh-clean-citrus
-    // (d≈36.4) — both are fresh-family clusters, so the assertion accepts the
-    // family, not one member of it.
+    // Observed geometry on the five scored axes: the aquatic-fresh cluster
+    // (d≈22.4) sits closer than fresh-clean-citrus (d≈31.6) — both are
+    // fresh-family clusters, so the assertion accepts the family, not one
+    // member of it.
     const freshHits = result.recommendations.filter((r) => r.perfumeId.includes("fresh-clean-citrus") || r.perfumeId.includes("aquatic-fresh"));
     expect(freshHits.length).toBe(5);
   });

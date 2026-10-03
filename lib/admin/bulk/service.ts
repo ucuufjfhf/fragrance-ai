@@ -14,7 +14,7 @@ import {
   validateBulkPerfumeIds,
   type BulkProfileWrite,
 } from "@/lib/admin/bulk/helpers";
-import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { PROFILE_AXES } from "@/lib/fragrance/profile";
 
 /**
  * Phase 12.3 — database-backed bulk AI profiling service.
@@ -908,7 +908,7 @@ export async function persistBulkProfileItemSuccess(
   // Only DETERMINISTICALLY DERIVED axes may travel in an update (the axis
   // derivation in `computeBulkProfileWrite` already skipped stored axes).
   if (write.matching !== undefined) {
-    for (const axis of MATCHING_DIMENSIONS) {
+    for (const axis of PROFILE_AXES) {
       updateData[axis] = write.matching[axis];
     }
   }
@@ -919,7 +919,7 @@ export async function persistBulkProfileItemSuccess(
   // otherwise they are stamped 0: a schema-consistent default, never an
   // invented matching value. Admins can refine them later through the normal
   // form; the AI structurally cannot supply them directly here.
-  for (const axis of MATCHING_DIMENSIONS) {
+  for (const axis of PROFILE_AXES) {
     createData[axis] = write.matching?.[axis] ?? 0;
   }
   for (const [dimension, value] of Object.entries(write.descriptors)) {

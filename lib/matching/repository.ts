@@ -31,6 +31,10 @@ export async function getEligiblePerfumesForStore(
       imageUrl: true,
       inStock: true,
       active: true,
+      // All nine stored axes are still SELECTED: eligibility requires a
+      // complete, in-range profile exactly as before. Only the five
+      // MATCHING_DIMENSIONS take part in the distance; the other four are
+      // validated and then ignored by the scorer.
       profile: {
         select: {
           social: true,

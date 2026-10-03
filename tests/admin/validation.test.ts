@@ -4,7 +4,7 @@ import {
   isPerfumeInStore,
   validatePerfumePayload,
 } from "@/lib/admin/validation";
-import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { PROFILE_AXES } from "@/lib/fragrance/profile";
 
 /**
  * Pure tests for the Phase 6A admin validation boundary — no database, no
@@ -26,7 +26,7 @@ const validPayload = () => ({
   inStock: true,
   active: true,
   profile: Object.fromEntries([
-    ...MATCHING_DIMENSIONS.map((dimension) => [dimension, 50]),
+    ...PROFILE_AXES.map((dimension) => [dimension, 50]),
     ["family", "woody amber"],
     ["notes", ["عود", "چرم"]],
     ["season", "AUTUMN"],
@@ -69,7 +69,7 @@ describe("validatePerfumePayload — valid payloads", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.name).toBe("نویر آزمون");
-      for (const dimension of MATCHING_DIMENSIONS) {
+      for (const dimension of PROFILE_AXES) {
         expect(result.value.profile.matching[dimension]).toBe(50);
       }
       expect(result.value.profile.descriptors.woody).toBe(80);
@@ -140,7 +140,7 @@ describe("validatePerfumePayload — required fields", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      for (const dimension of MATCHING_DIMENSIONS) {
+      for (const dimension of PROFILE_AXES) {
         expect(result.errors[dimension]).toBeTruthy();
       }
     }

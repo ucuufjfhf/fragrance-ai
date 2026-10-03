@@ -5,13 +5,13 @@ import {
   parseResultsParams,
   serializeResultsParams,
 } from "@/lib/results/params";
-import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { PROFILE_AXES } from "@/lib/fragrance/profile";
 import type { PersonalityVector } from "@/types/personality";
 
 /** Flat 50 vector; helper keeps the tests readable. */
 const makeVector = (value = 50): PersonalityVector =>
   Object.fromEntries(
-    MATCHING_DIMENSIONS.map((dimension) => [dimension, value]),
+    PROFILE_AXES.map((dimension) => [dimension, value]),
   ) as PersonalityVector;
 
 describe("serializeResultsParams", () => {
@@ -125,7 +125,7 @@ describe("parseResultsParams", () => {
 
     const badArchetype = parseResultsParams({
       ...Object.fromEntries(
-        MATCHING_DIMENSIONS.map((d) => [`v_${d}`, "50"]),
+        PROFILE_AXES.map((d) => [`v_${d}`, "50"]),
       ),
       archetype: "no-such-archetype",
     });
@@ -134,7 +134,7 @@ describe("parseResultsParams", () => {
 
   it("rejects out-of-range and non-integer vector values", () => {
     const base = Object.fromEntries(
-      MATCHING_DIMENSIONS.map((d) => [`v_${d}`, "50"]),
+      PROFILE_AXES.map((d) => [`v_${d}`, "50"]),
     ) as Record<string, string>;
 
     for (const invalid of ["101", "-1", "12.5", "abc", ""]) {
@@ -146,7 +146,7 @@ describe("parseResultsParams", () => {
 
   it("rejects an incomplete vector instead of substituting values", () => {
     const partial = Object.fromEntries(
-      MATCHING_DIMENSIONS.slice(0, 8).map((d) => [`v_${d}`, "50"]),
+      PROFILE_AXES.slice(0, 8).map((d) => [`v_${d}`, "50"]),
     );
 
     const parsed = parseResultsParams({ ...partial, archetype: "romantic" });
@@ -156,7 +156,7 @@ describe("parseResultsParams", () => {
 
   it("falls back to the demo store when store is absent or empty", () => {
     const base = Object.fromEntries(
-      MATCHING_DIMENSIONS.map((d) => [`v_${d}`, "50"]),
+      PROFILE_AXES.map((d) => [`v_${d}`, "50"]),
     );
     const withEmpty = parseResultsParams({ ...base, archetype: "romantic", store: "" });
 
@@ -168,7 +168,7 @@ describe("parseResultsParams", () => {
 
   it("defaults the source to REFERENCE_CATALOG when no store context exists", () => {
     const base = Object.fromEntries(
-      MATCHING_DIMENSIONS.map((d) => [`v_${d}`, "50"]),
+      PROFILE_AXES.map((d) => [`v_${d}`, "50"]),
     );
 
     const parsed = parseResultsParams({ ...base, archetype: "romantic" });
@@ -181,7 +181,7 @@ describe("parseResultsParams", () => {
 
   it("defaults the source to MERCHANT_INVENTORY when a store context exists", () => {
     const base = Object.fromEntries(
-      MATCHING_DIMENSIONS.map((d) => [`v_${d}`, "50"]),
+      PROFILE_AXES.map((d) => [`v_${d}`, "50"]),
     );
 
     const parsed = parseResultsParams({ ...base, archetype: "romantic", store: "store-real-merchant" });
@@ -194,7 +194,7 @@ describe("parseResultsParams", () => {
 
   it("an explicit source param wins over the store-presence default", () => {
     const base = Object.fromEntries(
-      MATCHING_DIMENSIONS.map((d) => [`v_${d}`, "50"]),
+      PROFILE_AXES.map((d) => [`v_${d}`, "50"]),
     );
 
     const pinnedDemo = parseResultsParams({
@@ -211,7 +211,7 @@ describe("parseResultsParams", () => {
 
   it("an unknown source value falls back to the store-presence default", () => {
     const base = Object.fromEntries(
-      MATCHING_DIMENSIONS.map((d) => [`v_${d}`, "50"]),
+      PROFILE_AXES.map((d) => [`v_${d}`, "50"]),
     );
 
     const bogus = parseResultsParams({ ...base, archetype: "romantic", source: "SOMETHING_ELSE" });

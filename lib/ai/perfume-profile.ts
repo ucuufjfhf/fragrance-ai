@@ -9,7 +9,7 @@ import type {
 } from "@/lib/ai/provider";
 import {
   DESCRIPTOR_DIMENSIONS,
-  MATCHING_DIMENSIONS,
+  PROFILE_AXES,
   clampProfileValue,
 } from "@/lib/fragrance/profile";
 import type { FragranceDimension } from "@/types/fragrance";
@@ -19,7 +19,7 @@ import type { FragranceDimension } from "@/types/fragrance";
  *
  * Scope, enforced by the validator rather than trusted from the prompt:
  *  - writable: the 10 descriptor dimensions, `family`, `notes`;
- *  - read-only: the nine matching axes — a response that tries to set them (or any
+ *  - read-only: all nine stored profile axes — a response that sets any of them (or any
  *    other key) is rejected, so the AI can never influence the deterministic score;
  *  - never touched: name, brand, price, stock, product URLs, descriptions.
  *
@@ -35,7 +35,7 @@ export const PROFILE_SYSTEM_PROMPT = [
   "Never mention scores, percentages, rankings or other products.",
   'Allowed top-level keys: "descriptors", "family", "notes".',
   `"descriptors" may only contain these integer keys, each 0-100: ${DESCRIPTOR_DIMENSIONS.join(", ")}.`,
-  `Never include any other key. These keys are forbidden: ${MATCHING_DIMENSIONS.join(", ")}.`,
+  `Never include any other key. These keys are forbidden: ${PROFILE_AXES.join(", ")}.`,
   '"family" is a short English fragrance family label.',
   '"notes" is an array of up to 6 short Persian note names.',
   `When describing scent character, prefer these known accord terms when applicable: ${REFERENCE_ACCORD_VOCABULARY.join(", ")}.`,
@@ -109,7 +109,7 @@ export function buildProfileUserPrompt(
     `Family: ${(input.family ?? "").trim() || "(unknown)"}`,
     `Notes: ${(input.notes ?? []).join(", ") || "(unknown)"}`,
     `Existing descriptors: ${formatDescriptors(input.descriptors)}`,
-    `Reference profile (read-only, do not repeat or change): ${MATCHING_DIMENSIONS.map(
+    `Reference profile (read-only, do not repeat or change): ${PROFILE_AXES.map(
       (dimension) => `${dimension}=${input.matchingProfile[dimension]}`,
     ).join(", ")}`,
   ];
@@ -169,7 +169,7 @@ export function validateAiProfileResult(
     const record = asRecord(payload.descriptors);
 
     for (const [key, value] of Object.entries(record)) {
-      if ((MATCHING_DIMENSIONS as readonly string[]).includes(key)) {
+      if ((PROFILE_AXES as readonly string[]).includes(key)) {
         throw new AiResponseError(
           `AI tried to write a read-only matching axis: ${key}.`,
         );

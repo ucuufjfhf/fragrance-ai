@@ -12,7 +12,7 @@ import {
   type AIProvider,
   type AiPerfumeProfileResult,
 } from "@/lib/ai/provider";
-import { DESCRIPTOR_DIMENSIONS, MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { DESCRIPTOR_DIMENSIONS, PROFILE_AXES } from "@/lib/fragrance/profile";
 import { makeProfileInput } from "./fixtures";
 
 describe("buildProfileUserPrompt", () => {
@@ -26,7 +26,7 @@ describe("buildProfileUserPrompt", () => {
     expect(prompt).toContain("عود");
     expect(prompt).toContain("read-only");
 
-    for (const axis of MATCHING_DIMENSIONS) {
+    for (const axis of PROFILE_AXES) {
       expect(prompt).toContain(axis);
     }
 
@@ -79,7 +79,7 @@ describe("validateAiProfileResult", () => {
 
     expect(Object.keys(result).sort()).toEqual(["descriptors", "family", "perfumeId"]);
 
-    for (const axis of MATCHING_DIMENSIONS) {
+    for (const axis of PROFILE_AXES) {
       expect(result.descriptors).not.toHaveProperty(axis);
     }
 

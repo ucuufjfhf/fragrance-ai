@@ -1,10 +1,10 @@
-import { DESCRIPTOR_DIMENSIONS, MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { DESCRIPTOR_DIMENSIONS, PROFILE_AXES } from "@/lib/fragrance/profile";
 
 /**
  * The canonical CSV import contract (Phase 6B).
  *
  * Column names are the contract; they are derived from the existing canonical
- * dimension lists (`MATCHING_DIMENSIONS` / `DESCRIPTOR_DIMENSIONS`) so the
+ * dimension lists (`PROFILE_AXES` / `DESCRIPTOR_DIMENSIONS`) so the
  * schema stays the single source of truth — no second array of the nine axes.
  * `storeId` is deliberately NOT a column: the target store comes from the
  * admin context, and a `storeId` column in an upload is rejected as unknown.
@@ -31,7 +31,7 @@ export const CSV_OPTIONAL_PRODUCT_COLUMNS = [
 ] as const;
 
 /** The nine required matching-dimension columns, from the canonical list. */
-export const CSV_MATCHING_COLUMNS: readonly string[] = MATCHING_DIMENSIONS;
+export const CSV_MATCHING_COLUMNS: readonly string[] = PROFILE_AXES;
 
 /** The ten optional descriptor columns, from the canonical list. */
 export const CSV_DESCRIPTOR_COLUMNS: readonly string[] = DESCRIPTOR_DIMENSIONS;
