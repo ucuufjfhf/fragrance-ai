@@ -1,4 +1,4 @@
-import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { PROFILE_AXES } from "@/lib/fragrance/profile";
 import type { PersonalityVector } from "@/types/personality";
 
 /**
@@ -65,7 +65,7 @@ export function validateWidgetVector(input: unknown):
   const record = input as Record<string, unknown>;
   const vector = {} as PersonalityVector;
 
-  for (const dimension of MATCHING_DIMENSIONS) {
+  for (const dimension of PROFILE_AXES) {
     const value = record[dimension];
 
     if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 100) {

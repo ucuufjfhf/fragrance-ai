@@ -4,7 +4,7 @@ import type { AiOutcome, AiPerfumeProfileResult } from "@/lib/ai/provider";
 import type { AIProvider, AiPerfumeProfileInput } from "@/lib/ai/provider";
 import { enrichPerfumeProfile } from "@/lib/ai/perfume-profile";
 import {
-  MATCHING_DIMENSIONS,
+  PROFILE_AXES,
   clampProfileValue,
 } from "@/lib/fragrance/profile";
 import {
@@ -74,7 +74,7 @@ export type EnrichmentOutcome =
 /** The neutral 50 vector used when no stored axes exist (context only). */
 export function neutralMatchingVector(): PersonalityVector {
   return Object.fromEntries(
-    MATCHING_DIMENSIONS.map((dimension) => [dimension, 50]),
+    PROFILE_AXES.map((dimension) => [dimension, 50]),
   ) as PersonalityVector;
 }
 
@@ -203,7 +203,7 @@ export async function enrichPerfumeProfileReferenceFirst(
   const existing = input.existing ?? null;
   const storedAxes = existing?.matching ?? null;
   const matchingProfile = Object.fromEntries(
-    MATCHING_DIMENSIONS.map((dimension) => [
+    PROFILE_AXES.map((dimension) => [
       dimension,
       clampProfileValue(storedAxes?.[dimension] ?? 50),
     ]),

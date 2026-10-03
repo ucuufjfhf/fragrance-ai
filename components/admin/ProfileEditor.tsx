@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 
 import { generateProfileAction } from "@/app/admin/perfumes/actions";
 import { PROFILE_MIN, PROFILE_MAX } from "@/lib/fragrance/profile";
-import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { PROFILE_AXES } from "@/lib/fragrance/profile";
 import { PERSONALITY_LABELS } from "@/lib/personality/labels";
 import { DESCRIPTOR_DIMENSIONS } from "@/lib/fragrance/profile";
 import type { FragranceDimension } from "@/types/fragrance";
@@ -13,7 +13,7 @@ import type { FragranceDimension } from "@/types/fragrance";
  * The fragrance-profile editor for the admin form.
  *
  * Client component (form interaction only — it never touches the DB). The nine
- * canonical axes are rendered from `MATCHING_DIMENSIONS` (the single source of
+ * canonical axes are rendered from `PROFILE_AXES` (the single source of
  * truth) with Persian labels from the shared label module; descriptors are
  * optional. Numeric inputs enforce integer 0–100 client-side; the server
  * re-validates everything.
@@ -110,7 +110,7 @@ export default function ProfileEditor({ profile, errors, perfumeId, storeId }: P
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {MATCHING_DIMENSIONS.map((dimension) => (
+        {PROFILE_AXES.map((dimension) => (
           <div key={dimension} className="flex flex-col gap-1">
             <label htmlFor={`profile-${dimension}`} className="text-sm">
               {PERSONALITY_LABELS[dimension]}

@@ -37,7 +37,7 @@ import {
 } from "@/lib/admin/bulk/service";
 import {
   DESCRIPTOR_DIMENSIONS,
-  MATCHING_DIMENSIONS,
+  PROFILE_AXES,
   clampProfileValue,
 } from "@/lib/fragrance/profile";
 import type { PersonalityVector } from "@/types/personality";
@@ -163,7 +163,7 @@ type ScopedStoredProfile = Record<DescriptorDimension, number | null> & {
   family: string | null;
   notes: string[];
   profileSource?: ProfileProvenance | null;
-} & Partial<Record<(typeof MATCHING_DIMENSIONS)[number], number | null>>;
+} & Partial<Record<(typeof PROFILE_AXES)[number], number | null>>;
 
 /**
  * Reference-first probe for one bulk item: resolves the perfume's identity
@@ -230,7 +230,7 @@ function toAiInput(
   stored: ScopedStoredProfile | null,
 ): Parameters<AIProvider["generatePerfumeProfile"]>[0] {
   const matchingProfile = Object.fromEntries(
-    MATCHING_DIMENSIONS.map((axis) => [axis, stored ? clampProfileValue(stored[axis] ?? 0) : 0]),
+    PROFILE_AXES.map((axis) => [axis, stored ? clampProfileValue(stored[axis] ?? 0) : 0]),
   ) as PersonalityVector;
 
   const descriptors = stored
@@ -266,7 +266,7 @@ function toExistingFacts(stored: ScopedStoredProfile | null): ExistingProfileFac
     // overwrite them (structurally absent from the write) — except the legacy
     // all-nine-zero row, which the write helper treats as repairable.
     matchingAxes: Object.fromEntries(
-      MATCHING_DIMENSIONS.map((axis) => [axis, stored[axis] ?? null]),
+      PROFILE_AXES.map((axis) => [axis, stored[axis] ?? null]),
     ),
     // Stored provenance is preserved by the fill-only merge (never auto-relabelled).
     profileSource: stored.profileSource ?? null,

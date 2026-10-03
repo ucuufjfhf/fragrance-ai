@@ -7,7 +7,7 @@ import {
   computeBulkProfileWrite,
   type ExistingProfileFacts,
 } from "@/lib/admin/bulk/helpers";
-import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { PROFILE_AXES } from "@/lib/fragrance/profile";
 import type { Gender, Season, Occasion } from "@/types/fragrance";
 
 /**
@@ -294,7 +294,7 @@ function toProfilePayload(input: AdminPerfumeInput) {
  * profile manual-authoritative (the fill-only contract).
  */
 function isUntouchedDefaultAxes(matching: AdminPerfumeInput["profile"]["matching"]): boolean {
-  return MATCHING_DIMENSIONS.every((axis) => matching[axis] === 50);
+  return PROFILE_AXES.every((axis) => matching[axis] === 50);
 }
 
 /**

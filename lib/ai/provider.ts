@@ -21,7 +21,7 @@ export {
  *
  * Non-negotiable boundaries enforced here and by the validators:
  *  - the AI never receives or returns match scores, ranks or product lists;
- *  - the nine matching axes (`MATCHING_DIMENSIONS`) are read-only context and an
+ *  - the nine stored profile axes (`PROFILE_AXES`) are read-only context and an
  *    AI response that tries to set them is rejected outright;
  *  - every AI call is optional: when it fails, the deterministic result stands.
  *

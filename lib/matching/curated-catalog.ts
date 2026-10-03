@@ -1,4 +1,4 @@
-import { clampProfileValue, toMatchingVector } from "@/lib/fragrance/profile";
+import { clampProfileValue, toPersonalityVector } from "@/lib/fragrance/profile";
 import {
   axesFromAccords,
   PERSONALITY_AXES,
@@ -175,7 +175,7 @@ function resolveEntry(entry: CuratedDemoEntry): ResolvedCuratedPerfume {
   // Every axis must be a usable 0–100 integer before a candidate is handed to
   // the engine: the engine excludes unprofiled candidates, and a curated pool
   // must never silently shrink itself.
-  if (!toMatchingVector(profile)) {
+  if (!toPersonalityVector(profile)) {
     throw new CuratedCatalogError(
       `curated entry ${entry.id} (${key}) did not derive a complete 9-axis profile.`,
     );

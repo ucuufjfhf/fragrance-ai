@@ -1,4 +1,4 @@
-import { DESCRIPTOR_DIMENSIONS, MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { DESCRIPTOR_DIMENSIONS, PROFILE_AXES } from "@/lib/fragrance/profile";
 import type { FragranceDimension } from "@/types/fragrance";
 import type { Gender, Occasion, Season } from "@/types/fragrance";
 
@@ -10,8 +10,9 @@ import type { Gender, Occasion, Season } from "@/types/fragrance";
  * live DB and the repository can trust its input types.
  *
  * Rules mirror the Prisma schema exactly:
- *  - the nine `MATCHING_DIMENSIONS` are required integers 0–100 (they drive the
- *    deterministic engine, so a bad value must be rejected, never clamped);
+ *  - the nine `PROFILE_AXES` are required integers 0–100 (five of them drive
+ *    the deterministic engine and all nine are part of the stored profile, so a
+ *    bad value must be rejected, never clamped);
  *  - the ten `DESCRIPTOR_DIMENSIONS` are optional integers 0–100;
  *  - `gender`/`season`/`occasion` must be existing enum values;
  *  - URLs/price/slug are validated only when supplied;
@@ -33,7 +34,7 @@ export const ADMIN_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const ADMIN_NOTES_MAX = 12;
 
 export interface AdminProfileInput {
-  matching: Record<(typeof MATCHING_DIMENSIONS)[number], number>;
+  matching: Record<(typeof PROFILE_AXES)[number], number>;
   descriptors: Partial<Record<FragranceDimension, number>>;
   family?: string;
   notes: string[];
@@ -142,7 +143,7 @@ function validateProfile(raw: unknown, errors: Record<string, string>): AdminPro
 
   // The nine canonical axes are required — validate against the single
   // canonical list, never a second hardcoded array.
-  for (const dimension of MATCHING_DIMENSIONS) {
+  for (const dimension of PROFILE_AXES) {
     const result = validateAxis(record[dimension]);
 
     if (typeof result === "string") {
@@ -191,7 +192,7 @@ function validateProfile(raw: unknown, errors: Record<string, string>): AdminPro
     errors.occasion = "مناسبت نامعتبر است.";
   }
 
-  if (Object.keys(errors).some((key) => MATCHING_DIMENSIONS.includes(key as never))) {
+  if (Object.keys(errors).some((key) => PROFILE_AXES.includes(key as never))) {
     return undefined;
   }
 

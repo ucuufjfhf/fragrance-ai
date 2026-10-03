@@ -12,7 +12,7 @@ import {
   type AiPerfumeProfileInput,
 } from "@/lib/ai/provider";
 import { AiRequestError } from "@/lib/ai/errors";
-import { MATCHING_DIMENSIONS, DESCRIPTOR_DIMENSIONS } from "@/lib/fragrance/profile";
+import { PROFILE_AXES, DESCRIPTOR_DIMENSIONS } from "@/lib/fragrance/profile";
 
 /**
  * Phase 11 profiler tests (spec §14 A–K) — pure, no live AI, no database.
@@ -31,7 +31,7 @@ const input: AiPerfumeProfileInput = {
   family: "woody",
   notes: ["عود", "چرم"],
   matchingProfile: Object.fromEntries(
-    MATCHING_DIMENSIONS.map((dimension) => [dimension, 50]),
+    PROFILE_AXES.map((dimension) => [dimension, 50]),
   ) as AiPerfumeProfileInput["matchingProfile"],
 };
 
@@ -150,7 +150,7 @@ describe("Phase 11 — AI-assisted fragrance profiler (A–K)", () => {
 
   it("prompt design — system prompt forbids facts invention and matching axes", () => {
     expect(PROFILE_SYSTEM_PROMPT).toContain("Never invent facts");
-    expect(PROFILE_SYSTEM_PROMPT).toContain(MATCHING_DIMENSIONS.join(", "));
+    expect(PROFILE_SYSTEM_PROMPT).toContain(PROFILE_AXES.join(", "));
     const userPrompt = buildProfileUserPrompt(input);
     expect(userPrompt).toContain("تست عطر");
     expect(userPrompt).toContain("عود");

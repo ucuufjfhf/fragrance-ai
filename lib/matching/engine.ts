@@ -1,4 +1,7 @@
-import { toMatchingVector } from "@/lib/fragrance/profile";
+import {
+  toMatchingProfile,
+  toPersonalityVector,
+} from "@/lib/fragrance/profile";
 import { similarityScore } from "@/lib/matching/score";
 import type { PersonalityVector } from "@/types/personality";
 import type {
@@ -44,7 +47,7 @@ export function resolveTopN(topN: unknown): number {
 
 /** Validates a user personality vector produced by Phase 1. */
 export function validatePersonalityVector(vector: unknown): PersonalityVector {
-  const valid = toMatchingVector(
+  const valid = toPersonalityVector(
     vector as Partial<Record<keyof PersonalityVector, number | null | undefined>>,
   );
 
@@ -76,8 +79,13 @@ export interface MatchPerfumesInput {
  *  - candidates from another store are excluded (when `storeId` is given);
  *  - inactive perfumes are excluded;
  *  - out-of-stock perfumes are excluded ("out-of-stock is never recommended");
- *  - perfumes with a missing or out-of-range matching profile are excluded —
- *    no arbitrary values are substituted for missing data.
+ *  - perfumes with a missing or out-of-range profile are excluded — no
+ *    arbitrary values are substituted for missing data.
+ *
+ * The distance is computed over `MATCHING_DIMENSIONS` only (fresh, warm,
+ * mysterious, elegant, bold). `social`, `adventurous`, `expressive` and
+ * `experimental` remain part of the user vector and the stored profile, but a
+ * perfume carries no signal for them, so they are excluded from the metric.
  *
  * Sorting: similarity score descending; ties are broken by ascending
  * `perfumeId`, a stable field that does not depend on database row order.
@@ -108,7 +116,18 @@ export function matchPerfumes(input: MatchPerfumesInput): MatchResult {
       continue;
     }
 
-    const profile = toMatchingVector(candidate.profile ?? {});
+    // Eligibility still requires a COMPLETE nine-axis profile: the four
+    // non-matching axes are not scored, but a partially profiled perfume is
+    // still rejected exactly as before.
+    const stored = toPersonalityVector(candidate.profile ?? {});
+
+    if (!stored) {
+      excluded += 1;
+      continue;
+    }
+
+    // Only the five matching axes take part in the distance.
+    const profile = toMatchingProfile(stored);
 
     if (!profile) {
       excluded += 1;

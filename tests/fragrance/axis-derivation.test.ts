@@ -9,7 +9,7 @@ import {
 } from "@/lib/fragrance/axis-derivation";
 import { REFERENCE_ACCORD_VOCABULARY } from "@/lib/ai/reference-lookup";
 import { getReferenceCatalogCandidates } from "@/lib/matching/reference-catalog";
-import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { PROFILE_AXES } from "@/lib/fragrance/profile";
 
 /**
  * Deterministic tests for the shared axis-derivation utility — the SINGLE
@@ -20,8 +20,8 @@ import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
 /** All nine axes, 0–100 integers, exactly the engine's dimension list. */
 function expectValidNineAxisVector(vector: Record<string, number>): void {
   const axes: Record<string, number> = { ...vector };
-  expect(Object.keys(axes).sort()).toEqual([...MATCHING_DIMENSIONS].sort());
-  for (const axis of MATCHING_DIMENSIONS) {
+  expect(Object.keys(axes).sort()).toEqual([...PROFILE_AXES].sort());
+  for (const axis of PROFILE_AXES) {
     expect(Number.isInteger(axes[axis])).toBe(true);
     expect(axes[axis]).toBeGreaterThanOrEqual(0);
     expect(axes[axis]).toBeLessThanOrEqual(100);

@@ -5,7 +5,7 @@ import {
   type DerivedMatchingAxes,
   type ExistingProfileFacts,
 } from "@/lib/admin/bulk/helpers";
-import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { PROFILE_AXES } from "@/lib/fragrance/profile";
 
 /**
  * Pure fill-only merge tests (Phase 12.4 + review fixes).
@@ -17,10 +17,10 @@ import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
  */
 
 const axes = (value: number): DerivedMatchingAxes =>
-  Object.fromEntries(MATCHING_DIMENSIONS.map((axis) => [axis, value])) as unknown as DerivedMatchingAxes;
+  Object.fromEntries(PROFILE_AXES.map((axis) => [axis, value])) as unknown as DerivedMatchingAxes;
 
 const fiveAxisNonZero = (): DerivedMatchingAxes =>
-  Object.fromEntries(MATCHING_DIMENSIONS.map((axis) => [axis, 70])) as unknown as DerivedMatchingAxes;
+  Object.fromEntries(PROFILE_AXES.map((axis) => [axis, 70])) as unknown as DerivedMatchingAxes;
 
 const stored = (
   matchingAxes: ExistingProfileFacts["matchingAxes"],

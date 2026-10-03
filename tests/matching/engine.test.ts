@@ -42,8 +42,9 @@ const candidate = (
 });
 
 describe("matching formula", () => {
-  it("uses the documented maximum distance of 300", () => {
-    expect(MAX_DISTANCE).toBe(300);
+  it("uses the documented 5D maximum distance sqrt(5 x 100^2)", () => {
+    expect(MAX_DISTANCE).toBeCloseTo(Math.sqrt(5) * 100, 10);
+    expect(MAX_DISTANCE).toBeCloseTo(223.60679774997897, 10);
   });
 
   it("scores an exact match as 100 with distance 0", () => {
@@ -66,35 +67,44 @@ describe("matching formula", () => {
     });
 
     expect(result.recommendations[0].distance).toBe(MAX_DISTANCE);
-    expect(result.recommendations[0].distance).toBe(300);
+    expect(result.recommendations[0].distance).toBeCloseTo(
+      Math.sqrt(5) * 100,
+      10,
+    );
     expect(result.recommendations[0].score).toBe(0);
     expect(result.recommendations[0].presentationScore).toBe(0);
   });
 
   it("matches the manually calculated intermediate result (0 vs 50 → 50)", () => {
-    // distance = sqrt(9 × 50²) = 150 → 100 × (1 − 150/300) = 50
+    // distance = sqrt(5 × 50²) ≈ 111.803 → 100 × (1 − 111.803/223.607) = 50
     const result = matchPerfumes({
       personalityVector: flat(0),
       perfumes: [candidate("p-mid", flat(50))],
     });
 
-    expect(result.recommendations[0].distance).toBe(150);
-    expect(result.recommendations[0].score).toBe(50);
+    expect(result.recommendations[0].distance).toBeCloseTo(
+      Math.sqrt(5) * 50,
+      10,
+    );
+    expect(result.recommendations[0].score).toBeCloseTo(50, 10);
   });
 
   it("matches the manually calculated intermediate result (50 vs 40 → 90)", () => {
-    // distance = sqrt(9 × 10²) = 30 → 100 × (1 − 30/300) = 90
+    // distance = sqrt(5 × 10²) ≈ 22.361 → 100 × (1 − 22.361/223.607) = 90
     const result = matchPerfumes({
       personalityVector: flat(50),
       perfumes: [candidate("p-mid2", flat(40))],
     });
 
-    expect(result.recommendations[0].distance).toBeCloseTo(30, 10);
+    expect(result.recommendations[0].distance).toBeCloseTo(
+      Math.sqrt(5) * 10,
+      10,
+    );
     expect(result.recommendations[0].score).toBeCloseTo(90, 10);
   });
 
   it("keeps one axis off-centre to verify partial-distance maths", () => {
-    // 8 axes equal, 1 axis off by 5 → distance 5 → 100 × (1 − 5/300) ≈ 98.333…
+    // 4 axes equal, 1 axis off by 5 → distance 5 → 100 × (1 − 5/223.607)
     const vector = flat(50);
     const profile = offsetProfile(50, "bold", 5);
 
@@ -105,7 +115,7 @@ describe("matching formula", () => {
 
     expect(result.recommendations[0].distance).toBeCloseTo(5, 10);
     expect(result.recommendations[0].score).toBeCloseTo(
-      100 * (1 - 5 / 300),
+      100 * (1 - 5 / MAX_DISTANCE),
       10,
     );
   });

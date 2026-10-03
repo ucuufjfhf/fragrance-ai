@@ -6,7 +6,7 @@ import {
   CSV_OPTIONAL_PRODUCT_COLUMNS,
   CSV_REQUIRED_PRODUCT_COLUMNS,
 } from "@/lib/admin/csv/contract";
-import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
+import { PROFILE_AXES } from "@/lib/fragrance/profile";
 import { SEASONS, OCCASIONS, validatePerfumePayload } from "@/lib/admin/validation";
 
 /**
@@ -196,4 +196,4 @@ export function validateCsvRow(row: number, record: Record<string, string>): Csv
 /** Exposed for tests: the enum lists the CSV contract must stay in sync with. */
 export const CSV_ALLOWED_SEASONS = SEASONS;
 export const CSV_ALLOWED_OCCASIONS = OCCASIONS;
-export const CSV_MATCHING_DIMENSIONS = MATCHING_DIMENSIONS;
+export const CSV_MATCHING_DIMENSIONS = PROFILE_AXES;
