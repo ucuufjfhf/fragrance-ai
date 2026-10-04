@@ -151,6 +151,12 @@ export function matchPerfumes(input: MatchPerfumesInput): MatchResult {
       distance,
       score: rawScore,
       presentationScore,
+      // Grounding facts for the AI explanation layer. Copied verbatim AFTER
+      // scoring; never read by `similarityScore` and never used for
+      // eligibility or ordering, so they cannot affect the result set.
+      description: candidate.description ?? null,
+      family: candidate.family ?? null,
+      notes: candidate.notes ?? null,
     });
   }
 

@@ -60,7 +60,8 @@ export interface AiPerfumeFacts {
   brand: string;
   description?: string | null;
   family?: string | null;
-  notes?: string[];
+  /** Nullable like the other optional facts; the prompt renders `(نامشخص)`. */
+  notes?: string[] | null;
 }
 
 export interface AiPerfumeProfileInput extends AiPerfumeFacts {

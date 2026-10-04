@@ -1,4 +1,5 @@
 import { createAIProvider } from "@/lib/ai/provider";
+import { createControlledAIProvider } from "@/lib/ai/cost-controls";
 import {
   generateExplanations,
   selectUserTraits,
@@ -67,6 +68,12 @@ export function buildExplanationInputs(
       perfumeId: recommendation.perfumeId,
       name: recommendation.name,
       brand: recommendation.brand,
+      // Real grounding facts when the store/profile has them. Missing values
+      // stay null so the prompt keeps its existing `(نامشخص)` fallback rather
+      // than inventing anything.
+      description: recommendation.description ?? null,
+      family: recommendation.family ?? null,
+      notes: recommendation.notes ?? null,
     },
     traits,
   }));
@@ -131,7 +138,10 @@ export async function getResultsViewData(
   let aiAvailable = false;
 
   if (!isDemo) {
-    const provider = createAIProvider();
+    // Same rate-limit + circuit-breaker wrapper the widget route already uses.
+    // One implementation, unchanged limits: the results page gets the same
+    // cost controls without a second cost-control code path.
+    const provider = createControlledAIProvider(createAIProvider(), storeId);
     // Reference-catalog cards have no real merchant context (no storeId, no
     // product URL), so the AI explanation layer stays merchant-only — the
     // deterministic ranking is identical either way.
