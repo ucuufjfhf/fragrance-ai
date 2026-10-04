@@ -9,6 +9,7 @@ import { requireAdmin } from "@/lib/admin/server-access";
 
 import BulkProfilingPanel from "@/components/admin/BulkProfilingPanel";
 import PerfumeToggles from "@/components/admin/PerfumeToggles";
+import ProfileSourceBadge from "@/components/admin/ProfileSourceBadge";
 import WidgetEmbedCode from "@/components/admin/WidgetEmbedCode";
 import { getOpenBulkJobForStoreAction } from "@/app/admin/perfumes/bulk-actions";
 import { AI_BULK_MAX_ITEMS } from "@/lib/admin/bulk/contract";
@@ -170,6 +171,7 @@ export default async function AdminPerfumesPage({ searchParams }: AdminPerfumesP
                   ) : null}
                   {perfume.profile?.family ? <span>· {perfume.profile.family}</span> : null}
                 </div>
+                <ProfileSourceBadge profile={perfume.profile} />
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
