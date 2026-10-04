@@ -1,9 +1,12 @@
 import Link from "next/link";
 
 import PerfumeForm from "@/components/admin/PerfumeForm";
+import ProfileSourceBadge from "@/components/admin/ProfileSourceBadge";
 import { updatePerfumeAction } from "@/app/admin/perfumes/actions";
 import type { AdminActionState } from "@/app/admin/perfumes/actions";
 import { getPerfumeForStore } from "@/lib/admin/repository";
+import { describeProfileSource } from "@/components/admin/ProfileSourceBadge";
+import type { ProfileProvenance } from "@/lib/fragrance/profile-enrichment";
 import type { Metadata } from "next";
 
 import { requireAdmin } from "@/lib/admin/server-access";
@@ -72,6 +75,18 @@ export default async function EditPerfumePage({ params, searchParams }: EditPerf
         <p className="text-sm text-muted">{perfume.name} — {perfume.brand}</p>
       </header>
 
+      {/* Informational only: provenance is rendered OUTSIDE <PerfumeForm>, so it
+          is never a submittable field and cannot be relabelled from this UI. */}
+      <section
+        className="flex flex-wrap items-center gap-3 rounded-2xl border border-border-soft bg-surface p-4"
+        aria-label="منبع پروفایل"
+      >
+        <ProfileSourceBadge profile={perfume.profile} size="md" />
+        <p className="text-sm leading-7 text-muted">
+          {provenanceHint(perfume.profile)}
+        </p>
+      </section>
+
       <PerfumeForm
         storeId={perfume.storeId}
         perfumeId={perfume.id}
@@ -126,4 +141,20 @@ export default async function EditPerfumePage({ params, searchParams }: EditPerf
       </Link>
     </main>
   );
+}
+
+/**
+ * Merchant-facing explanation of the stored provenance. Deliberately explains
+ * that editing the values below does NOT change the label — the write path
+ * preserves `profileSource` on purpose, so an AI or reference profile stays
+ * labelled as such after a manual edit.
+ */
+function provenanceHint(profile: { profileSource: ProfileProvenance | null } | null): string {
+  const { source, description } = describeProfileSource(profile);
+
+  if (source === null) {
+    return `${description}. برای ساخت پروفایل، دکمهٔ تولید پروفایل را بزنید.`;
+  }
+
+  return `${description}. با ویرایش مقادیر، منبع پروفایل تغییر نمی‌کند.`;
 }

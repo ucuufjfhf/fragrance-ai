@@ -8,6 +8,7 @@ import {
   type ExistingProfileFacts,
 } from "@/lib/admin/bulk/helpers";
 import { PROFILE_AXES } from "@/lib/fragrance/profile";
+import type { ProfileProvenance } from "@/lib/fragrance/profile-enrichment";
 import type { Gender, Season, Occasion } from "@/types/fragrance";
 
 /**
@@ -69,6 +70,12 @@ export interface AdminPerfumeRow {
     notes: string[];
     season: Season | null;
     occasion: Occasion | null;
+    /**
+     * Persisted provenance of the profile, surfaced read-only for the merchant
+     * admin. `null` when the perfume has no profile at all. This is the stored
+     * value only — nothing in the admin UI may write or relabel it.
+     */
+    profileSource: ProfileProvenance | null;
   } | null;
 }
 
@@ -132,6 +139,7 @@ export async function getPerfumesForStore(storeId: string): Promise<AdminPerfume
           notes: true,
           season: true,
           occasion: true,
+          profileSource: true,
         },
       },
     },
@@ -189,6 +197,7 @@ export async function getPerfumeForStore(
           notes: true,
           season: true,
           occasion: true,
+          profileSource: true,
         },
       },
     },
