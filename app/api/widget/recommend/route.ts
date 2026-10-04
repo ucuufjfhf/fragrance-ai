@@ -121,6 +121,11 @@ export async function POST(request: Request): Promise<Response> {
           perfumeId: recommendation.perfumeId,
           name: recommendation.name,
           brand: recommendation.brand,
+          // Real grounding facts when the store/profile has them; absent stays
+          // null so the prompt keeps its `(نامشخص)` fallback.
+          description: recommendation.description ?? null,
+          family: recommendation.family ?? null,
+          notes: recommendation.notes ?? null,
         },
         traits,
       }));

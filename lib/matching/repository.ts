@@ -31,10 +31,15 @@ export async function getEligiblePerfumesForStore(
       imageUrl: true,
       inStock: true,
       active: true,
+      // Grounding fact for the AI explanation layer. Selected ONLY so the
+      // explanation prompt can describe the real perfume; it is never read by
+      // the scorer, so eligibility and ranking are unaffected.
+      description: true,
       // All nine stored axes are still SELECTED: eligibility requires a
       // complete, in-range profile exactly as before. Only the five
       // MATCHING_DIMENSIONS take part in the distance; the other four are
-      // validated and then ignored by the scorer.
+      // validated and then ignored by the scorer. `family`/`notes` ride along
+      // in the same relation for the explanation layer and are never scored.
       profile: {
         select: {
           social: true,
@@ -46,6 +51,8 @@ export async function getEligiblePerfumesForStore(
           experimental: true,
           elegant: true,
           bold: true,
+          family: true,
+          notes: true,
         },
       },
     },
@@ -62,5 +69,9 @@ export async function getEligiblePerfumesForStore(
     inStock: perfume.inStock,
     active: perfume.active,
     profile: perfume.profile,
+    // Copied through for the explanation layer; never scored.
+    description: perfume.description,
+    family: perfume.profile?.family ?? null,
+    notes: perfume.profile?.notes ?? null,
   }));
 }

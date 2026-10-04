@@ -66,6 +66,21 @@ export interface MatchCandidateInput {
    * scored with substituted values.
    */
   profile?: Partial<Record<PersonalityDimension, number>> | null;
+  /**
+   * OPTIONAL grounding facts for the AI explanation layer — display copy only.
+   *
+   * These are carried through the engine untouched and are NEVER read by
+   * `similarityScore`, so adding them cannot change eligibility, distance,
+   * score or ranking. They exist so the explanation prompt can describe the
+   * real perfume instead of guessing. Absent stays absent: the prompt keeps
+   * its existing `(نامشخص)` fallback.
+   */
+  /** Free-text merchant description (`Perfume.description`). */
+  description?: string | null;
+  /** Fragrance family, e.g. "woody amber" (`FragranceProfile.family`). */
+  family?: string | null;
+  /** Scent notes (`FragranceProfile.notes`). */
+  notes?: string[] | null;
 }
 
 /** One ranked recommendation produced by the engine. */
@@ -85,6 +100,14 @@ export interface MatchedPerfume {
   score: number;
   /** Presentation score: `round(score × 10) / 10` — for display only. */
   presentationScore: number;
+  /**
+   * OPTIONAL grounding facts copied verbatim from the candidate. Pure
+   * pass-through for the AI explanation layer: never scored, never sorted on,
+   * never used for eligibility. See `MatchCandidateInput` for the rationale.
+   */
+  description?: string | null;
+  family?: string | null;
+  notes?: string[] | null;
 }
 
 export interface MatchResult {
