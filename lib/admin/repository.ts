@@ -8,6 +8,7 @@ import {
   type ExistingProfileFacts,
 } from "@/lib/admin/bulk/helpers";
 import { PROFILE_AXES } from "@/lib/fragrance/profile";
+import { STORE_CURRENCY } from "@/lib/pricing/currency";
 import type { ProfileProvenance } from "@/lib/fragrance/profile-enrichment";
 import type { Gender, Season, Occasion } from "@/types/fragrance";
 
@@ -449,6 +450,8 @@ export async function createPerfumeForStore(
         imageUrl: input.imageUrl,
         gender: input.gender,
         price: input.price,
+        // Explicit, never the DB default — see lib/pricing/currency.ts.
+        currency: STORE_CURRENCY,
         inStock: input.inStock,
         active: input.active,
         profile: {
@@ -513,6 +516,8 @@ export async function updatePerfumeForStore(
           imageUrl: input.imageUrl,
           gender: input.gender,
           price: input.price,
+          // A price-bearing update re-asserts the unit; it never converts.
+          currency: STORE_CURRENCY,
           inStock: input.inStock,
           active: input.active,
         },

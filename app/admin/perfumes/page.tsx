@@ -19,6 +19,7 @@ import {
   getPerfumesForStore,
 } from "@/lib/admin/repository";
 import { toPersianDigits } from "@/lib/persian";
+import { CURRENCY_LABEL_FA } from "@/lib/pricing/currency";
 import type { Metadata } from "next";
 
 /** Canonical path of this page, reused as the post-unlock redirect target. */
@@ -167,7 +168,7 @@ export default async function AdminPerfumesPage({ searchParams }: AdminPerfumesP
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
                   <span>{GENDER_LABELS[perfume.gender] ?? perfume.gender}</span>
                   {perfume.price !== null ? (
-                    <span>· {toPersianDigits(perfume.price.toLocaleString("en-US"))} تومان</span>
+                    <span>· {toPersianDigits(perfume.price.toLocaleString("en-US"))} {CURRENCY_LABEL_FA}</span>
                   ) : null}
                   {perfume.profile?.family ? <span>· {perfume.profile.family}</span> : null}
                 </div>

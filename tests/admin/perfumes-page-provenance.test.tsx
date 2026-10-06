@@ -149,4 +149,12 @@ describe("/admin/perfumes — provenance is visible in the list", () => {
     expect(html).not.toContain('name="profileSource"');
     expect(html).not.toContain('value="AI"');
   });
+
+  it("labels a stored price with the canonical Persian unit labelled «تومان»", async () => {
+    const html = await renderList([makePerfume("F", "MANUAL")]);
+
+    // The label comes from CURRENCY_LABEL_FA, so it stays consistent with the
+    // canonical currency instead of drifting into a second hardcoded literal.
+    expect(html).toContain("تومان");
+  });
 });

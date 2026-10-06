@@ -1,4 +1,5 @@
 import { getPrisma } from "@/lib/db";
+import { STORE_CURRENCY } from "@/lib/pricing/currency";
 
 /**
  * Development seed: one demo store and a handful of fictional perfumes with
@@ -192,6 +193,7 @@ async function main() {
         productUrl: p.productUrl,
         gender: p.gender,
         price: p.price,
+        currency: STORE_CURRENCY,
         inStock: p.inStock,
         profile: {
           create: p.profile,

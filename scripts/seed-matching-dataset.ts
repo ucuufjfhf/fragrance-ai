@@ -1,6 +1,7 @@
 import "dotenv/config";
 
 import { getPrisma } from "@/lib/db";
+import { STORE_CURRENCY } from "@/lib/pricing/currency";
 
 /**
  * Phase 9.5 — matching-engine validation dataset.
@@ -145,6 +146,7 @@ async function main() {
       productUrl: `https://matching-test.invalid/p/${row.variant}`,
       gender: row.gender,
       price: row.price,
+      currency: STORE_CURRENCY,
       inStock: row.inStock,
       active: row.active,
       profile: {

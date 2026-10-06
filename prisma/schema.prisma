@@ -144,9 +144,10 @@ model Perfume {
   /// Audience/category of the perfume, used by the Phase 3 gender filter.
   gender Gender @default(UNISEX)
 
-  /// Optional price in the store currency, used by the Phase 3 budget filter.
+  /// Optional price amount in Toman (see lib/pricing/currency.ts). Reserved for
+  /// a future budget filter — no budget filter reads it yet.
   price    Float?
-  currency String @default("IRR")
+  currency String @default("TOMAN")
 
   /// Inventory state: out-of-stock perfumes are never recommended.
   inStock Boolean @default(true)

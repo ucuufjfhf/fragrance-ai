@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { confirmCsvImport, previewCsvImport } from "@/lib/admin/csv/service";
+import { STORE_CURRENCY } from "@/lib/pricing/currency";
 
 /**
  * Phase 6B service tests (spec §24, duplicate + import sections) with a fully
@@ -153,6 +154,29 @@ describe("confirmCsvImport — atomicity and re-validation (§11/§16/§17)", ()
     expect(data.profile).toBeDefined();
     // One nested profile create — never a second profile row.
     expect(Object.keys(data.profile)).toEqual(["create"]);
+  });
+
+  it("stamps the canonical currency on every imported row (never the IRR default)", async () => {
+    // The CSV contract has no `currency` column: the unit is an application
+    // invariant that the service asserts explicitly, so no imported row can
+    // silently inherit a database column default.
+    const csv = makeCsv(ROW, ROW.replace("night-perfume", "day-perfume"));
+    const result = await confirmCsvImport(csv, "store-1");
+
+    expect(result).toEqual({ ok: true, importedCount: 2 });
+    expect(mocks.perfumeCreate).toHaveBeenCalledTimes(2);
+
+    for (const call of mocks.perfumeCreate.mock.calls) {
+      expect(call[0].data.currency).toBe(STORE_CURRENCY);
+      expect(call[0].data.currency).not.toBe("IRR");
+    }
+  });
+
+  it("does not convert the imported price (no ×10 Toman/Rial transformation)", async () => {
+    await confirmCsvImport(makeCsv(ROW), "store-1");
+
+    // The CSV value is 1500000 and must be stored verbatim.
+    expect(mocks.perfumeCreate.mock.calls[0][0].data.price).toBe(1500000);
   });
 
   it("refuses the import when the store is missing or inactive", async () => {

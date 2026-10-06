@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createPerfumeForStore, updatePerfumeForStore } from "@/lib/admin/repository";
+import { STORE_CURRENCY } from "@/lib/pricing/currency";
 import type { AIProvider, AiPerfumeProfileInput, AiPerfumeProfileResult } from "@/lib/ai/provider";
 import type { AdminPerfumeInput } from "@/lib/admin/validation";
 
@@ -300,5 +301,51 @@ describe("updatePerfumeForStore — provenance preservation (no silent relabel)"
 
     const arg = mocks.fragranceProfileUpsert.mock.calls[0][0];
     expect(arg.create.profileSource).toBe("MANUAL");
+  });
+});
+
+/**
+ * The currency unit is an invariant of every price-bearing write.
+ *
+ * The regression this guards: a write that omits `currency` silently inherits
+ * the database column default. Testing the ACTUAL write payloads (not a grep)
+ * is what makes a future refactor that drops the field fail here.
+ */
+describe("canonical currency on price-bearing writes", () => {
+  const PRICE = 38700000;
+
+  it("create asserts the canonical unit explicitly and never converts the amount", async () => {
+    providerMocks.createAIProvider.mockReturnValue(makeAvailableProvider());
+
+    await createPerfumeForStore("store-1", inputWith({ price: PRICE }));
+
+    const data = mocks.perfumeCreate.mock.calls[0][0].data;
+
+    expect(data.currency).toBe(STORE_CURRENCY);
+    expect(data.currency).not.toBe("IRR");
+    // Stored verbatim — no ×10 Toman/Rial transformation.
+    expect(data.price).toBe(PRICE);
+  });
+
+  it("a price-bearing update re-asserts the canonical unit", async () => {
+    mocks.perfumeFindFirst.mockResolvedValue({ id: "p-1", profile: { profileSource: "MANUAL" } });
+    providerMocks.createAIProvider.mockReturnValue(makeAvailableProvider());
+
+    await updatePerfumeForStore("p-1", "store-1", inputWith({ price: PRICE }));
+
+    const data = mocks.perfumeUpdate.mock.calls[0][0].data;
+
+    expect(data.currency).toBe(STORE_CURRENCY);
+    expect(data.currency).not.toBe("IRR");
+    expect(data.price).toBe(PRICE);
+  });
+
+  it("never leaves currency undefined on a create (no reliance on the DB default)", async () => {
+    providerMocks.createAIProvider.mockReturnValue(makeAvailableProvider());
+
+    await createPerfumeForStore("store-1", inputWith());
+
+    expect(mocks.perfumeCreate.mock.calls[0][0].data.currency).toBeDefined();
+    expect(mocks.perfumeCreate.mock.calls[0][0].data.currency).toBe(STORE_CURRENCY);
   });
 });

@@ -3,6 +3,7 @@ import { parseCsv } from "@/lib/admin/csv/parser";
 import { csvRecordToPayload, validateCsvRow, type CsvRowError } from "@/lib/admin/csv/validate";
 import { validatePerfumePayload, type AdminPerfumeInput } from "@/lib/admin/validation";
 import { getPrisma } from "@/lib/db";
+import { STORE_CURRENCY } from "@/lib/pricing/currency";
 
 /**
  * Server-only CSV import service (Phase 6B).
@@ -252,6 +253,9 @@ export async function confirmCsvImport(raw: string, storeId: string): Promise<Cs
             imageUrl: input.imageUrl,
             gender: input.gender,
             price: input.price,
+            // Explicit, never the DB default: the CSV has no currency column,
+            // and currency is an application-level invariant (lib/pricing/currency.ts).
+            currency: STORE_CURRENCY,
             inStock: input.inStock,
             active: input.active,
             // Exactly one profile per perfume (§13) — created inline so the

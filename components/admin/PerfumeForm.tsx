@@ -6,6 +6,7 @@ import ProfileEditor, {
   type ProfileEditorValues,
 } from "@/components/admin/ProfileEditor";
 import type { AdminActionState } from "@/app/admin/perfumes/actions";
+import { CURRENCY_LABEL_FA } from "@/lib/pricing/currency";
 
 /**
  * The admin perfume form (create and edit share it).
@@ -164,7 +165,7 @@ export default function PerfumeForm({
 
           <div className="flex flex-col gap-1">
             <label htmlFor="price" className="text-sm">
-              قیمت (تومان، اختیاری)
+              قیمت ({CURRENCY_LABEL_FA}، اختیاری)
             </label>
             <input
               id="price"
