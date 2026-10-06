@@ -3,6 +3,13 @@ import {
   toPersonalityVector,
 } from "@/lib/fragrance/profile";
 import { similarityScore } from "@/lib/matching/score";
+import { isGenderEligibleFor, type AudienceGender } from "@/lib/audience";
+import {
+  isOccasionEligible,
+  isSeasonEligible,
+  type SeasonFilter,
+} from "@/lib/context";
+import type { Occasion } from "@/types/fragrance";
 import type { PersonalityVector } from "@/types/personality";
 import type {
   MatchCandidateInput,
@@ -70,6 +77,27 @@ export interface MatchPerfumesInput {
   personalityVector: unknown;
   perfumes: readonly MatchCandidateInput[];
   topN?: unknown;
+  /**
+   * The shopper's audience selection (MEN/WOMEN), when one was made.
+   *
+   * A MERCHANDISING filter, not a personality dimension: it only gates
+   * candidate eligibility (MEN → MEN + UNISEX, WOMEN → WOMEN + UNISEX) and is
+   * checked BEFORE any similarity scoring. Omitted/unknown keeps the legacy
+   * behaviour (no gender filter at all).
+   */
+  targetGender?: AudienceGender | null;
+  /**
+   * The shopper's optional season choice (spring/summer/autumn/winter), when
+   * one was made on the context step. Applied as a hard eligibility filter
+   * before scoring; `null`/absent = no season filter, exactly the legacy
+   * behaviour. Never part of the personality vector.
+   */
+  targetSeason?: SeasonFilter | null;
+  /**
+   * The shopper's optional occasion choice, same contract as `targetSeason`.
+   * The schema has no "all occasions" value, so `null` means no filter.
+   */
+  targetOccasion?: Occasion | null;
 }
 
 /**
@@ -79,6 +107,15 @@ export interface MatchPerfumesInput {
  *  - candidates from another store are excluded (when `storeId` is given);
  *  - inactive perfumes are excluded;
  *  - out-of-stock perfumes are excluded ("out-of-stock is never recommended");
+ *  - perfumes outside the shopper's selected audience are excluded BEFORE any
+ *    scoring (MEN → MEN + UNISEX, WOMEN → WOMEN + UNISEX; no selection → no
+ *    gender filter, so legacy URLs are unchanged);
+ *  - when a season was selected, perfumes not tagged with that season (or
+ *    `ALL`) are excluded BEFORE scoring; no season selected → no season
+ *    filter;
+ *  - when an occasion was selected, perfumes not tagged with exactly that
+ *    occasion are excluded BEFORE scoring; no occasion selected → no filter
+ *    (the schema has no "all occasions" value);
  *  - perfumes with a missing or out-of-range profile are excluded — no
  *    arbitrary values are substituted for missing data.
  *
@@ -112,6 +149,32 @@ export function matchPerfumes(input: MatchPerfumesInput): MatchResult {
     // recommended (the flag is loaded alongside `active` for exactly this
     // check — scoring itself is untouched).
     if (candidate.inStock !== true) {
+      excluded += 1;
+      continue;
+    }
+
+    // Audience eligibility (documented merchandising rule): when the shopper
+    // selected an audience, only that audience's genders survive. This runs
+    // BEFORE the profile check and BEFORE any scoring, so an excluded perfume
+    // can never influence the ranking. `isGenderEligibleFor` returns true when
+    // no audience was selected, which is what keeps legacy URLs byte-identical.
+    if (!isGenderEligibleFor(candidate.gender, input.targetGender)) {
+      excluded += 1;
+      continue;
+    }
+
+    // Season/occasion eligibility (optional purchase context): applied AFTER
+    // the audience gate and BEFORE the profile check and any scoring, so an
+    // excluded perfume can never influence the ranking or the scores of the
+    // survivors. Both predicates return true when no selection was made,
+    // which keeps legacy URLs byte-identical. Untagged candidates are never
+    // guessed to match — they are excluded while a filter is active.
+    if (!isSeasonEligible(candidate.season, input.targetSeason)) {
+      excluded += 1;
+      continue;
+    }
+
+    if (!isOccasionEligible(candidate.occasion, input.targetOccasion)) {
       excluded += 1;
       continue;
     }

@@ -1,6 +1,9 @@
 import { matchPerfumes } from "@/lib/matching/engine";
 import { getEligiblePerfumesForStore } from "@/lib/matching/repository";
 import { getReferenceCatalogCandidates } from "@/lib/matching/reference-catalog";
+import type { AudienceGender } from "@/lib/audience";
+import type { SeasonFilter } from "@/lib/context";
+import type { Occasion } from "@/types/fragrance";
 import type { MatchResult } from "@/types/recommendation";
 
 /**
@@ -34,6 +37,19 @@ export interface GetRecommendationsInput {
   topN?: unknown;
   /** Candidate source; defaults to `DEFAULT_RECOMMENDATION_SOURCE`. */
   source?: RecommendationSource;
+  /**
+   * The shopper's audience selection, threaded straight through to the engine's
+   * eligibility pass. Never part of the personality vector; omitted → legacy
+   * (no gender filter).
+   */
+  targetGender?: AudienceGender | null;
+  /**
+   * Optional purchase context from the context step, threaded straight
+   * through to the engine's eligibility pass. Never part of the personality
+   * vector; omitted/null → no filter (legacy behaviour).
+   */
+  targetSeason?: SeasonFilter | null;
+  targetOccasion?: Occasion | null;
 }
 
 function resolveSource(source: unknown): RecommendationSource {
@@ -67,6 +83,9 @@ export async function getRecommendations(
       personalityVector: input.personalityVector,
       perfumes: getReferenceCatalogCandidates(),
       topN: input.topN,
+      targetGender: input.targetGender ?? null,
+      targetSeason: input.targetSeason ?? null,
+      targetOccasion: input.targetOccasion ?? null,
     });
   }
 
@@ -77,5 +96,8 @@ export async function getRecommendations(
     personalityVector: input.personalityVector,
     perfumes,
     topN: input.topN,
+    targetGender: input.targetGender ?? null,
+    targetSeason: input.targetSeason ?? null,
+    targetOccasion: input.targetOccasion ?? null,
   });
 }

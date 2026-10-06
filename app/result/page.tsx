@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import ResultsView from "@/components/results/ResultsView";
-import { parseResultsParams } from "@/lib/results/params";
+import { parseResultsParams, serializeResultsParams } from "@/lib/results/params";
 import { getResultsViewData } from "@/lib/results/service";
 
 /**
@@ -39,12 +39,29 @@ export default async function ResultPage({ searchParams }: ResultPageProps) {
 
   const data = await getResultsViewData(params.value, params.value.source);
 
+  // When a purchase context (season/occasion) was active and the filtered
+  // inventory came back empty, the view offers a relax action: the identical
+  // results URL WITHOUT the context tokens (vector, archetype, store, source
+  // and audience are all preserved). No context → no action (legacy empty
+  // state renders exactly as before).
+  const contextActive = Boolean(params.value.season || params.value.occasion);
+  const contextRelaxHref = contextActive
+    ? `/result?${serializeResultsParams(
+        params.value.vector,
+        params.value.archetype.id,
+        params.value.storeId,
+        params.value.source,
+        params.value.audience,
+      )}`
+    : null;
+
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
       <ResultsView
         vector={params.value.vector}
         archetype={params.value.archetype}
         data={data}
+        contextRelaxHref={contextRelaxHref}
       />
     </main>
   );

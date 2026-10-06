@@ -131,3 +131,55 @@ describe("results view rendering", () => {
     expect(html).not.toContain("<img");
   });
 });
+
+describe("context-filtered empty state", () => {
+  it("shows the graceful no-match message and a relax action when the context filtered everything out", () => {
+    const html = render(
+      <ResultsView
+        vector={vector}
+        archetype={archetype}
+        data={viewData({ isEmpty: true, recommendations: [], aiAvailable: false })}
+        contextRelaxHref="/result?v_fresh=50&archetype=mysterious-explorer"
+      />,
+    );
+
+    // The filters are never bypassed silently: the message explains that no
+    // perfume matches ALL selected preferences…
+    expect(html).toContain("ترجیحات انتخابی");
+    // …and offers a clear action that relaxes exactly the context tokens
+    // (React escapes `&` as `&amp;` inside the rendered attribute).
+    expect(html).toContain("حذف فیلتر فصل و موقعیت");
+    expect(html).toContain(
+      'href="/result?v_fresh=50&amp;archetype=mysterious-explorer"',
+    );
+    // The restart action stays available alongside it.
+    expect(html).toContain("شروع دوباره آزمون");
+  });
+
+  it("keeps the legacy empty state when no context was active", () => {
+    const html = render(
+      <ResultsView
+        vector={vector}
+        archetype={archetype}
+        data={viewData({ isEmpty: true, recommendations: [], aiAvailable: false })}
+      />,
+    );
+
+    expect(html).toContain("فعلاً عطری مطابق با پروفایل تو پیدا نکردیم");
+    expect(html).not.toContain("حذف فیلتر فصل و موقعیت");
+  });
+
+  it("does not show the context message when recommendations exist", () => {
+    const html = render(
+      <ResultsView
+        vector={vector}
+        archetype={archetype}
+        data={viewData()}
+        contextRelaxHref="/result?season=summer"
+      />,
+    );
+
+    expect(html).not.toContain("حذف فیلتر فصل و موقعیت");
+    expect(html).toContain("عطرهایی که بهت میاد");
+  });
+});

@@ -148,3 +148,48 @@ h1, h2, h3, h4, h5, h6 {
     animation: none;
   }
 }
+
+/* Ambient floating particles — shared by the Fragrance Profile and
+ * Recommendations screens (see components/AmbientParticles.tsx). Purely
+ * decorative: CSS-only drift, no canvas and no JS loop. `--accent` (inherited
+ * from the screen) tints each particle; `--particle-opacity` varies intensity.
+ * The layer itself is `pointer-events: none` and sits behind the content. */
+.ambient-particle {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at center,
+    color-mix(in srgb, var(--accent) 60%, white) 0%,
+    color-mix(in srgb, var(--accent) 35%, transparent) 45%,
+    transparent 72%
+  );
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 30%, transparent);
+  filter: blur(1.2px);
+  opacity: var(--particle-opacity, 0.4);
+  animation-name: ambient-particle-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform, opacity;
+}
+
+@keyframes ambient-particle-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: calc(var(--particle-opacity, 0.4) * 0.55);
+  }
+  50% {
+    transform: translate3d(12px, -28px, 0) scale(1.12);
+    opacity: var(--particle-opacity, 0.4);
+  }
+  100% {
+    transform: translate3d(-10px, -52px, 0) scale(0.92);
+    opacity: calc(var(--particle-opacity, 0.4) * 0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-particle {
+    animation: none;
+  }
+}

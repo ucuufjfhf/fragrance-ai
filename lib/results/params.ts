@@ -1,4 +1,19 @@
 import { getArchetypeById } from "@/lib/personality/archetypes";
+import {
+  audienceToUrlToken,
+  parseAudienceToken,
+  type AudienceGender,
+} from "@/lib/audience";
+import {
+  isOccasion,
+  isSeasonFilter,
+  occasionToUrlToken,
+  parseOccasionToken,
+  parseSeasonToken,
+  seasonToUrlToken,
+  type SeasonFilter,
+} from "@/lib/context";
+import type { Occasion } from "@/types/fragrance";
 import { PROFILE_AXES } from "@/lib/fragrance/profile";
 import type { Archetype, PersonalityVector } from "@/types/personality";
 
@@ -8,8 +23,9 @@ import type { Archetype, PersonalityVector } from "@/types/personality";
  * The quiz posts its answers to `POST /api/quiz/submit` (Phase 1), and the
  * computed profile is shared state — the same pure scorer runs on both sides.
  * Instead of persisting a session (a later phase), the results page receives
- * the profile through the URL: nine 0–100 integers, the archetype id and an
- * optional store id. This module is the only place that knows that shape.
+ * the profile through the URL: nine 0–100 integers, the archetype id, an
+ * optional store id and an optional compact audience token
+ * (`?target=men|women`). This module is the only place that knows that shape.
  *
  * Pure by design (no React, no DB, no AI): it is unit-testable without a DOM
  * and safe to import from both client and server components. Validation is
@@ -52,12 +68,41 @@ export interface ResultsParams {
   storeId: string;
   /** Where the ranked candidates come from; defaults to the demo catalog. */
   source: ResultsRecommendationSource;
+  /**
+   * The audience the shopper selected on its own step before Q1
+   * (`?target=men|women`).
+   *
+   * `null` = no selection → the engine applies no gender filter at all, exactly
+   * like before the audience feature. It is NOT part of the personality vector
+   * and never affects scoring.
+   */
+  audience: AudienceGender | null;
+  /**
+   * The optional season chosen on the context step
+   * (`?season=spring|summer|autumn|winter`).
+   *
+   * `null` = no selection → no season filter, exactly like before the
+   * feature. NEVER carries `ALL`: «فرقی نمی‌کنه» is represented by omission,
+   * not by a fake restrictive value. Not part of the personality vector and
+   * never affects scoring.
+   */
+  season: SeasonFilter | null;
+  /**
+   * The optional occasion chosen on the context step
+   * (`?occasion=daily|date|party|office|formal`). The schema has no "all
+   * occasions" value, so `null` = no occasion filter («فرقی نمی‌کنه» =
+   * omission). Never affects scoring.
+   */
+  occasion: Occasion | null;
 }
 
 /** Query-string keys, kept in one place so both sides can never drift. */
 const VECTOR_KEY_PREFIX = "v_";
 const ARCHETYPE_KEY = "archetype";
 const STORE_KEY = "store";
+const TARGET_KEY = "target";
+const SEASON_KEY = "season";
+const OCCASION_KEY = "occasion";
 
 function firstValue(
   source: Record<string, string | string[] | undefined>,
@@ -83,6 +128,9 @@ export function serializeResultsParams(
   archetypeId: string,
   storeId?: string,
   source?: ResultsRecommendationSource,
+  audience?: AudienceGender | null,
+  season?: SeasonFilter | null,
+  occasion?: Occasion | null,
 ): string {
   const search = new URLSearchParams();
 
@@ -101,6 +149,25 @@ export function serializeResultsParams(
     search.set(SOURCE_KEY, source);
   }
 
+  // The audience is an optional add-on: without one the query string stays
+  // byte-identical to the pre-audience contract, so existing links keep their
+  // legacy (unfiltered) behaviour.
+  if (audience === "MEN" || audience === "WOMEN") {
+    search.set(TARGET_KEY, audienceToUrlToken(audience));
+  }
+
+  // The purchase context is an optional add-on, exactly like the audience:
+  // without one the query string stays byte-identical to the pre-context
+  // contract, so existing links keep their legacy (unfiltered) behaviour.
+  // «فرقی نمی‌کنه»/absent both serialise to OMISSION — never a fake value.
+  if (isSeasonFilter(season)) {
+    search.set(SEASON_KEY, seasonToUrlToken(season));
+  }
+
+  if (isOccasion(occasion)) {
+    search.set(OCCASION_KEY, occasionToUrlToken(occasion));
+  }
+
   return search.toString();
 }
 
@@ -108,8 +175,10 @@ export function serializeResultsParams(
  * Parses and validates the results query params.
  *
  * Rejected (with a developer-facing reason): missing/out-of-range/non-integer
- * vector values, an unknown or missing archetype id, an empty store id. The
- * caller shows its own Persian error state; nothing is ever substituted.
+ * vector values, an unknown or missing archetype id, an empty store id. A
+ * malformed or unknown `target`, `season` or `occasion` is NEVER a rejection —
+ * each degrades to "no filter" so legacy links keep working. The caller shows
+ * its own Persian error state; nothing is ever substituted.
  */
 export function parseResultsParams(
   input: Record<string, string | string[] | undefined> | undefined,
@@ -157,6 +226,18 @@ export function parseResultsParams(
     parseSource(firstValue(input, SOURCE_KEY)) ??
     (rawStore ? "MERCHANT_INVENTORY" : DEFAULT_RESULTS_SOURCE);
 
+  // Deliberately lenient: an absent, empty, differently-cased or malformed
+  // `target` resolves to `null` (no audience) instead of failing the page, so a
+  // legacy or hand-edited link keeps rendering unfiltered recommendations.
+  const audience = parseAudienceToken(firstValue(input, TARGET_KEY));
+
+  // Deliberately lenient, same as `target`: an absent, empty, differently
+  // cased or malformed `season`/`occasion` resolves to `null` (no filter)
+  // instead of failing the page, so legacy and hand-edited links keep
+  // rendering unfiltered recommendations.
+  const season = parseSeasonToken(firstValue(input, SEASON_KEY));
+  const occasion = parseOccasionToken(firstValue(input, OCCASION_KEY));
+
   return {
     ok: true,
     value: {
@@ -164,6 +245,9 @@ export function parseResultsParams(
       archetype,
       storeId,
       source,
+      audience,
+      season,
+      occasion,
     },
   };
 }

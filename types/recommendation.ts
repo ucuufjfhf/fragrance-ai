@@ -3,7 +3,12 @@ import type {
   PersonalityDimension,
   PersonalityVector,
 } from "@/types/personality";
-import type { FragranceDimension } from "@/types/fragrance";
+import type {
+  FragranceDimension,
+  Gender,
+  Occasion,
+  Season,
+} from "@/types/fragrance";
 
 /** A single scored recommendation produced by the deterministic engine. */
 export interface ScoredRecommendation {
@@ -52,6 +57,32 @@ export interface MatchCandidateInput {
   slug?: string | null;
   productUrl?: string | null;
   imageUrl?: string | null;
+  /**
+   * Perfume audience/category (`Perfume.gender`).
+   *
+   * Read ONLY by the audience eligibility check at the top of the candidate
+   * pass, and only when the shopper selected an audience (`targetGender`).
+   * It is never scored, never ranked on and never part of the personality
+   * vector. Optional so hand-built candidates (tests, older callers) keep
+   * working: with no audience selected it is ignored entirely.
+   */
+  gender?: Gender | null;
+  /**
+   * The perfume's stored season tag (`FragranceProfile.season`).
+   *
+   * Read ONLY by the engine's optional season eligibility check, and only
+   * when the shopper selected a season (`targetSeason`). Never scored, never
+   * ranked on, never part of the personality vector. Optional so hand-built
+   * candidates (tests, older callers) keep working: with no season selected
+   * it is ignored entirely. `null`/unknown = untagged, which is EXCLUDED when
+   * a season filter is active — unknown is never guessed to be a match.
+   */
+  season?: Season | null;
+  /**
+   * The perfume's stored occasion tag (`FragranceProfile.occasion`). Same
+   * read-only eligibility contract as `season`, gated on `targetOccasion`.
+   */
+  occasion?: Occasion | null;
   /** Inactive perfumes are never eligible. */
   active: boolean;
   /** Out-of-stock perfumes are never eligible (documented inventory contract). */
