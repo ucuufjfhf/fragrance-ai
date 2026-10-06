@@ -1,6 +1,12 @@
 import { isAudienceGender, type AudienceGender } from "@/lib/audience";
+import {
+  isOccasion,
+  isSeasonFilter,
+  type SeasonFilter,
+} from "@/lib/context";
 import { QUIZ_QUESTIONS, getOptionById } from "@/lib/personality/questions";
 import type { QuizAnswer, QuizQuestion } from "@/types/personality";
+import type { Occasion } from "@/types/fragrance";
 
 /**
  * Framework-free state machine for the quiz UI.
@@ -9,14 +15,25 @@ import type { QuizAnswer, QuizQuestion } from "@/types/personality";
  * one-question-per-screen flow, the previous/next buttons and the restart
  * behaviour deterministic and unit-testable without a DOM or a browser.
  *
- * Flow: intro → audience → Q1…Q10 → result.
+ * Flow: intro → audience → Q1…Q10 → result → context.
  *
  * The audience step is a single screen of its own between the intro and the
  * first question. It is NOT one of the 10 personality questions: it never enters
  * `selections`, never reaches the scorer, and the progress indicator still reads
  * «سؤال ۱ از ۱۰» the moment Q1 renders (see `getProgress`).
+ *
+ * The optional context step (season + occasion) comes AFTER the personality
+ * result and before the recommendations link. Like the audience, it is not a
+ * question: it never enters `selections`, never reaches the scorer, and cannot
+ * change the vector or the archetype. Its selections travel to the results URL
+ * as optional `season`/`occasion` tokens.
  */
-export type QuizPhase = "intro" | "audience" | "question" | "result";
+export type QuizPhase =
+  | "intro"
+  | "audience"
+  | "question"
+  | "result"
+  | "context";
 
 export interface QuizFlowState {
   phase: QuizPhase;
@@ -29,6 +46,13 @@ export interface QuizFlowState {
    * Merchandising context only — never part of the personality vector.
    */
   audience: AudienceGender | null;
+  /**
+   * Optional purchase context selected on the context step after the result
+   * (`null` = «فرقی نمی‌کنه» = no filter). Merchandising context only — never
+   * part of the personality vector and never scored.
+   */
+  season: SeasonFilter | null;
+  occasion: Occasion | null;
 }
 
 export interface QuizProgress {
@@ -44,7 +68,14 @@ export interface QuizProgress {
  * refresh (or a remount) can never inherit selections from a previous run.
  */
 export function createInitialQuizFlowState(): QuizFlowState {
-  return { phase: "intro", questionIndex: 0, selections: {}, audience: null };
+  return {
+    phase: "intro",
+    questionIndex: 0,
+    selections: {},
+    audience: null,
+    season: null,
+    occasion: null,
+  };
 }
 
 /**
@@ -54,7 +85,14 @@ export function createInitialQuizFlowState(): QuizFlowState {
  * moves the flow to Q1 through `selectAudience`.
  */
 export function startQuiz(): QuizFlowState {
-  return { phase: "audience", questionIndex: 0, selections: {}, audience: null };
+  return {
+    phase: "audience",
+    questionIndex: 0,
+    selections: {},
+    audience: null,
+    season: null,
+    occasion: null,
+  };
 }
 
 /**
@@ -65,7 +103,14 @@ export function startQuiz(): QuizFlowState {
  * behaviour is byte-identical to the pre-audience contract.
  */
 export function startQuizQuestions(): QuizFlowState {
-  return { phase: "question", questionIndex: 0, selections: {}, audience: null };
+  return {
+    phase: "question",
+    questionIndex: 0,
+    selections: {},
+    audience: null,
+    season: null,
+    occasion: null,
+  };
 }
 
 /**
@@ -89,6 +134,62 @@ export function selectAudience(
 /** Restart returns to the intro screen with all answers cleared. */
 export function restartQuiz(): QuizFlowState {
   return createInitialQuizFlowState();
+}
+
+/**
+ * Opens the optional context step from the personality result screen.
+ *
+ * A no-op from any other phase, so the context screen can only be reached
+ * after a real result exists. Selecting a context never touches `selections`,
+ * the vector or the archetype.
+ */
+export function openContext(state: QuizFlowState): QuizFlowState {
+  if (state.phase !== "result") {
+    return state;
+  }
+
+  return { ...state, phase: "context" };
+}
+
+/**
+ * Records the season choice on the context step.
+ *
+ * `null` = «فرقی نمی‌کنه» = no filter; unknown values are ignored (state
+ * returned unchanged), mirroring `selectAudience`/`selectAnswer`.
+ */
+export function selectSeason(
+  state: QuizFlowState,
+  season: SeasonFilter | null,
+): QuizFlowState {
+  if (season !== null && !isSeasonFilter(season)) {
+    return state;
+  }
+
+  return { ...state, season };
+}
+
+/**
+ * Records the occasion choice on the context step. Same contract as
+ * `selectSeason`: `null` = «فرقی نمی‌کنه» = no filter.
+ */
+export function selectOccasion(
+  state: QuizFlowState,
+  occasion: Occasion | null,
+): QuizFlowState {
+  if (occasion !== null && !isOccasion(occasion)) {
+    return state;
+  }
+
+  return { ...state, occasion };
+}
+
+/** Returns from the context step to the personality result screen. */
+export function returnToResult(state: QuizFlowState): QuizFlowState {
+  if (state.phase !== "context") {
+    return state;
+  }
+
+  return { ...state, phase: "result" };
 }
 
 /**

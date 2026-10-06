@@ -6,9 +6,13 @@ import {
   goNext,
   goPrevious,
   isQuizComplete,
+  openContext,
   restartQuiz,
+  returnToResult,
   selectAnswer,
   selectAudience,
+  selectOccasion,
+  selectSeason,
   showResult,
   startQuiz,
   startQuizQuestions,
@@ -239,5 +243,128 @@ describe("quiz flow state machine", () => {
       total: TOTAL,
       percent: 100,
     });
+  });
+});
+
+describe("optional context step (season + occasion)", () => {
+  /** The state right after the last question: the personality result screen. */
+  function resultState(): QuizFlowState {
+    return showResult(completeFlow());
+  }
+
+  it("starts every entry point with no context selected", () => {
+    for (const state of [
+      createInitialQuizFlowState(),
+      startQuiz(),
+      startQuizQuestions(),
+    ]) {
+      expect(state.season).toBeNull();
+      expect(state.occasion).toBeNull();
+    }
+  });
+
+  it("opens from the result screen only", () => {
+    const fromResult = openContext(resultState());
+    expect(fromResult.phase).toBe("context");
+
+    // No result yet → no context screen (state unchanged).
+    expect(openContext(createInitialQuizFlowState()).phase).toBe("intro");
+    expect(openContext(startQuiz()).phase).toBe("audience");
+    expect(openContext(startQuizQuestions()).phase).toBe("question");
+  });
+
+  it("records season and occasion selections without touching the answers", () => {
+    const before = resultState();
+    let state = openContext(before);
+
+    state = selectSeason(state, "SUMMER");
+    state = selectOccasion(state, "DATE");
+
+    expect(state.season).toBe("SUMMER");
+    expect(state.occasion).toBe("DATE");
+    expect(state.selections).toEqual(before.selections);
+    expect(state.phase).toBe("context");
+  });
+
+  it("accepts null as «فرقی نمی‌کنه» (clears back to no filter)", () => {
+    let state = openContext(resultState());
+    state = selectSeason(state, "WINTER");
+    state = selectOccasion(state, "FORMAL");
+
+    state = selectSeason(state, null);
+    state = selectOccasion(state, null);
+
+    expect(state.season).toBeNull();
+    expect(state.occasion).toBeNull();
+  });
+
+  it("ignores unknown season and occasion values", () => {
+    const before = openContext(resultState());
+
+    const badSeason = selectSeason(before, "FALL" as never);
+    const badOccasion = selectOccasion(before, "CASUAL" as never);
+
+    expect(badSeason).toBe(before);
+    expect(badOccasion).toBe(before);
+  });
+
+  it("returns from the context step to the result screen, keeping selections", () => {
+    let state = openContext(resultState());
+    state = selectSeason(state, "AUTUMN");
+
+    const back = returnToResult(state);
+    expect(back.phase).toBe("result");
+    expect(back.season).toBe("AUTUMN");
+
+    // A no-op anywhere else (state returned untouched, same reference).
+    expect(returnToResult(back)).toBe(back);
+
+    const audienceState = startQuiz();
+    expect(returnToResult(audienceState)).toBe(audienceState);
+  });
+
+  it("restart clears the context selections along with everything else", () => {
+    let state = openContext(resultState());
+    state = selectSeason(state, "SPRING");
+    state = selectOccasion(state, "PARTY");
+
+    // The selections really are set before the restart clears them.
+    expect(state.season).toBe("SPRING");
+    expect(state.occasion).toBe("PARTY");
+
+    const restarted = restartQuiz();
+    expect(restarted.season).toBeNull();
+    expect(restarted.occasion).toBeNull();
+    expect(restarted.phase).toBe("intro");
+  });
+
+  it("context selection never changes the personality vector or archetype", () => {
+    const before = resultState();
+    const baseline = scoreQuiz(toAnswers(before));
+
+    let state = openContext(before);
+    state = selectSeason(state, "SUMMER");
+    state = selectOccasion(state, "OFFICE");
+    state = selectSeason(state, "WINTER");
+    state = selectOccasion(state, null);
+
+    // The answer sheet — the scorer's ONLY input — is byte-identical.
+    expect(toAnswers(state)).toEqual(toAnswers(before));
+    expect(state.selections).toEqual(before.selections);
+
+    const after = scoreQuiz(toAnswers(state));
+    expect(after.vector).toEqual(baseline.vector);
+    expect(after.archetype.id).toBe(baseline.archetype.id);
+    expect(after).toEqual(baseline);
+  });
+
+  it("the context step is never counted as a question", () => {
+    const state = openContext(resultState());
+
+    // Progress derives from the 10-question bank only — identical to the
+    // result screen, never an 11th step and never beyond 100%.
+    expect(getProgress(state)).toEqual(getProgress(resultState()));
+    expect(getProgress(state).total).toBe(TOTAL);
+    expect(getProgress(state).percent).toBeLessThanOrEqual(100);
   });
 });

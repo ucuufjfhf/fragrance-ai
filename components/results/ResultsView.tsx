@@ -15,6 +15,12 @@ interface ResultsViewProps {
   vector: PersonalityVector;
   archetype: Archetype;
   data: ResultsViewData;
+  /**
+   * When the empty result was produced by an active season/occasion context,
+   * this is the same results URL without those filters — rendered as the
+   * "relax the filters" action. `null`/absent → the legacy empty state.
+   */
+  contextRelaxHref?: string | null;
 }
 
 /**
@@ -28,6 +34,7 @@ export default function ResultsView({
   vector,
   archetype,
   data,
+  contextRelaxHref = null,
 }: ResultsViewProps) {
   const { recommendations, explanations, aiAvailable, isEmpty } = data;
 
@@ -74,15 +81,43 @@ export default function ResultsView({
 
         {isEmpty ? (
           <div className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 text-center">
-            <p className="text-sm leading-8 text-muted">
-              فعلاً عطری مطابق با پروفایل تو پیدا نکردیم.
-            </p>
-            <Link
-              href="/quiz"
-              className="mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
-            >
-              شروع دوباره آزمون
-            </Link>
+            {contextRelaxHref ? (
+              // Context-filtered empty state: the filters are NEVER bypassed
+              // silently — the shopper is told no perfume matches all of the
+              // selected preferences and is offered a clear action to relax
+              // the season/occasion context (the deterministic list itself is
+              // untouched).
+              <>
+                <p className="text-sm leading-8 text-muted">
+                  عطری پیدا نکردیم که همهٔ ترجیحات انتخابیِ تو (فصل و موقعیت)
+                  رو داشته باشه.
+                </p>
+                <Link
+                  href={contextRelaxHref}
+                  className="mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
+                >
+                  حذف فیلتر فصل و موقعیت
+                </Link>
+                <Link
+                  href="/quiz"
+                  className="mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50 hover:text-foreground sm:w-fit sm:px-8"
+                >
+                  شروع دوباره آزمون
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="text-sm leading-8 text-muted">
+                  فعلاً عطری مطابق با پروفایل تو پیدا نکردیم.
+                </p>
+                <Link
+                  href="/quiz"
+                  className="mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
+                >
+                  شروع دوباره آزمون
+                </Link>
+              </>
+            )}
           </div>
         ) : (
           <ol className="flex list-none flex-col gap-4">

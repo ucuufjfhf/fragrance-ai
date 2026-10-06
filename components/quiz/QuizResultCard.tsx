@@ -6,7 +6,9 @@ import { BottleMark } from "@/components/ui-icons";
 
 import { resetAnalyticsFlow } from "@/lib/analytics/flow-tracker";
 import type { AudienceGender } from "@/lib/audience";
+import type { SeasonFilter } from "@/lib/context";
 import { serializeResultsParams } from "@/lib/results/params";
+import type { Occasion } from "@/types/fragrance";
 import type { CSSProperties } from "react";
 import type { QuizResult } from "@/types/personality";
 
@@ -23,6 +25,19 @@ interface QuizResultCardProps {
    * candidates. Never part of the personality vector; absent → legacy URL.
    */
   audience?: AudienceGender | null;
+  /**
+   * Optional context selections (season/occasion) — included in the results
+   * href so the link stays truthful when the shopper returns from the context
+   * step. Absent → legacy URL, byte-identical to the pre-context contract.
+   */
+  season?: SeasonFilter | null;
+  occasion?: Occasion | null;
+  /**
+   * When provided, the CTA opens the optional context step instead of
+   * navigating directly — the context step builds the final results link.
+   * Absent → the legacy direct link (standalone/SSR usage).
+   */
+  onContinue?: () => void;
 }
 
 /**
@@ -37,6 +52,9 @@ export default function QuizResultCard({
   onRestart,
   storeId,
   audience,
+  season = null,
+  occasion = null,
+  onContinue,
 }: QuizResultCardProps) {
   const { archetype, vector } = result;
 
@@ -53,6 +71,8 @@ export default function QuizResultCard({
     storeId,
     undefined,
     audience,
+    season,
+    occasion,
   )}`;
 
   return (
@@ -82,10 +102,18 @@ export default function QuizResultCard({
         <p className="text-sm leading-8 text-muted">{archetype.fragranceHint}</p>
         <Link
           href={resultsHref}
-          onClick={() => {
-            // Navigating to /result starts the results attempt: clear the
-            // once-guards so RESULT_VIEWED can fire for this navigation and
-            // again for a future attempt (Phase 7, §12).
+          onClick={(event) => {
+            if (onContinue) {
+              // Open the optional context step (season + occasion) before the
+              // recommendations: navigation happens later, from that step.
+              event.preventDefault();
+              onContinue();
+              return;
+            }
+
+            // Legacy direct navigation: /result starts the results attempt —
+            // clear the once-guards so RESULT_VIEWED can fire for this
+            // navigation and again for a future attempt (Phase 7, §12).
             resetAnalyticsFlow();
           }}
           className="flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90"

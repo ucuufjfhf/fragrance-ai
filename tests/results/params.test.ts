@@ -303,3 +303,109 @@ describe("parseResultsParams", () => {
     }
   });
 });
+
+describe("season/occasion context contract", () => {
+  const parseQuery = (query: string) =>
+    parseResultsParams(Object.fromEntries(new URLSearchParams(query).entries()));
+
+  it("omits season and occasion entirely when none was selected (16 — legacy URLs unchanged)", () => {
+    const bare = serializeResultsParams(makeVector(), "romantic");
+    const withAudience = serializeResultsParams(
+      makeVector(),
+      "romantic",
+      undefined,
+      undefined,
+      "MEN",
+    );
+
+    expect(bare).not.toContain("season=");
+    expect(bare).not.toContain("occasion=");
+    expect(withAudience).not.toContain("season=");
+    expect(withAudience).not.toContain("occasion=");
+  });
+
+  it("serialises a selected context as compact lowercase tokens", () => {
+    const query = serializeResultsParams(
+      makeVector(),
+      "romantic",
+      undefined,
+      undefined,
+      null,
+      "SUMMER",
+      "DATE",
+    );
+
+    expect(query).toContain("season=summer");
+    expect(query).toContain("occasion=date");
+  });
+
+  it("round-trips the context together with the audience, store and source", () => {
+    const query = serializeResultsParams(
+      makeVector(73),
+      "mysterious-explorer",
+      "store-merchant-x",
+      "MERCHANT_INVENTORY",
+      "WOMEN",
+      "AUTUMN",
+      "FORMAL",
+    );
+
+    const parsed = parseQuery(query);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.value.season).toBe("AUTUMN");
+      expect(parsed.value.occasion).toBe("FORMAL");
+      expect(parsed.value.audience).toBe("WOMEN");
+      expect(parsed.value.storeId).toBe("store-merchant-x");
+      expect(parsed.value.source).toBe("MERCHANT_INVENTORY");
+      expect(parsed.value.vector.fresh).toBe(73);
+    }
+  });
+
+  it("16 — parses absent season/occasion as null (old result URLs keep working)", () => {
+    const query = serializeResultsParams(makeVector(), "romantic");
+    const parsed = parseQuery(query);
+
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.value.season).toBeNull();
+      expect(parsed.value.occasion).toBeNull();
+      expect(parsed.value.audience).toBeNull();
+    }
+  });
+
+  it("15 — malformed season/occasion values degrade to null instead of failing", () => {
+    const base = Object.fromEntries(
+      new URLSearchParams(serializeResultsParams(makeVector(), "romantic")).entries(),
+    );
+
+    for (const [season, occasion] of [
+      ["fall", "casual"],
+      ["", ""],
+      ["SUMMER!", "DATEE"],
+      ["all", "ALL"],
+      ["42", "_party_"],
+    ] as const) {
+      const parsed = parseResultsParams({ ...base, season, occasion });
+
+      expect(parsed.ok).toBe(true);
+      if (parsed.ok) {
+        expect(parsed.value.season).toBeNull();
+        expect(parsed.value.occasion).toBeNull();
+      }
+    }
+  });
+
+  it("keeps a valid context even when the other parameters are legacy", () => {
+    const base = Object.fromEntries(
+      new URLSearchParams(serializeResultsParams(makeVector(), "romantic")).entries(),
+    );
+
+    const parsed = parseResultsParams({ ...base, season: "winter" });
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.value.season).toBe("WINTER");
+      expect(parsed.value.occasion).toBeNull();
+    }
+  });
+});

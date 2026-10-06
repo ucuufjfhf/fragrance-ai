@@ -144,3 +144,38 @@ describe("audience threading (results params → matching service)", () => {
     );
   });
 });
+
+describe("context threading (results params → matching service)", () => {
+  it("passes the parsed season and occasion through as targetSeason/targetOccasion", async () => {
+    await getResultsViewData(
+      paramsWith({ store: "store-real-merchant", season: "summer", occasion: "date" }),
+    );
+
+    expect(mocks.getRecommendations).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetSeason: "SUMMER",
+        targetOccasion: "DATE",
+      }),
+    );
+  });
+
+  it("passes null/null when the URL carries no context (legacy, no filter)", async () => {
+    await getResultsViewData(paramsWith({ store: "store-real-merchant" }));
+
+    expect(mocks.getRecommendations).toHaveBeenCalledWith(
+      expect.objectContaining({ targetSeason: null, targetOccasion: null }),
+    );
+  });
+
+  it("returns the empty view (no AI, no bypass) when the filtered inventory is empty", async () => {
+    mocks.getRecommendations.mockResolvedValue({ recommendations: [], excluded: 7 });
+
+    const data = await getResultsViewData(
+      paramsWith({ store: "store-real-merchant", season: "winter", occasion: "formal" }),
+    );
+
+    expect(data.isEmpty).toBe(true);
+    expect(data.recommendations).toEqual([]);
+    expect(mocks.generateExplanations).not.toHaveBeenCalled();
+  });
+});

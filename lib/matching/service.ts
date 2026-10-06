@@ -2,6 +2,8 @@ import { matchPerfumes } from "@/lib/matching/engine";
 import { getEligiblePerfumesForStore } from "@/lib/matching/repository";
 import { getReferenceCatalogCandidates } from "@/lib/matching/reference-catalog";
 import type { AudienceGender } from "@/lib/audience";
+import type { SeasonFilter } from "@/lib/context";
+import type { Occasion } from "@/types/fragrance";
 import type { MatchResult } from "@/types/recommendation";
 
 /**
@@ -41,6 +43,13 @@ export interface GetRecommendationsInput {
    * (no gender filter).
    */
   targetGender?: AudienceGender | null;
+  /**
+   * Optional purchase context from the context step, threaded straight
+   * through to the engine's eligibility pass. Never part of the personality
+   * vector; omitted/null → no filter (legacy behaviour).
+   */
+  targetSeason?: SeasonFilter | null;
+  targetOccasion?: Occasion | null;
 }
 
 function resolveSource(source: unknown): RecommendationSource {
@@ -75,6 +84,8 @@ export async function getRecommendations(
       perfumes: getReferenceCatalogCandidates(),
       topN: input.topN,
       targetGender: input.targetGender ?? null,
+      targetSeason: input.targetSeason ?? null,
+      targetOccasion: input.targetOccasion ?? null,
     });
   }
 
@@ -86,5 +97,7 @@ export async function getRecommendations(
     perfumes,
     topN: input.topN,
     targetGender: input.targetGender ?? null,
+    targetSeason: input.targetSeason ?? null,
+    targetOccasion: input.targetOccasion ?? null,
   });
 }

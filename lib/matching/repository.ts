@@ -57,6 +57,10 @@ export async function getEligiblePerfumesForStore(
           bold: true,
           family: true,
           notes: true,
+          // Optional purchase-context tags — selected ONLY for the engine's
+          // season/occasion eligibility checks; never scored.
+          season: true,
+          occasion: true,
         },
       },
     },
@@ -73,6 +77,8 @@ export async function getEligiblePerfumesForStore(
     inStock: perfume.inStock,
     active: perfume.active,
     gender: perfume.gender,
+    season: perfume.profile?.season ?? null,
+    occasion: perfume.profile?.occasion ?? null,
     profile: perfume.profile,
     // Copied through for the explanation layer; never scored.
     description: perfume.description,

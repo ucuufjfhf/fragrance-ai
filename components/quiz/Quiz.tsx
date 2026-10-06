@@ -10,10 +10,13 @@ import {
 } from "@/lib/analytics/flow-tracker";
 
 import AudienceStep from "@/components/quiz/AudienceStep";
+import ContextStep from "@/components/quiz/ContextStep";
 import ProgressBar from "@/components/quiz/ProgressBar";
 import Question from "@/components/quiz/Question";
 import QuizResultCard from "@/components/quiz/QuizResultCard";
 import type { AudienceGender } from "@/lib/audience";
+import type { Occasion } from "@/types/fragrance";
+import type { SeasonFilter } from "@/lib/context";
 import { QUIZ_QUESTIONS } from "@/lib/personality/questions";
 import {
   createInitialQuizFlowState,
@@ -21,9 +24,13 @@ import {
   goNext,
   goPrevious,
   isQuizComplete,
+  openContext,
   restartQuiz,
+  returnToResult,
   selectAnswer,
   selectAudience,
+  selectOccasion,
+  selectSeason,
   showResult,
   startQuiz,
   toAnswers,
@@ -42,12 +49,18 @@ const OFFLINE_NOTICE =
   "ارتباط با سرور برقرار نشد؛ پروفایل با همون محاسبه قطعی و به‌صورت آفلاین ساخته شد.";
 
 /**
- * The quiz surface: intro → audience → one question per screen → result.
+ * The quiz surface: intro → audience → one question per screen → result →
+ * optional context.
  *
  * The audience screen is a separate step, not a personality question: it is not
  * part of the 10-question bank, is never counted in the progress label, and its
  * answer travels to the results URL as a compact target token (never into the
  * personality vector).
+ *
+ * The context screen (season + occasion) is the other non-question step: it
+ * comes after the personality result and before the recommendations link, and
+ * its selections travel as optional `season`/`occasion` URL tokens — likewise
+ * never into the personality vector.
  *
  * Every transition comes from the pure state machine in
  * `lib/personality/quiz-flow`, so this component holds no scoring logic.
@@ -73,6 +86,16 @@ export default function Quiz({ storeId }: { storeId?: string }) {
   // to Q1 — it never touches the answer selections, so scoring is untouched.
   const handleAudienceSelect = useCallback((audience: AudienceGender) => {
     setFlow((current) => selectAudience(current, audience));
+  }, []);
+
+  // Context selections live in the flow state only: they never enter the
+  // answer sheet, so the personality vector and archetype stay untouched.
+  const handleSeasonSelect = useCallback((season: SeasonFilter | null) => {
+    setFlow((current) => selectSeason(current, season));
+  }, []);
+
+  const handleOccasionSelect = useCallback((occasion: Occasion | null) => {
+    setFlow((current) => selectOccasion(current, occasion));
   }, []);
 
   const handleRestart = useCallback(() => {
@@ -123,6 +146,31 @@ export default function Quiz({ storeId }: { storeId?: string }) {
     }
   }, [flow, storeId]);
 
+  if (flow.phase === "context" && result) {
+    return (
+      <section className="quiz-rise flex flex-col gap-6 rounded-3xl border border-border-soft bg-surface p-5 sm:p-8">
+        <ContextStep
+          result={result}
+          storeId={storeId}
+          audience={flow.audience}
+          season={flow.season}
+          occasion={flow.occasion}
+          onSeasonChange={handleSeasonSelect}
+          onOccasionChange={handleOccasionSelect}
+          onBack={() => setFlow((current) => returnToResult(current))}
+        />
+
+        <button
+          type="button"
+          onClick={handleRestart}
+          className="mx-auto text-xs text-muted underline underline-offset-4 transition-colors hover:text-foreground"
+        >
+          شروع دوباره
+        </button>
+      </section>
+    );
+  }
+
   if (flow.phase === "result" && result) {
     return (
       <QuizResultCard
@@ -131,6 +179,9 @@ export default function Quiz({ storeId }: { storeId?: string }) {
         onRestart={handleRestart}
         storeId={storeId}
         audience={flow.audience}
+        season={flow.season}
+        occasion={flow.occasion}
+        onContinue={() => setFlow((current) => openContext(current))}
       />
     );
   }

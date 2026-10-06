@@ -93,7 +93,7 @@ export async function getResultsViewData(
   params: ResultsParams,
   sourceOverride?: RecommendationSource,
 ): Promise<ResultsViewData> {
-  const { vector, archetype, storeId, audience } = params;
+  const { vector, archetype, storeId, audience, season, occasion } = params;
 
   // Mode selection: an explicit `source` query param wins (demo links can pin
   // REFERENCE_CATALOG); otherwise a real store context means merchant
@@ -112,6 +112,11 @@ export async function getResultsViewData(
     // inside the engine and never reaches the personality vector. `null` = no
     // selection, i.e. the legacy unfiltered behaviour.
     targetGender: audience,
+    // Optional purchase context (season/occasion) — hard eligibility filters
+    // inside the engine, applied before scoring. `null` = no filter, exactly
+    // the legacy behaviour; they never touch the vector or the ranking rules.
+    targetSeason: season,
+    targetOccasion: occasion,
   });
 
   const recommendations = matchResult.recommendations;

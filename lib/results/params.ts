@@ -4,6 +4,16 @@ import {
   parseAudienceToken,
   type AudienceGender,
 } from "@/lib/audience";
+import {
+  isOccasion,
+  isSeasonFilter,
+  occasionToUrlToken,
+  parseOccasionToken,
+  parseSeasonToken,
+  seasonToUrlToken,
+  type SeasonFilter,
+} from "@/lib/context";
+import type { Occasion } from "@/types/fragrance";
 import { PROFILE_AXES } from "@/lib/fragrance/profile";
 import type { Archetype, PersonalityVector } from "@/types/personality";
 
@@ -67,6 +77,23 @@ export interface ResultsParams {
    * and never affects scoring.
    */
   audience: AudienceGender | null;
+  /**
+   * The optional season chosen on the context step
+   * (`?season=spring|summer|autumn|winter`).
+   *
+   * `null` = no selection → no season filter, exactly like before the
+   * feature. NEVER carries `ALL`: «فرقی نمی‌کنه» is represented by omission,
+   * not by a fake restrictive value. Not part of the personality vector and
+   * never affects scoring.
+   */
+  season: SeasonFilter | null;
+  /**
+   * The optional occasion chosen on the context step
+   * (`?occasion=daily|date|party|office|formal`). The schema has no "all
+   * occasions" value, so `null` = no occasion filter («فرقی نمی‌کنه» =
+   * omission). Never affects scoring.
+   */
+  occasion: Occasion | null;
 }
 
 /** Query-string keys, kept in one place so both sides can never drift. */
@@ -74,6 +101,8 @@ const VECTOR_KEY_PREFIX = "v_";
 const ARCHETYPE_KEY = "archetype";
 const STORE_KEY = "store";
 const TARGET_KEY = "target";
+const SEASON_KEY = "season";
+const OCCASION_KEY = "occasion";
 
 function firstValue(
   source: Record<string, string | string[] | undefined>,
@@ -100,6 +129,8 @@ export function serializeResultsParams(
   storeId?: string,
   source?: ResultsRecommendationSource,
   audience?: AudienceGender | null,
+  season?: SeasonFilter | null,
+  occasion?: Occasion | null,
 ): string {
   const search = new URLSearchParams();
 
@@ -125,6 +156,18 @@ export function serializeResultsParams(
     search.set(TARGET_KEY, audienceToUrlToken(audience));
   }
 
+  // The purchase context is an optional add-on, exactly like the audience:
+  // without one the query string stays byte-identical to the pre-context
+  // contract, so existing links keep their legacy (unfiltered) behaviour.
+  // «فرقی نمی‌کنه»/absent both serialise to OMISSION — never a fake value.
+  if (isSeasonFilter(season)) {
+    search.set(SEASON_KEY, seasonToUrlToken(season));
+  }
+
+  if (isOccasion(occasion)) {
+    search.set(OCCASION_KEY, occasionToUrlToken(occasion));
+  }
+
   return search.toString();
 }
 
@@ -133,9 +176,9 @@ export function serializeResultsParams(
  *
  * Rejected (with a developer-facing reason): missing/out-of-range/non-integer
  * vector values, an unknown or missing archetype id, an empty store id. A
- * malformed or unknown `target` is NEVER a rejection — it degrades to "no
- * audience" so legacy links keep working. The caller shows its own Persian
- * error state; nothing is ever substituted.
+ * malformed or unknown `target`, `season` or `occasion` is NEVER a rejection —
+ * each degrades to "no filter" so legacy links keep working. The caller shows
+ * its own Persian error state; nothing is ever substituted.
  */
 export function parseResultsParams(
   input: Record<string, string | string[] | undefined> | undefined,
@@ -188,6 +231,13 @@ export function parseResultsParams(
   // legacy or hand-edited link keeps rendering unfiltered recommendations.
   const audience = parseAudienceToken(firstValue(input, TARGET_KEY));
 
+  // Deliberately lenient, same as `target`: an absent, empty, differently
+  // cased or malformed `season`/`occasion` resolves to `null` (no filter)
+  // instead of failing the page, so legacy and hand-edited links keep
+  // rendering unfiltered recommendations.
+  const season = parseSeasonToken(firstValue(input, SEASON_KEY));
+  const occasion = parseOccasionToken(firstValue(input, OCCASION_KEY));
+
   return {
     ok: true,
     value: {
@@ -196,6 +246,8 @@ export function parseResultsParams(
       storeId,
       source,
       audience,
+      season,
+      occasion,
     },
   };
 }
