@@ -121,3 +121,26 @@ describe("getResultsViewData — merchant mode preserves AI explanations", () =>
     expect(data.explanations.get("p-1")).toBe("دلیل");
   });
 });
+
+describe("audience threading (results params → matching service)", () => {
+  it("passes the parsed audience through as targetGender", async () => {
+    await getResultsViewData(
+      paramsWith({ store: "store-real-merchant", target: "men" }),
+    );
+
+    expect(mocks.getRecommendations).toHaveBeenCalledWith(
+      expect.objectContaining({
+        storeId: "store-real-merchant",
+        targetGender: "MEN",
+      }),
+    );
+  });
+
+  it("passes null (legacy, no filter) when the URL carries no audience", async () => {
+    await getResultsViewData(paramsWith({ store: "store-real-merchant" }));
+
+    expect(mocks.getRecommendations).toHaveBeenCalledWith(
+      expect.objectContaining({ targetGender: null }),
+    );
+  });
+});

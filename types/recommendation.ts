@@ -3,7 +3,7 @@ import type {
   PersonalityDimension,
   PersonalityVector,
 } from "@/types/personality";
-import type { FragranceDimension } from "@/types/fragrance";
+import type { FragranceDimension, Gender } from "@/types/fragrance";
 
 /** A single scored recommendation produced by the deterministic engine. */
 export interface ScoredRecommendation {
@@ -52,6 +52,16 @@ export interface MatchCandidateInput {
   slug?: string | null;
   productUrl?: string | null;
   imageUrl?: string | null;
+  /**
+   * Perfume audience/category (`Perfume.gender`).
+   *
+   * Read ONLY by the audience eligibility check at the top of the candidate
+   * pass, and only when the shopper selected an audience (`targetGender`).
+   * It is never scored, never ranked on and never part of the personality
+   * vector. Optional so hand-built candidates (tests, older callers) keep
+   * working: with no audience selected it is ignored entirely.
+   */
+  gender?: Gender | null;
   /** Inactive perfumes are never eligible. */
   active: boolean;
   /** Out-of-stock perfumes are never eligible (documented inventory contract). */

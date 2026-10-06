@@ -4,7 +4,11 @@ import {
   PERSONALITY_AXES,
   type PersonalityAxis,
 } from "@/lib/fragrance/axis-derivation";
-import { getCuratedDemoPerfumes } from "@/lib/matching/curated-catalog";
+import {
+  getCuratedDemoPerfumes,
+  type CuratedTargetGender,
+} from "@/lib/matching/curated-catalog";
+import type { Gender } from "@/types/fragrance";
 
 // ONE source of truth: the accord→axis map and its derivation live in the
 // shared axis-derivation utility (also used by the AI fallback path).
@@ -43,6 +47,21 @@ export type { PersonalityAxis };
 /** Reference entries are always "in stock" and "active" for the engine. */
 export const REFERENCE_STORE_ID = "reference-catalog";
 
+/**
+ * The curated catalog's merchandising segment → the engine's perfume gender.
+ *
+ * REUSE, not a second source of truth: the demo pool already declares a
+ * `targetGender` per perfume (data/curated-demo-catalog.json), and the audience
+ * filter only needs it in the engine's `Gender` vocabulary. The curated data is
+ * untouched and no scoring behaviour changes — the demo catalog simply becomes
+ * audience-filterable exactly like merchant inventory.
+ */
+const CURATED_GENDER: Record<CuratedTargetGender, Gender> = {
+  men: "MEN",
+  women: "WOMEN",
+  unisex: "UNISEX",
+};
+
 /** The bundled, lazily-built curated demo candidates (one pass, then cached). */
 let cachedCandidates: MatchCandidateInput[] | null = null;
 
@@ -71,6 +90,7 @@ export function getReferenceCatalogCandidates(): MatchCandidateInput[] {
       imageUrl: null,
       active: true,
       inStock: true,
+      gender: CURATED_GENDER[perfume.targetGender],
       profile: perfume.profile,
     }),
   );

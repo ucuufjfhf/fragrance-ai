@@ -22,7 +22,7 @@ import {
   isQuizComplete,
   restartQuiz,
   selectAnswer,
-  startQuiz,
+  startQuizQuestions,
   toAnswers,
   type QuizFlowState,
 } from "@/lib/personality/quiz-flow";
@@ -101,7 +101,14 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
     // A new attempt begins here, so prior once-guards reset first.
     resetAnalyticsFlow();
     trackQuizStarted(storeId);
-    setState((current) => ({ ...current, flow: startQuiz(), phase: "question" }));
+    // The embedded widget keeps its frozen Phase-8 flow (no audience step, no
+    // target in the widget API): the questions-only entry point preserves the
+    // existing behaviour exactly, and the engine applies no gender filter.
+    setState((current) => ({
+      ...current,
+      flow: startQuizQuestions(),
+      phase: "question",
+    }));
   }, [storeId]);
 
   const handleRestart = useCallback(() => {

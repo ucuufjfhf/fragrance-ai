@@ -2,10 +2,12 @@ import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import AudienceStep from "@/components/quiz/AudienceStep";
 import ProgressBar from "@/components/quiz/ProgressBar";
 import Question from "@/components/quiz/Question";
 import Quiz from "@/components/quiz/Quiz";
 import QuizResultCard from "@/components/quiz/QuizResultCard";
+import { AUDIENCE_OPTIONS, AUDIENCE_QUESTION } from "@/lib/audience";
 import { QUIZ_QUESTIONS } from "@/lib/personality/questions";
 import { scoreQuiz } from "@/lib/personality/scoring";
 
@@ -82,5 +84,38 @@ describe("quiz UI rendering", () => {
     expect(html).toContain(result.archetype.fragranceHint);
     expect(html).toContain("پروفایل شخصیتی تو");
     expect(html).toContain("شروع دوباره");
+  });
+});
+
+describe("audience step rendering", () => {
+  it("renders the approved question and both options as radio cards", () => {
+    const html = render(<AudienceStep onSelect={noopSelect} />);
+
+    expect(html).toContain(AUDIENCE_QUESTION);
+
+    for (const option of AUDIENCE_OPTIONS) {
+      expect(html).toContain(option.label);
+      expect(html).toContain(`value="${option.id}"`);
+    }
+
+    expect(html).toContain('type="radio"');
+    expect(html).toContain('name="audience"');
+    // The audience screen is not a question: no «سؤال …» progress label.
+    expect(html).not.toContain("سؤال");
+  });
+
+  it("keeps the audience selection visible when the shopper returns from Q1", () => {
+    const selected = render(<AudienceStep selected="WOMEN" onSelect={noopSelect} />);
+    const unselected = render(<AudienceStep selected={null} onSelect={noopSelect} />);
+
+    expect(selected).toContain('value="WOMEN"');
+    expect(selected).toContain('checked=""');
+    expect(selected).not.toBe(unselected);
+  });
+
+  it("keeps the intro promising exactly 10 questions", () => {
+    const html = render(<Quiz />);
+
+    expect(withoutJoiners(html)).toContain(withoutJoiners("۱۰ سؤال"));
   });
 });

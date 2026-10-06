@@ -41,6 +41,50 @@ describe("serializeResultsParams", () => {
     expect(query.split("&").filter((part) => part.startsWith("v_"))).toHaveLength(9);
   });
 
+  it("omits target entirely when no audience was selected (legacy URLs unchanged)", () => {
+    const withoutAudience = serializeResultsParams(makeVector(), "romantic");
+    const explicitNull = serializeResultsParams(
+      makeVector(),
+      "romantic",
+      undefined,
+      undefined,
+      null,
+    );
+
+    expect(withoutAudience).not.toContain("target=");
+    expect(explicitNull).toBe(withoutAudience);
+  });
+
+  it("serialises the audience as a compact target token", () => {
+    expect(
+      serializeResultsParams(makeVector(), "romantic", undefined, undefined, "MEN"),
+    ).toContain("target=men");
+    expect(
+      serializeResultsParams(makeVector(), "bold-one", undefined, undefined, "WOMEN"),
+    ).toContain("target=women");
+  });
+
+  it("round-trips the audience together with the vector, store and source", () => {
+    const query = serializeResultsParams(
+      makeVector(42),
+      "free-spirit",
+      "store-other",
+      "MERCHANT_INVENTORY",
+      "WOMEN",
+    );
+    const parsed = parseResultsParams(
+      Object.fromEntries(new URLSearchParams(query).entries()),
+    );
+
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.value.audience).toBe("WOMEN");
+      expect(parsed.value.storeId).toBe("store-other");
+      expect(parsed.value.source).toBe("MERCHANT_INVENTORY");
+      expect(parsed.value.vector.bold).toBe(42);
+    }
+  });
+
   it("carries a non-default store id", () => {
     const query = serializeResultsParams(makeVector(), "romantic", "store-other");
     const parsed = parseResultsParams(
@@ -206,6 +250,44 @@ describe("parseResultsParams", () => {
     expect(pinnedDemo.ok).toBe(true);
     if (pinnedDemo.ok) {
       expect(pinnedDemo.value.source).toBe("REFERENCE_CATALOG");
+    }
+  });
+
+  it("defaults the audience to null when target is absent", () => {
+    const base = Object.fromEntries(
+      PROFILE_AXES.map((d) => [`v_${d}`, "50"]),
+    );
+    const parsed = parseResultsParams({ ...base, archetype: "romantic" });
+
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.value.audience).toBeNull();
+    }
+  });
+
+  it("parses target=men / target=women and tolerates casing and spacing", () => {
+    const base = Object.fromEntries(
+      PROFILE_AXES.map((d) => [`v_${d}`, "50"]),
+    );
+    const men = parseResultsParams({ ...base, archetype: "romantic", target: "men" });
+    const women = parseResultsParams({ ...base, archetype: "romantic", target: "  WOMEN " });
+
+    expect(men.ok && men.value.audience).toBe("MEN");
+    expect(women.ok && women.value.audience).toBe("WOMEN");
+  });
+
+  it("never fails the page for a malformed target (legacy behavior instead)", () => {
+    const base = Object.fromEntries(
+      PROFILE_AXES.map((d) => [`v_${d}`, "50"]),
+    );
+
+    for (const target of ["male", "unisex", "", "1", "men,women", "<script>"]) {
+      const parsed = parseResultsParams({ ...base, archetype: "romantic", target });
+
+      expect(parsed.ok).toBe(true);
+      if (parsed.ok) {
+        expect(parsed.value.audience).toBeNull();
+      }
     }
   });
 

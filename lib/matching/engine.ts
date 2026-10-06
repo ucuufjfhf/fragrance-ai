@@ -3,6 +3,7 @@ import {
   toPersonalityVector,
 } from "@/lib/fragrance/profile";
 import { similarityScore } from "@/lib/matching/score";
+import { isGenderEligibleFor, type AudienceGender } from "@/lib/audience";
 import type { PersonalityVector } from "@/types/personality";
 import type {
   MatchCandidateInput,
@@ -70,6 +71,15 @@ export interface MatchPerfumesInput {
   personalityVector: unknown;
   perfumes: readonly MatchCandidateInput[];
   topN?: unknown;
+  /**
+   * The shopper's audience selection (MEN/WOMEN), when one was made.
+   *
+   * A MERCHANDISING filter, not a personality dimension: it only gates
+   * candidate eligibility (MEN → MEN + UNISEX, WOMEN → WOMEN + UNISEX) and is
+   * checked BEFORE any similarity scoring. Omitted/unknown keeps the legacy
+   * behaviour (no gender filter at all).
+   */
+  targetGender?: AudienceGender | null;
 }
 
 /**
@@ -79,6 +89,9 @@ export interface MatchPerfumesInput {
  *  - candidates from another store are excluded (when `storeId` is given);
  *  - inactive perfumes are excluded;
  *  - out-of-stock perfumes are excluded ("out-of-stock is never recommended");
+ *  - perfumes outside the shopper's selected audience are excluded BEFORE any
+ *    scoring (MEN → MEN + UNISEX, WOMEN → WOMEN + UNISEX; no selection → no
+ *    gender filter, so legacy URLs are unchanged);
  *  - perfumes with a missing or out-of-range profile are excluded — no
  *    arbitrary values are substituted for missing data.
  *
@@ -112,6 +125,16 @@ export function matchPerfumes(input: MatchPerfumesInput): MatchResult {
     // recommended (the flag is loaded alongside `active` for exactly this
     // check — scoring itself is untouched).
     if (candidate.inStock !== true) {
+      excluded += 1;
+      continue;
+    }
+
+    // Audience eligibility (documented merchandising rule): when the shopper
+    // selected an audience, only that audience's genders survive. This runs
+    // BEFORE the profile check and BEFORE any scoring, so an excluded perfume
+    // can never influence the ranking. `isGenderEligibleFor` returns true when
+    // no audience was selected, which is what keeps legacy URLs byte-identical.
+    if (!isGenderEligibleFor(candidate.gender, input.targetGender)) {
       excluded += 1;
       continue;
     }

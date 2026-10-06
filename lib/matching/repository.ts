@@ -31,6 +31,10 @@ export async function getEligiblePerfumesForStore(
       imageUrl: true,
       inStock: true,
       active: true,
+      // Audience/category of the perfume (`Perfume.gender`). Selected ONLY for
+      // the engine's audience eligibility check; never scored and never part of
+      // the personality vector.
+      gender: true,
       // Grounding fact for the AI explanation layer. Selected ONLY so the
       // explanation prompt can describe the real perfume; it is never read by
       // the scorer, so eligibility and ranking are unaffected.
@@ -68,6 +72,7 @@ export async function getEligiblePerfumesForStore(
     imageUrl: perfume.imageUrl,
     inStock: perfume.inStock,
     active: perfume.active,
+    gender: perfume.gender,
     profile: perfume.profile,
     // Copied through for the explanation layer; never scored.
     description: perfume.description,

@@ -1,4 +1,5 @@
 import { BrandMark, BottleMark } from "@/components/ui-icons";
+import AmbientParticles from "@/components/AmbientParticles";
 import TraitBars from "@/components/results/TraitBars";
 
 import type { CSSProperties } from "react";
@@ -39,6 +40,10 @@ export default function ResultsView({
         "--accent-contrast": archetype.id === "clean-minimalist" || archetype.id === "elegant-classic" ? "#2A2420" : "#FFFFFF",
       } as CSSProperties}
     >
+      {/* Shared ambient background — identical implementation to the
+          Fragrance Profile screen (components/quiz/QuizResultCard.tsx). */}
+      <AmbientParticles />
+
       {/* --- profile header (Phase 1 data, same contract as the quiz card) --- */}
       <section className="quiz-rise flex flex-col items-center gap-3 rounded-3xl border border-accent/40 bg-accent-soft p-6 text-center sm:p-8">
         <span className="text-sm text-accent"><BrandMark className="ml-1 inline h-4 w-4" /> پروفایل عطری شما</span>

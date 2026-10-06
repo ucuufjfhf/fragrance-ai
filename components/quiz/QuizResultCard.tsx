@@ -1,9 +1,11 @@
 import Link from "next/link";
 
 import TraitBars from "@/components/results/TraitBars";
+import AmbientParticles from "@/components/AmbientParticles";
 import { BottleMark } from "@/components/ui-icons";
 
 import { resetAnalyticsFlow } from "@/lib/analytics/flow-tracker";
+import type { AudienceGender } from "@/lib/audience";
 import { serializeResultsParams } from "@/lib/results/params";
 import type { CSSProperties } from "react";
 import type { QuizResult } from "@/types/personality";
@@ -15,6 +17,12 @@ interface QuizResultCardProps {
   onRestart: () => void;
   /** Optional store context (Phase 9) — pinned into the results URL. */
   storeId?: string;
+  /**
+   * Optional audience selected on its own step before Q1. It travels to the
+   * results page as a compact target token so the server-side engine can filter
+   * candidates. Never part of the personality vector; absent → legacy URL.
+   */
+  audience?: AudienceGender | null;
 }
 
 /**
@@ -28,6 +36,7 @@ export default function QuizResultCard({
   notice,
   onRestart,
   storeId,
+  audience,
 }: QuizResultCardProps) {
   const { archetype, vector } = result;
 
@@ -36,7 +45,15 @@ export default function QuizResultCard({
   // same pure scorer produced this result even when the API failed.
   // Phase 9: when the quiz carries a store context it is pinned into the URL,
   // so recommendations come from that store instead of the default.
-  const resultsHref = `/result?${serializeResultsParams(vector, archetype.id, storeId)}`;
+  // The audience rides along as the compact target token; without one the URL
+  // is byte-identical to the pre-audience contract (legacy behaviour).
+  const resultsHref = `/result?${serializeResultsParams(
+    vector,
+    archetype.id,
+    storeId,
+    undefined,
+    audience,
+  )}`;
 
   return (
     <section
@@ -47,6 +64,10 @@ export default function QuizResultCard({
         "--accent-contrast": archetype.id === "clean-minimalist" || archetype.id === "elegant-classic" ? "#2A2420" : "#FFFFFF",
       } as CSSProperties}
     >
+      {/* Shared ambient background — identical implementation to the
+          Recommendations screen (components/results/ResultsView.tsx). */}
+      <AmbientParticles />
+
       <div className="flex flex-col items-center gap-3 rounded-3xl border border-accent/40 bg-accent-soft p-6 text-center sm:p-8">
         <span className="text-sm text-accent">پروفایل عطری تو</span>
         <BottleMark className="h-8 w-8 text-accent" />
