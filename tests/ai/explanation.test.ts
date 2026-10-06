@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import {
   EXPLANATION_MAX_CHARS,
@@ -6,6 +6,7 @@ import {
   describeTraitLevel,
   generateExplanation,
   generateExplanations,
+  resetExplanationCacheForTests,
   selectUserTraits,
   validateAiExplanation,
 } from "@/lib/ai/explanation";
@@ -199,6 +200,12 @@ describe("generateExplanation", () => {
 });
 
 describe("generateExplanations", () => {
+  // The prompt-hash cache is process-local: start every case from an empty
+  // cache so these assertions observe provider behaviour, not cache state.
+  beforeEach(() => {
+    resetExplanationCacheForTests();
+  });
+
   it("keeps successes and skips failures without throwing", async () => {
     const input = makeExplanationInput();
     const provider = explanationProvider(async (candidate) => {
@@ -230,6 +237,11 @@ describe("generateExplanations", () => {
     );
 
     expect(duplicated.size).toBe(1);
+
+    // The dead-provider assertion is about a COLD cache: with the prompt-hash
+    // cache a prior success would legitimately be served without the provider,
+    // so reset before checking the failure path.
+    resetExplanationCacheForTests();
 
     const dead = await generateExplanations(createUnavailableProvider("no ai"), [
       input,

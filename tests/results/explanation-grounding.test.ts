@@ -54,7 +54,7 @@ vi.mock("@/lib/analytics/service", () => ({
   recordAnalyticsEvent: mocks.recordAnalyticsEvent,
 }));
 
-import { buildExplanationUserPrompt } from "@/lib/ai/explanation";
+import { buildExplanationUserPrompt, resetExplanationCacheForTests } from "@/lib/ai/explanation";
 import { getResultsViewData } from "@/lib/results/service";
 import { parseResultsParams } from "@/lib/results/params";
 import { PROFILE_AXES } from "@/lib/fragrance/profile";
@@ -121,6 +121,9 @@ function healthyProvider() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // The prompt-hash cache is process-local: these tests assert real provider
+  // call counts, so each case must start from an empty cache.
+  resetExplanationCacheForTests();
   mocks.getRecommendations.mockResolvedValue({ recommendations: ranked(5), excluded: 0 });
   mocks.generateExplanations.mockResolvedValue(new Map<string, string>());
   mocks.createAIProvider.mockReturnValue(healthyProvider());

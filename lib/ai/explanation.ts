@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { AiResponseError } from "@/lib/ai/errors";
 import type {
   AIProvider,
@@ -218,10 +220,192 @@ export async function generateExplanation(
   }
 }
 
+/* ------------------------------------------------ explanation cache (MVP) */
+
+/** How long a generated explanation stays reusable (1 hour). */
+export const EXPLANATION_CACHE_TTL_MS = 60 * 60 * 1000;
+
+/** Upper bound on cached explanations; the oldest entry is evicted first. */
+export const EXPLANATION_CACHE_MAX_ENTRIES = 500;
+
+interface ExplanationCacheEntry {
+  explanation: string;
+  createdAt: number;
+  expiresAt: number;
+}
+
+interface CachedGenerationSuccess {
+  ok: true;
+  explanation: string;
+}
+interface CachedGenerationFailure {
+  ok: false;
+  reason: string;
+}
+type CachedGenerationOutcome = CachedGenerationSuccess | CachedGenerationFailure;
+
+/**
+ * In-process, content-addressed cache for generated explanations.
+ *
+ * The results page and the widget both regenerate the same explanations on
+ * every render (up to `RESULTS_TOP_N` Qwen calls each). This cache keys
+ * explanations by the *exact* prompt sent to the model — see
+ * `explanationCacheKey` — so a cache hit can never return copy that was
+ * written for different prompt inputs: change the perfume facts, the archetype
+ * or a trait band and the key changes automatically.
+ *
+ * Deliberately module-local (no Redis, no database): a restart or dev module
+ * reload simply clears it, which only costs another provider call — never
+ * correctness. Failures are never stored, so a broken render stays retryable.
+ */
+const explanationCache = new Map<string, ExplanationCacheEntry>();
+
+/**
+ * Same-process stampede guard: identical concurrent requests share one
+ * provider call instead of racing to spend credits. Entries are always removed
+ * in `finally`, so a failed generation can never leave a promise stuck.
+ */
+const inflightExplanations = new Map<string, Promise<CachedGenerationOutcome>>();
+
+/**
+ * Content-addressed cache key: SHA-256 over the complete prompt actually sent
+ * to Qwen (system prompt, a NUL separator, then the rendered user prompt).
+ * Any change to the prompt — perfume facts, archetype label, trait bands,
+ * prompt wording — yields a new key without any invalidation code.
+ */
+export function explanationCacheKey(input: AiExplanationInput): string {
+  return createHash("sha256")
+    .update(EXPLANATION_SYSTEM_PROMPT)
+    .update("\u0000")
+    .update(buildExplanationUserPrompt(input))
+    .digest("hex");
+}
+
+/** Returns the cached explanation, lazily dropping expired entries. */
+function readExplanationCache(key: string): string | null {
+  const entry = explanationCache.get(key);
+
+  if (entry === undefined) {
+    return null;
+  }
+
+  if (Date.now() >= entry.expiresAt) {
+    explanationCache.delete(key);
+    return null;
+  }
+
+  return entry.explanation;
+}
+
+/**
+ * Stores a successful explanation, keeping the map bounded: re-inserting the
+ * key refreshes its position, and the oldest entry is evicted before the
+ * configured maximum would be exceeded. No background cleanup — expired
+ * entries are removed on read or by this eviction.
+ */
+function writeExplanationCache(key: string, explanation: string): void {
+  explanationCache.delete(key);
+
+  while (explanationCache.size >= EXPLANATION_CACHE_MAX_ENTRIES) {
+    const oldest = explanationCache.keys().next();
+    if (oldest.done) {
+      break;
+    }
+    explanationCache.delete(oldest.value);
+  }
+
+  const now = Date.now();
+  explanationCache.set(key, {
+    explanation,
+    createdAt: now,
+    expiresAt: now + EXPLANATION_CACHE_TTL_MS,
+  });
+}
+
+/** Test hook: empties the cache and any in-flight promises between tests. */
+export function resetExplanationCacheForTests(): void {
+  explanationCache.clear();
+  inflightExplanations.clear();
+}
+
+/** Test hook: current number of cached explanations. */
+export function explanationCacheSizeForTests(): number {
+  return explanationCache.size;
+}
+
+/**
+ * One explanation with caching layered around the unchanged Phase 4 call:
+ * cache hit → no provider call; concurrent identical requests → one shared
+ * provider call; success (already validated by `generateExplanation`) →
+ * stored; failure → never stored, so the next render retries.
+ */
+async function generateCachedExplanation(
+  provider: AIProvider,
+  input: AiExplanationInput,
+): Promise<AiOutcome<AiExplanationResult>> {
+  const key = explanationCacheKey(input);
+
+  const cached = readExplanationCache(key);
+  if (cached !== null) {
+    return {
+      ok: true,
+      value: { perfumeId: input.recommendation.perfumeId, explanation: cached },
+    };
+  }
+
+  const shared = inflightExplanations.get(key);
+  if (shared !== undefined) {
+    const outcome = await shared;
+    return outcome.ok
+      ? {
+          ok: true,
+          value: {
+            perfumeId: input.recommendation.perfumeId,
+            explanation: outcome.explanation,
+          },
+        }
+      : outcome;
+  }
+
+  const generation = (async (): Promise<CachedGenerationOutcome> => {
+    try {
+      const outcome = await generateExplanation(provider, input);
+
+      if (outcome.ok) {
+        writeExplanationCache(key, outcome.value.explanation);
+        return { ok: true, explanation: outcome.value.explanation };
+      }
+
+      // Failures are returned but never cached.
+      return outcome;
+    } finally {
+      inflightExplanations.delete(key);
+    }
+  })();
+
+  inflightExplanations.set(key, generation);
+
+  const outcome = await generation;
+  return outcome.ok
+    ? {
+        ok: true,
+        value: {
+          perfumeId: input.recommendation.perfumeId,
+          explanation: outcome.explanation,
+        },
+      }
+    : outcome;
+}
+
 /**
  * Convenience for the results layer: explanations for a ranked list, keyed by
  * perfume id. Sequential on purpose (small credit, no rate-limit surprises) and
  * resilient — failed items are simply omitted, duplicates keep the first result.
+ *
+ * Each item goes through the process-local prompt-hash cache (see
+ * `explanationCacheKey`): identical prompts reuse the stored explanation and
+ * make no provider call, while the within-batch duplicate-id skip below is
+ * unchanged.
  */
 export async function generateExplanations(
   provider: AIProvider,
@@ -234,7 +418,7 @@ export async function generateExplanations(
       continue;
     }
 
-    const outcome = await generateExplanation(provider, input);
+    const outcome = await generateCachedExplanation(provider, input);
 
     if (outcome.ok) {
       explanations.set(outcome.value.perfumeId, outcome.value.explanation);
