@@ -1,17 +1,17 @@
 "use client";
 
-import { BottleMark } from "@/components/ui-icons";
+import { ArrowLeftMark, BottleMark, StarMark } from "@/components/ui-icons";
 import { trackEvent } from "@/lib/analytics/client";
-import { formatPersianScore } from "@/lib/persian";
+import { formatPersianScore, toPersianDigits } from "@/lib/persian";
 import type { WidgetRecommendation } from "@/lib/widget/contract";
 
 /**
  * One recommendation inside the widget (Phase 8).
  *
- * Renders only customer-safe fields from the widget API (§12). A missing
+ * The compact sibling of the public recommendation card: same visual language
+ * (hairline borders, one champagne accent, one match meter) at merchant-widget
+ * scale. Renders only customer-safe fields from the widget API (§12). A missing
  * productUrl renders no CTA at all — a fake URL is never invented (§17).
- * PERFUME_CLICKED fires on actual clicks only, carrying the widget's store
- * context and the minimum identifier needed for analytics.
  */
 export default function WidgetRecommendationCard({
   recommendation,
@@ -23,7 +23,7 @@ export default function WidgetRecommendationCard({
   const { rank, name, brand, productUrl, imageUrl, matchPercent, explanation } = recommendation;
 
   return (
-    <article className="flex flex-col gap-3 rounded-3xl border border-border-soft bg-surface p-5">
+    <article className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-border-soft bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           {imageUrl ? (
@@ -35,51 +35,64 @@ export default function WidgetRecommendationCard({
               width={56}
               height={56}
               loading="lazy"
-              className="h-14 w-14 shrink-0 rounded-2xl border border-border-soft object-cover"
+              className="h-14 w-14 shrink-0 rounded-[var(--radius-md)] border border-border-soft object-cover"
             />
           ) : (
             <span
               aria-hidden="true"
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-border-soft bg-accent-soft text-2xl"
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-border-soft bg-accent-soft"
             >
-              <BottleMark className="h-6 w-6" />
+              <BottleMark className="h-6 w-6 text-champagne-deep/70" />
             </span>
           )}
 
           <div className="flex flex-col gap-0.5">
-            <h3 className="text-base font-bold leading-7 text-foreground">{name}</h3>
-            <span className="text-sm text-muted">{brand}</span>
+            <h3 className="font-heading text-base leading-7 text-ink">{name}</h3>
+            <span className="text-xs text-muted">{brand}</span>
           </div>
         </div>
 
         <span
           aria-label={`رتبه ${rank}`}
-          className="tnum flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-accent/40 bg-accent-soft text-sm font-bold text-accent"
+          className="tnum shrink-0 text-xs text-muted"
         >
-          {rank}
+          {toPersianDigits(rank)}
         </span>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-[0.7rem] text-muted">میزان تطابق</span>
+          <span className="tnum accent-ink font-heading text-sm font-semibold">
+            {formatPersianScore(matchPercent)}
+          </span>
+        </div>
         <div
-          className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2"
+          className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2 ring-1 ring-inset ring-border-soft/70"
           role="progressbar"
           aria-valuenow={Math.round(matchPercent)}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label={`میزان تطابق ${name}`}
         >
-          <div className="h-full rounded-full bg-accent" style={{ width: `${matchPercent}%` }} />
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: `${matchPercent}%`,
+              backgroundImage:
+                "linear-gradient(to left, var(--accent), color-mix(in srgb, var(--accent) 58%, var(--foreground)))",
+            }}
+          />
         </div>
-        <span className="tnum shrink-0 text-sm font-semibold text-accent">
-          {formatPersianScore(matchPercent)} تطابق
-        </span>
       </div>
 
       {explanation ? (
-        <div className="flex flex-col gap-1 rounded-2xl border border-accent/25 bg-accent-soft p-3">
-          <span className="text-xs font-semibold text-accent">چرا بهت میاد؟</span>
-          <p className="text-sm leading-7 text-foreground/90">{explanation}</p>
+        <div className="flex flex-col gap-1.5 rounded-[var(--radius-md)] bg-accent-soft p-3">
+          <span className="eyebrow flex items-center gap-1.5 text-champagne-deep">
+            <StarMark className="h-3 w-3" />
+            چرا بهت میاد؟
+          </span>
+          <p className="text-xs leading-7 text-foreground/90">{explanation}</p>
         </div>
       ) : null}
 
@@ -92,9 +105,10 @@ export default function WidgetRecommendationCard({
             // A real click on the merchant's product link (§17).
             void trackEvent({ eventType: "PERFUME_CLICKED", storeId, perfumeId: recommendation.perfumeId });
           }}
-          className="flex min-h-11 items-center justify-center rounded-2xl border border-border-soft px-5 text-sm font-medium text-foreground transition-colors hover:border-accent/60 hover:text-accent"
+          className="btn-ghost flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-medium"
         >
-          مشاهده عطر →
+          مشاهده عطر
+          <ArrowLeftMark className="h-3.5 w-3.5" />
         </a>
       ) : null}
     </article>

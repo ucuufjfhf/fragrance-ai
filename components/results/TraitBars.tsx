@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { StarMark } from "@/components/ui-icons";
 import { PERSONALITY_LABELS } from "@/lib/personality/labels";
 import { formatPersianPercent } from "@/lib/persian";
 import { PERSONALITY_DIMENSIONS } from "@/types/personality";
@@ -130,22 +131,43 @@ export default function TraitBars({ vector }: { vector: PersonalityVector }) {
   }, []);
 
   return (
-    <section ref={sectionRef} className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6">
-      <h2 className="font-semibold">پروفایل شخصیتی تو</h2>
-      <ul className="flex flex-col gap-3">
+    <section
+      ref={sectionRef}
+      className="flex flex-col gap-6 rounded-[var(--radius-lg)] border border-border-soft bg-surface p-5 sm:p-7"
+    >
+      <header className="flex flex-col gap-2">
+        <span className="eyebrow accent-ink flex items-center gap-2">
+          <StarMark className="h-3 w-3" />
+          نُه بُعد سلیقه‌ات
+        </span>
+        <h2 className="display-md text-ink">پروفایل شخصیتی تو</h2>
+        <p className="max-w-md text-xs leading-7 text-muted">
+          هر بُعد از ۰ تا ۱۰۰ سنجیده می‌شود؛ همین نمره‌ها مبنای رتبه‌بندی عطرها هستند.
+        </p>
+      </header>
+
+      <ul className="flex flex-col gap-5">
         {PERSONALITY_DIMENSIONS.map((dimension, index) => {
           const target = vector[dimension];
           const isSettled = settled[index];
           const showTip = visible && !isSettled && displayValues[index] > 0;
           return (
-            <li key={dimension} className="flex flex-col gap-1">
-              <div className="flex items-center justify-between text-sm">
-                <span>{PERSONALITY_LABELS[dimension]}</span>
-                <span className="tnum text-muted">{formatPersianPercent(displayValues[index])}</span>
+            <li key={dimension} className="flex flex-col gap-2">
+              <div className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="flex items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="h-1 w-1 rounded-full bg-champagne-deep/70"
+                  />
+                  {PERSONALITY_LABELS[dimension]}
+                </span>
+                <span className="tnum accent-ink text-[0.82rem] font-semibold">
+                  {formatPersianPercent(displayValues[index])}
+                </span>
               </div>
               <div className="relative">
                 <div
-                  className="h-2 w-full overflow-hidden rounded-full bg-surface-2"
+                  className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2 ring-1 ring-inset ring-border-soft/70"
                   role="progressbar"
                   aria-label={PERSONALITY_LABELS[dimension]}
                   aria-valuemin={0}
@@ -161,7 +183,7 @@ export default function TraitBars({ vector }: { vector: PersonalityVector }) {
                       transitionTimingFunction: EASING_BEZIER,
                       transitionDelay: `${index * ANIMATION_STAGGER_MS}ms`,
                       backgroundImage:
-                        "linear-gradient(to left, var(--accent) 0%, var(--accent) 60%, color-mix(in srgb, var(--accent) 60%, white) 100%)",
+                        "linear-gradient(to left, var(--accent) 0%, var(--accent) 55%, color-mix(in srgb, var(--accent) 55%, var(--foreground)) 100%)",
                     }}
                     onTransitionEnd={(event) => {
                       if (event.propertyName === "width") handleFillEnd(index);

@@ -8,12 +8,11 @@ import WidgetApp from "@/components/widget/WidgetApp";
  * This is the actual embeddable experience: a merchant page loads a tiny
  * loader script, which mounts an iframe pointed at this route
  * (`/widget?store=…`). The iframe gives **complete two-way CSS isolation**
- * from the merchant page (§8) while reusing the app's real quiz components —
- * there is exactly one quiz UI, one scorer and one matching engine.
+ * from the merchant page while reusing the app's real quiz components — there
+ * is exactly one quiz UI, one scorer and one matching engine.
  *
- * All traffic inside the iframe is same-origin to the app; only the two
- * public widget APIs are additionally exposed cross-origin for direct
- * integrations. The iframe is resized via postMessage by the app below.
+ * Visually it is a compact, self-contained Fiage: an ivory panel with a narrow
+ * night-sky header, deliberately small so it never overwhelms the host page.
  */
 
 export const metadata: Metadata = {
@@ -34,7 +33,7 @@ export default async function WidgetPage({ searchParams }: WidgetPageProps) {
     <main
       dir="rtl"
       lang="fa"
-      className="flex min-h-dvh w-full flex-col bg-background p-4"
+      className="flex min-h-dvh w-full flex-col bg-background p-3 sm:p-4"
       data-widget-root=""
     >
       <WidgetApp storeId={storeId} />

@@ -69,7 +69,7 @@ export default function PerfumeToggles({
       {feedback ? (
         <span
           role="status"
-          className={`text-xs ${feedback.ok ? "text-accent" : "text-red-400"}`}
+          className={`text-xs ${feedback.ok ? "text-accent" : "text-nebula"}`}
           aria-live="polite"
         >
           {feedback.message}

@@ -1,4 +1,6 @@
 import { unlockAdminAccessAction } from "@/app/admin/access/actions";
+import { CosmicBackdrop } from "@/components/cosmic/cosmic-visuals";
+import { StarMark } from "@/components/ui-icons";
 import { isAdminAccessConfigured, safeAdminRedirectPath } from "@/lib/admin/access";
 
 /**
@@ -12,7 +14,7 @@ import { isAdminAccessConfigured, safeAdminRedirectPath } from "@/lib/admin/acce
  */
 
 export const metadata = {
-  title: "ورود مدیریت | عطر خودتو پیدا کن",
+  title: "ورود مدیریت | فیاج",
   robots: { index: false, follow: false },
 };
 
@@ -46,48 +48,66 @@ export default async function AdminAccessPage({ searchParams }: AdminAccessPageP
           : null;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-4 py-12">
-      <header className="flex flex-col gap-2 text-center">
-        <h1 className="text-2xl font-bold">ورود مدیریت</h1>
-        <p className="text-sm leading-8 text-muted">
-          این بخش ویژهٔ مدیر فروشگاه است. برای مشاهدهٔ مدیریت عطرها و آمار،
-          گذرواژهٔ مدیریت را وارد کنید.
-        </p>
-      </header>
-
-      {unlockError ? (
-        <p role="alert" className="rounded-2xl border border-red-400/40 p-4 text-sm leading-8 text-red-400">
-          {unlockError}
-        </p>
-      ) : null}
-
-      {!configured ? (
-        <p role="alert" className="rounded-2xl border border-red-400/40 p-4 text-sm leading-8 text-red-400">
-          {MESSAGES.notConfigured}
-        </p>
-      ) : (
-        <form action={unlockAdminAccessAction} className="flex flex-col gap-3">
-          <input type="hidden" name="next" value={nextPath} />
-          <label className="flex flex-col gap-1 text-sm" htmlFor="admin-secret">
-            گذرواژهٔ مدیریت
-          </label>
-          <input
-            id="admin-secret"
-            name="secret"
-            type="password"
-            required
-            autoComplete="current-password"
-            dir="ltr"
-            className="min-h-12 rounded-2xl border border-border-soft bg-surface px-4 text-left"
-          />
-          <button
-            type="submit"
-            className="min-h-12 rounded-2xl btn-primary bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90"
+    <main
+      data-surface="dark"
+      className="relative isolate flex flex-1 flex-col items-center justify-center overflow-hidden horizon px-4 py-16"
+    >
+      <CosmicBackdrop stars={40} seed={31} constellation intensity={0.7} />
+      <section className="relative z-10 flex w-full max-w-md flex-col gap-6 rounded-[var(--radius-lg)] border border-border-soft bg-surface/80 p-6 sm:p-8">
+        <header className="flex flex-col items-center gap-3 text-center">
+          <span
+            aria-hidden="true"
+            className="flex h-12 w-12 items-center justify-center rounded-full border border-champagne/40"
           >
-            ورود
-          </button>
-        </form>
-      )}
+            <StarMark className="h-4 w-4 text-champagne" />
+          </span>
+          <h1 className="display-md text-ivory">ورود مدیریت</h1>
+          <p className="text-xs leading-7 text-muted">
+            این بخش ویژهٔ مدیر فروشگاه است. برای مشاهدهٔ مدیریت عطرها و آمار، گذرواژهٔ
+            مدیریت را وارد کنید.
+          </p>
+        </header>
+
+        {unlockError ? (
+          <p
+            role="alert"
+            className="rounded-[var(--radius-md)] border border-nebula/40 bg-nebula/10 p-3.5 text-xs leading-7 text-nebula"
+          >
+            {unlockError}
+          </p>
+        ) : null}
+
+        {!configured ? (
+          <p
+            role="alert"
+            className="rounded-[var(--radius-md)] border border-nebula/40 bg-nebula/10 p-3.5 text-xs leading-7 text-nebula"
+          >
+            {MESSAGES.notConfigured}
+          </p>
+        ) : (
+          <form action={unlockAdminAccessAction} className="flex flex-col gap-3">
+            <input type="hidden" name="next" value={nextPath} />
+            <label className="flex flex-col gap-1.5 text-xs text-muted" htmlFor="admin-secret">
+              گذرواژهٔ مدیریت
+            </label>
+            <input
+              id="admin-secret"
+              name="secret"
+              type="password"
+              required
+              autoComplete="current-password"
+              dir="ltr"
+              className="min-h-12 rounded-[var(--radius-md)] border border-border-soft bg-night/60 px-4 text-left text-sm text-ivory placeholder:text-muted/70"
+            />
+            <button
+              type="submit"
+              className="btn-primary flex min-h-12 items-center justify-center rounded-full px-5 text-sm font-medium"
+            >
+              ورود
+            </button>
+          </form>
+        )}
+      </section>
     </main>
   );
 }

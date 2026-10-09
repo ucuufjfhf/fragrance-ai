@@ -1,5 +1,8 @@
 import Link from "next/link";
 
+import { CompassMark } from "@/components/ui-icons";
+
+import AdminShell from "@/components/admin/AdminShell";
 import PerfumeForm from "@/components/admin/PerfumeForm";
 import { updatePerfumeAction } from "@/app/admin/perfumes/actions";
 import type { AdminActionState } from "@/app/admin/perfumes/actions";
@@ -41,21 +44,21 @@ export default async function EditPerfumePage({ params, searchParams }: EditPerf
 
   if (!perfume) {
     return (
-      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-8">
-        <section className="flex flex-col items-center gap-3 rounded-3xl border border-border-soft bg-surface p-8 text-center">
-          <span aria-hidden="true" className="text-4xl">🔍</span>
-          <h1 className="text-lg font-semibold">عطر پیدا نشد</h1>
+      <AdminShell title="ویرایش عطر" current="perfumes" width="md">
+        <section className="flex flex-col items-center gap-3 rounded-[var(--radius-lg)] border border-border-soft bg-surface p-8 text-center">
+          <CompassMark className="h-7 w-7 text-champagne-deep/70" />
+          <h1 className="font-heading text-lg text-ink">عطر پیدا نشد</h1>
           <p className="text-sm leading-8 text-muted">
             این عطر در فروشگاه انتخاب‌شده وجود ندارد یا شناسه نامعتبر است.
           </p>
           <Link
             href="/admin/perfumes"
-            className="flex min-h-11 items-center justify-center rounded-2xl bg-accent px-6 font-medium text-background transition-colors hover:bg-accent/90"
+            className="btn-primary flex min-h-11 items-center justify-center rounded-full px-6 text-sm font-medium"
           >
             بازگشت به فهرست
           </Link>
         </section>
-      </main>
+      </AdminShell>
     );
   }
 
@@ -66,12 +69,11 @@ export default async function EditPerfumePage({ params, searchParams }: EditPerf
   const boundAction = updatePerfumeAction.bind(null, perfume.id, perfume.storeId);
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold sm:text-3xl">ویرایش عطر</h1>
-        <p className="text-sm text-muted">{perfume.name} — {perfume.brand}</p>
-      </header>
-
+    <AdminShell
+      title="ویرایش عطر"
+      description={`${perfume.name} — ${perfume.brand}`}
+      current="perfumes"
+    >
       <PerfumeForm
         storeId={perfume.storeId}
         perfumeId={perfume.id}
@@ -124,6 +126,6 @@ export default async function EditPerfumePage({ params, searchParams }: EditPerf
       >
         بازگشت به فهرست عطرها
       </Link>
-    </main>
+    </AdminShell>
   );
 }

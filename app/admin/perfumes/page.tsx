@@ -1,12 +1,11 @@
-import { ArchiveMark } from "@/components/ui-icons";
-
-import { logoutAdminAccessAction } from "@/app/admin/access/actions";
+import { ArchiveMark, CheckMark } from "@/components/ui-icons";
 
 import { headers } from "next/headers";
 import Link from "next/link";
 
 import { requireAdmin } from "@/lib/admin/server-access";
 
+import AdminShell from "@/components/admin/AdminShell";
 import BulkProfilingPanel from "@/components/admin/BulkProfilingPanel";
 import PerfumeToggles from "@/components/admin/PerfumeToggles";
 import WidgetEmbedCode from "@/components/admin/WidgetEmbedCode";
@@ -61,7 +60,11 @@ export default async function AdminPerfumesPage({ searchParams }: AdminPerfumesP
 
   if (stores.length === 0) {
     return (
-      <AdminShell>
+      <AdminShell
+        title="مدیریت عطرها"
+        description="عطرهای هر فروشگاه، وضعیت موجودی و ورود گروهی"
+        current="perfumes"
+      >
         <EmptyState
           title="فروشگاه فعالی وجود ندارد"
           body="برای مدیریت عطرها، اول یک فروشگاه فعال در پایگاه داده ثبت شود."
@@ -92,16 +95,17 @@ export default async function AdminPerfumesPage({ searchParams }: AdminPerfumesP
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? `${protocol}://${host}`;
 
   return (
-    <AdminShell>
-      <header className="flex flex-col gap-3">
-        <h1 className="text-2xl font-bold sm:text-3xl">مدیریت عطرها</h1>
-        <p className="text-sm text-muted">
-          عطرهای فروشگاه «{selectedStore.name}» — {toPersianDigits(perfumes.length)} عطر
-        </p>
-      </header>
-
+    <AdminShell
+      title="مدیریت عطرها"
+      description={`عطرهای فروشگاه «${selectedStore.name}» — ${toPersianDigits(perfumes.length)} عطر`}
+      current="perfumes"
+    >
       {created ? (
-        <p role="status" className="rounded-2xl border border-accent/40 bg-accent-soft p-4 text-sm text-accent">
+        <p
+          role="status"
+          className="flex items-center gap-2 rounded-[var(--radius-md)] border border-border-soft bg-surface p-4 text-sm text-foreground"
+        >
+          <CheckMark className="h-4 w-4 shrink-0 text-champagne-deep" />
           عطر با موفقیت ثبت شد.
         </p>
       ) : null}
@@ -118,8 +122,8 @@ export default async function AdminPerfumesPage({ searchParams }: AdminPerfumesP
               aria-current={store.id === selectedStore.id ? "page" : undefined}
               className={`rounded-full border px-4 py-2 text-sm transition-colors ${
                 store.id === selectedStore.id
-                  ? "border-accent/50 bg-accent-soft text-accent"
-                  : "border-border-soft text-muted hover:border-accent/40 hover:text-foreground"
+                  ? "border-champagne-deep/50 bg-champagne/15 text-ink"
+                  : "border-border-soft text-muted hover:border-champagne-deep/40 hover:text-foreground"
               }`}
             >
               {store.name}
@@ -128,12 +132,20 @@ export default async function AdminPerfumesPage({ searchParams }: AdminPerfumesP
         </div>
       </section>
 
-      <Link
-        href={`/admin/perfumes/new?store=${selectedStore.id}`}
-        className="flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
-      >
-        + افزودن عطر جدید
-      </Link>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Link
+          href={`/admin/perfumes/new?store=${selectedStore.id}`}
+          className="btn-primary flex min-h-12 items-center justify-center rounded-full px-6 text-sm font-medium sm:w-fit"
+        >
+          + افزودن عطر جدید
+        </Link>
+        <Link
+          href={`/admin/perfumes/import?store=${selectedStore.id}`}
+          className="btn-ghost flex min-h-12 items-center justify-center rounded-full px-6 text-sm sm:w-fit"
+        >
+          ورود گروهی با CSV
+        </Link>
+      </div>
 
       <BulkProfilingPanel
         storeId={selectedStore.id}
@@ -156,19 +168,27 @@ export default async function AdminPerfumesPage({ searchParams }: AdminPerfumesP
           {perfumes.map((perfume) => (
             <li
               key={perfume.id}
-              className="flex flex-col gap-3 rounded-3xl border border-border-soft bg-surface p-5 sm:flex-row sm:items-center sm:justify-between"
+              className={`flex flex-col gap-4 rounded-[var(--radius-lg)] border border-border-soft bg-surface p-4 transition-colors hover:border-champagne-deep/40 sm:flex-row sm:items-center sm:justify-between sm:p-5 ${
+                perfume.active ? "" : "opacity-70"
+              }`}
             >
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{perfume.name}</span>
-                  <span className="text-sm text-muted">— {perfume.brand}</span>
+              <div className="flex min-w-0 flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-heading text-base text-ink">{perfume.name}</span>
+                  <span className="text-xs text-muted">{perfume.brand}</span>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
                   <span>{GENDER_LABELS[perfume.gender] ?? perfume.gender}</span>
                   {perfume.price !== null ? (
-                    <span>· {toPersianDigits(perfume.price.toLocaleString("en-US"))} تومان</span>
+                    <span className="tnum">
+                      {toPersianDigits(perfume.price.toLocaleString("en-US"))} تومان
+                    </span>
                   ) : null}
-                  {perfume.profile?.family ? <span>· {perfume.profile.family}</span> : null}
+                  {perfume.profile?.family ? (
+                    <span className="rounded-full bg-surface-2 px-2.5 py-0.5">
+                      {perfume.profile.family}
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
@@ -181,7 +201,7 @@ export default async function AdminPerfumesPage({ searchParams }: AdminPerfumesP
                 />
                 <Link
                   href={`/admin/perfumes/${perfume.id}/edit?store=${selectedStore.id}`}
-                  className="rounded-full border border-border-soft px-4 py-2 text-xs text-muted transition-colors hover:border-accent/50 hover:text-foreground"
+                  className="btn-ghost rounded-full px-4 py-2 text-xs"
                 >
                   ویرایش
                 </Link>
@@ -194,21 +214,10 @@ export default async function AdminPerfumesPage({ searchParams }: AdminPerfumesP
   );
 }
 
-function AdminShell({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
-      {children}
-      <form action={logoutAdminAccessAction} className="self-end">
-        <button type="submit" className="text-sm underline">خروج از مدیریت</button>
-      </form>
-    </main>
-  );
-}
-
 function EmptyState({ title, body }: { title: string; body: string }) {
   return (
-    <section className="flex flex-col items-center gap-3 rounded-3xl border border-border-soft bg-surface p-8 text-center">
-      <ArchiveMark className="h-8 w-8 text-accent" />
+    <section className="flex flex-col items-center gap-3 rounded-[var(--radius-lg)] border border-border-soft bg-surface p-8 text-center">
+      <ArchiveMark className="h-8 w-8 text-champagne-deep/70" />
       <h2 className="text-lg font-semibold">{title}</h2>
       <p className="text-sm leading-8 text-muted">{body}</p>
     </section>

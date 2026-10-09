@@ -1,6 +1,6 @@
 "use client";
 
-import { BrandMark } from "@/components/ui-icons";
+import { ArrowLeftMark, BottleMark, CompassMark, StarMark } from "@/components/ui-icons";
 import { useCallback, useState } from "react";
 
 import {
@@ -30,13 +30,19 @@ import { scoreQuiz } from "@/lib/personality/scoring";
 import type { QuizResult, QuizSubmitResponse } from "@/types/personality";
 
 const primaryButton =
-  "flex min-h-12 flex-1 items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50";
+  "btn-primary flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full px-6 font-medium disabled:cursor-not-allowed";
 
 const secondaryButton =
-  "flex min-h-12 items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
+  "btn-ghost flex min-h-12 items-center justify-center rounded-full px-6 text-sm disabled:cursor-not-allowed disabled:opacity-40";
 
 const OFFLINE_NOTICE =
   "ارتباط با سرور برقرار نشد؛ پروفایل با همون محاسبه قطعی و به‌صورت آفلاین ساخته شد.";
+
+const INTRO_POINTS = [
+  { icon: StarMark, text: "کمتر از دو دقیقه وقت می‌بره." },
+  { icon: CompassMark, text: "جواب درست و غلط نداره؛ گزینه‌ای رو انتخاب کن که بهت نزدیک‌تره." },
+  { icon: BottleMark, text: "نتیجه یک تحلیل سلیقه‌ای برای انتخاب عطره، نه یک تست روانشناسی." },
+] as const;
 
 /**
  * The quiz surface: intro → one question per screen → result.
@@ -47,9 +53,7 @@ const OFFLINE_NOTICE =
  * `storeId` (Phase 9): an optional store context, passed down from the page
  * (`/quiz?store=…`). When present, analytics events carry it and the results
  * URL pins that store instead of the default — this is how standalone traffic
- * gets the same store attribution the Phase 8 widget already has. No store
- * selector is ever shown to the shopper (§10 Phase 8: the merchant picks the
- * store at installation time, never the customer).
+ * gets the same store attribution the Phase 8 widget already has.
  */
 export default function Quiz({ storeId }: { storeId?: string }) {
   const [flow, setFlow] = useState<QuizFlowState>(createInitialQuizFlowState);
@@ -122,38 +126,47 @@ export default function Quiz({ storeId }: { storeId?: string }) {
 
   if (flow.phase === "intro") {
     return (
-      <section className="quiz-rise flex flex-col gap-6 rounded-3xl border border-border-soft bg-surface p-6 sm:p-8">
-        <div className="flex flex-col gap-3">
-          <span className="w-fit rounded-full border border-border-soft bg-surface-2 px-4 py-1 text-sm text-accent">
-            <BrandMark className="ml-1 inline h-4 w-4" /> آزمون سلیقه عطری
-          </span>
-          <h1 className="text-2xl font-bold leading-10 sm:text-3xl">
-            عطر مناسب خودت رو پیدا کن
-          </h1>
-          <p className="text-muted">
-            فقط به ۱۰ سؤال کوتاه جواب بده تا ببینیم چه رایحه‌ای بیشتر با سلیقه و
-            شخصیت عطری تو هماهنگه.
-          </p>
-        </div>
+      <section className="quiz-rise flex flex-1 flex-col justify-center gap-8 py-8 sm:gap-10">
+        <span className="eyebrow flex w-fit items-center gap-2 rounded-full border border-champagne/35 bg-champagne/5 px-4 py-1.5 text-champagne">
+          <StarMark className="h-3.5 w-3.5" />
+          آزمون سلیقه عطری
+        </span>
 
-        <ul className="flex flex-col gap-2 text-sm text-muted">
-          <li>⏱ کمتر از دو دقیقه وقت می‌بره.</li>
-          <li>🧠 جواب درست و غلط نداره؛ هر گزینه‌ای که بهت نزدیک‌تره رو انتخاب کن.</li>
-          <li>🕵️ نتیجه یک تحلیل سلیقه‌ای برای انتخاب عطره، نه یک تست روانشناسی.</li>
+        <h1 className="display-xl max-w-lg text-ivory">عطر مناسب خودت رو پیدا کن</h1>
+
+        <p className="lead max-w-xl">
+          فقط به ۱۰ سؤال کوتاه جواب بده تا ببینیم چه رایحه‌ای بیشتر با سلیقه و شخصیت
+          عطری تو هماهنگ است.
+        </p>
+
+        <ul className="grid gap-px overflow-hidden rounded-[var(--radius-md)] border border-border-soft sm:grid-cols-3">
+          {INTRO_POINTS.map((point) => (
+            <li
+              key={point.text}
+              className="flex flex-col gap-2 bg-surface/40 p-4 text-xs leading-7 text-muted sm:p-5"
+            >
+              <point.icon className="h-4 w-4 text-celestial" />
+              {point.text}
+            </li>
+          ))}
         </ul>
 
-        <button
-          type="button"
-          onClick={() => {
-            // The shopper explicitly enters the quiz — the QUIZ_STARTED
-            // moment (§6). Never fired by homepage loads or renders.
-            trackQuizStarted(storeId);
-            setFlow(startQuiz());
-          }}
-          className={primaryButton}
-        >
-          شروع آزمون
-        </button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+          <button
+            type="button"
+            onClick={() => {
+              // The shopper explicitly enters the quiz — the QUIZ_STARTED
+              // moment (§6). Never fired by homepage loads or renders.
+              trackQuizStarted(storeId);
+              setFlow(startQuiz());
+            }}
+            className="btn-primary flex min-h-12 items-center justify-center gap-2 rounded-full px-8 text-base font-medium sm:w-fit sm:px-10"
+          >
+            شروع آزمون
+            <ArrowLeftMark className="h-4 w-4" />
+          </button>
+          <span className="text-xs text-muted">۱۰ سؤال · بدون ثبت‌نام · نتیجه بلافاصله</span>
+        </div>
       </section>
     );
   }
@@ -165,7 +178,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
   const canContinue = typeof selectedOptionId === "string";
 
   return (
-    <section className="flex flex-col gap-6 rounded-3xl border border-border-soft bg-surface p-5 sm:p-8">
+    <section className="flex flex-1 flex-col gap-8 py-4 sm:justify-center">
       <ProgressBar current={progress.current} total={progress.total} />
 
       <div key={question.id} className="quiz-rise">
@@ -206,13 +219,14 @@ export default function Quiz({ storeId }: { storeId?: string }) {
               ? "داره حساب می‌شه…"
               : "دیدن پروفایل عطری من"
             : "بعدی"}
+          {isLastQuestion && !submitting ? <ArrowLeftMark className="h-4 w-4" /> : null}
         </button>
       </div>
 
       <button
         type="button"
         onClick={handleRestart}
-        className="mx-auto text-xs text-muted underline underline-offset-4 transition-colors hover:text-foreground"
+        className="mx-auto text-xs text-muted underline underline-offset-4 transition-colors hover:text-ivory"
       >
         شروع دوباره
       </button>

@@ -27,32 +27,32 @@ export default function ResultError({
   }, [error]);
 
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
-      <section className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 text-center sm:p-8">
-        <WarningMark className="mx-auto h-8 w-8 text-accent" />
-        <h1 className="text-xl font-bold sm:text-2xl">
-          مشکلی پیش اومد
-        </h1>
-        <p className="text-sm leading-8 text-muted">
-          در آماده‌سازی نتیجه خطایی رخ داد. می‌تونی دوباره تلاش کنی یا آزمون رو از
-          اول شروع کنی.
-        </p>
-        <div className="flex flex-col items-center gap-3">
-          <button
-            type="button"
-            onClick={reset}
-            className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
-          >
-            تلاش دوباره
-          </button>
-          <Link
-            href="/quiz"
-            className="flex min-h-11 items-center justify-center px-4 text-sm text-muted underline underline-offset-4 transition-colors hover:text-foreground"
-          >
-            شروع دوباره آزمون
-          </Link>
-        </div>
-      </section>
+    <main className="flex flex-1 flex-col bg-background">
+      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-6 px-5 py-16 sm:px-8">
+        <section className="flex flex-col items-center gap-4 rounded-[var(--radius-lg)] border border-border-soft bg-surface px-6 py-12 text-center">
+          <WarningMark className="h-8 w-8 text-champagne-deep" />
+          <h1 className="display-md text-ink">مشکلی پیش اومد</h1>
+          <p className="max-w-sm text-sm leading-8 text-muted">
+            در آماده‌سازی نتیجه خطایی رخ داد. می‌تونی دوباره تلاش کنی یا آزمون رو از
+            اول شروع کنی.
+          </p>
+          <div className="mt-1 flex flex-col items-center gap-3">
+            <button
+              type="button"
+              onClick={reset}
+              className="btn-primary flex min-h-12 w-full items-center justify-center rounded-full px-7 text-sm font-medium sm:w-fit"
+            >
+              تلاش دوباره
+            </button>
+            <Link
+              href="/quiz"
+              className="flex min-h-11 items-center justify-center px-4 text-sm text-muted underline underline-offset-4 transition-colors hover:text-foreground"
+            >
+              شروع دوباره آزمون
+            </Link>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

@@ -48,7 +48,7 @@ const STATUS_LABEL: Record<PreviewRow["status"], string> = {
 
 const STATUS_CLASS: Record<PreviewRow["status"], string> = {
   valid: "text-forest",
-  invalid: "text-red-700",
+  invalid: "text-nebula",
   duplicate: "text-accent",
 };
 
@@ -108,16 +108,16 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
 
   if (confirmResult !== null && confirmResult.ok) {
     return (
-      <section aria-live="polite" className="rounded-xl border border-emerald-300 bg-emerald-50 p-6 dark:border-emerald-700 dark:bg-emerald-950">
-        <h2 className="text-lg font-bold text-emerald-900 dark:text-emerald-100">
+      <section aria-live="polite" className="rounded-[var(--radius-md)] border border border-champagne-deep/40 bg-champagne/10 p-6 ">
+        <h2 className="text-lg font-bold text-ink">
           وارد کردن عطرها با موفقیت انجام شد.
         </h2>
-        <p className="mt-2 text-emerald-800 dark:text-emerald-200">
+        <p className="mt-2 text-muted">
           تعداد واردشده: {confirmResult.importedCount.toLocaleString("fa-IR")}
         </p>
         <Link
           href={`/admin/perfumes?store=${encodeURIComponent(storeId)}`}
-          className="mt-4 inline-block rounded-lg bg-emerald-700 px-4 py-2 font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="mt-4 inline-block rounded-[var(--radius-md)] btn-primary flex min-h-11 items-center justify-center rounded-full px-5 text-sm font-medium  focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           مشاهده فهرست عطرها
         </Link>
@@ -132,7 +132,7 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
           event.preventDefault();
           void handlePreview(new FormData(event.currentTarget));
         }}
-        className="space-y-4 rounded-xl border border-border-soft p-6 border-border-soft"
+        className="space-y-4 rounded-[var(--radius-md)] border border-border-soft p-6 border-border-soft"
       >
         <div>
           <label htmlFor="csv-store" className="mb-1 block text-sm font-medium">
@@ -143,7 +143,7 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
             name="storeId"
             value={storeId}
             onChange={(event) => setStoreId(event.target.value)}
-            className="w-full max-w-sm rounded-lg border border-neutral-300 bg-surface px-3 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 dark:border-neutral-700 dark:bg-accent"
+            className="w-full max-w-sm rounded-[var(--radius-md)] border border-border-soft bg-surface px-3 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 "
           >
             {stores.map((store) => (
               <option key={store.id} value={store.id}>
@@ -163,7 +163,7 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
             type="file"
             accept=".csv,text/csv"
             required
-            className="w-full max-w-sm rounded-lg border border-neutral-300 bg-surface px-3 py-2 file:mr-3 file:rounded file:border-0 file:bg-surface-2 file:px-3 file:py-1 dark:border-neutral-700 dark:bg-accent dark:file:bg-neutral-800"
+            className="w-full max-w-sm rounded-[var(--radius-md)] border border-border-soft bg-surface px-3 py-2 file:mr-3 file:rounded file:border-0 file:bg-surface-2 file:px-3 file:py-1 "
           />
           <p className="mt-1 text-xs text-neutral-500 text-muted">
             حداکثر حجم: ۵ مگابایت — حداکثر ردیف: ۵٬۰۰۰
@@ -173,21 +173,21 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
         <button
           type="submit"
           disabled={submitting !== null}
-          className="rounded-lg bg-accent px-4 py-2 font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 dark:bg-surface text-white"
+          className="rounded-[var(--radius-md)] btn-primary flex min-h-11 items-center justify-center rounded-full px-5 text-sm font-medium  focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50  "
         >
           {submitting === "preview" ? "در حال بررسی..." : "بارگذاری و پیش‌نمایش"}
         </button>
       </form>
 
       {confirmResult !== null && !confirmResult.ok && (
-        <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
-          <p className="font-medium text-red-900 dark:text-red-100">{(confirmResult as ActionError).error}</p>
+        <div role="alert" className="rounded-[var(--radius-md)] border border border-nebula/40 bg-nebula/10 p-4 ">
+          <p className="font-medium text-nebula ">{(confirmResult as ActionError).error}</p>
           {(() => {
             const failure = confirmResult as ActionError;
             const details = failure.details ?? [];
 
             return details.length > 0 ? (
-              <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-red-800 dark:text-red-200">
+              <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-nebula ">
                 {details.slice(0, 20).map((detail, index) => (
                   <li key={index}>
                     {detail.row !== undefined && <>ردیف {detail.row.toLocaleString("fa-IR")}: </>}
@@ -203,17 +203,17 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
 
       {preview !== null && (
         <section aria-live="polite" className="space-y-4">
-          <div className="flex flex-wrap gap-4 rounded-xl border border-border-soft p-4 text-sm border-border-soft">
+          <div className="flex flex-wrap gap-4 rounded-[var(--radius-md)] border border-border-soft p-4 text-sm border-border-soft">
             <span>تعداد کل ردیف‌ها: <strong>{preview.summary.totalRows.toLocaleString("fa-IR")}</strong></span>
             <span className="text-forest">
               تعداد معتبر: <strong>{preview.summary.validRows.toLocaleString("fa-IR")}</strong>
             </span>
-            <span className="text-red-700">
+            <span className="text-nebula">
               تعداد خطادار: <strong>{preview.summary.errorRows.toLocaleString("fa-IR")}</strong>
             </span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-border-soft border-border-soft">
+          <div className="overflow-x-auto rounded-[var(--radius-md)] border border-border-soft">
             <table className="w-full text-sm">
               <caption className="sr-only">پیش‌نمایش ردیف‌های فایل CSV</caption>
               <thead>
@@ -228,7 +228,7 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
               </thead>
               <tbody>
                 {preview.rows.map((entry) => (
-                  <tr key={entry.row} className="border-t border-border-soft border-border-soft">
+                  <tr key={entry.row} className="border-t border-border-soft">
                     <td className="px-3 py-2">{entry.row.toLocaleString("fa-IR")}</td>
                     <td className="px-3 py-2">{entry.name || "—"}</td>
                     <td className="px-3 py-2">{entry.brand || "—"}</td>
@@ -254,7 +254,7 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
           </div>
 
           {hasErrors ? (
-            <div role="alert" className="rounded-xl border border-accent/30 bg-accent-soft p-4 text-foreground border-accent/30 bg-accent-soft text-foreground">
+            <div role="alert" className="rounded-[var(--radius-md)] border border-accent/30 bg-accent-soft p-4 text-foreground border-accent/30 bg-accent-soft text-foreground">
               به دلیل وجود خطا، امکان وارد کردن فایل وجود ندارد. لطفاً فایل را اصلاح و دوباره بارگذاری کنید.
             </div>
           ) : (
@@ -262,7 +262,7 @@ export default function CsvImportFlow({ stores }: { stores: AdminStoreView[] }) 
               type="button"
               onClick={() => void handleConfirm()}
               disabled={submitting !== null}
-              className="rounded-lg bg-emerald-700 px-4 py-2 font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
+              className="rounded-[var(--radius-md)] btn-primary flex min-h-11 items-center justify-center rounded-full px-5 text-sm font-medium  focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
             >
               {submitting === "confirm" ? "در حال وارد کردن..." : "تأیید و وارد کردن"}
             </button>

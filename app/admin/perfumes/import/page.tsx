@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { getActiveStores } from "@/lib/admin/repository";
+import AdminShell from "@/components/admin/AdminShell";
 import CsvImportFlow from "@/components/admin/CsvImportFlow";
 import { requireAdmin } from "@/lib/admin/server-access";
 
@@ -25,32 +26,38 @@ export default async function ImportPage() {
 
   if (stores.length === 0) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-10">
-        <h1 className="mb-6 text-2xl font-bold">ورود گروهی عطرها</h1>
+      <AdminShell
+        title="ورود گروهی عطرها"
+        current="perfumes"
+        width="md"
+      >
         <div
           role="status"
-          className="rounded-xl border border-accent/30 bg-accent-soft p-6 text-foreground border-accent/30 bg-accent-soft text-foreground"
+          className="rounded-[var(--radius-lg)] border border-border-soft bg-surface p-6 text-center"
         >
-          <p className="font-medium">هنوز فروشگاه فعالی وجود ندارد.</p>
-          <p className="mt-2 text-sm">برای ورود گروهی، ابتدا یک فروشگاه فعال لازم است.</p>
+          <p className="text-sm font-medium">هنوز فروشگاه فعالی وجود ندارد.</p>
+          <p className="mt-1 text-xs leading-7 text-muted">
+            برای ورود گروهی، ابتدا یک فروشگاه فعال لازم است.
+          </p>
         </div>
         <Link
           href="/admin/perfumes"
-          className="mt-6 inline-block rounded-lg btn-primary bg-accent px-4 py-2 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 bg-accent text-white"
+          className="btn-primary flex min-h-11 items-center justify-center rounded-full px-6 text-sm font-medium sm:self-start"
         >
           بازگشت به مدیریت عطرها
         </Link>
-      </main>
+      </AdminShell>
     );
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10">
-      <h1 className="mb-2 text-2xl font-bold">ورود گروهی عطرها</h1>
-      <p className="mb-6 text-sm text-muted text-muted">
-        فایل CSV را بارگذاری کنید، پیش‌نمایش را بررسی کنید و سپس وارد کردن را تأیید کنید.
-      </p>
+    <AdminShell
+      title="ورود گروهی عطرها"
+      description="فایل CSV را بارگذاری کنید، پیش‌نمایش را بررسی کنید و سپس وارد کردن را تأیید کنید."
+      current="perfumes"
+      width="xl"
+    >
       <CsvImportFlow stores={stores} />
-    </main>
+    </AdminShell>
   );
 }

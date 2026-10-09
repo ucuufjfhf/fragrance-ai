@@ -307,7 +307,7 @@ export default function BulkProfilingPanel({
 
   return (
     <section
-      className="flex flex-col gap-3 rounded-2xl border border-border-soft bg-surface p-4"
+      className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-border-soft bg-surface p-4"
       aria-label="پروفایل‌سازی گروهی با هوش مصنوعی"
     >
       <header className="flex flex-col gap-1">
@@ -320,7 +320,7 @@ export default function BulkProfilingPanel({
       </header>
 
       {error ? (
-        <p role="alert" className="text-xs text-red-400" aria-live="polite">
+        <p role="alert" className="text-xs text-nebula" aria-live="polite">
           {error}
         </p>
       ) : null}
@@ -357,7 +357,7 @@ export default function BulkProfilingPanel({
               type="button"
               disabled={selected.size === 0 || busy}
               onClick={() => void handleCreate()}
-              className="rounded-xl bg-accent px-5 py-2 text-xs font-medium text-background transition-colors hover:bg-accent/90 disabled:opacity-50"
+              className="rounded-[var(--radius-md)] btn-primary flex min-h-10 items-center justify-center rounded-full px-5 text-xs font-medium text-background transition-colors  disabled:opacity-50"
             >
               AI پروفایل‌سازی ({toPersianDigits(selected.size)})
             </button>
@@ -369,7 +369,7 @@ export default function BulkProfilingPanel({
           <ul className="flex flex-col gap-1">
             {perfumes.map((perfume) => (
               <li key={perfume.id}>
-                <label className="flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm hover:bg-surface-2">
+                <label className="flex items-center gap-2 rounded-[var(--radius-md)] px-2 py-1.5 text-sm hover:bg-surface-2">
                   <input
                     type="checkbox"
                     checked={selected.has(perfume.id)}
@@ -475,7 +475,7 @@ function BulkJobProgressView({
       {paused ? (
         <p
           role="status"
-          className="rounded-xl border border-border-soft bg-surface-2 p-3 text-xs leading-6"
+          className="rounded-[var(--radius-md)] border border-border-soft bg-surface-2 p-3 text-xs leading-6"
         >
           پردازش متوقف است (محدودیت نرخ هوش مصنوعی). با «ادامه» از همان‌جا
           پیش می‌رود.
@@ -489,7 +489,7 @@ function BulkJobProgressView({
               <button
                 type="button"
                 onClick={onAbort}
-                className="rounded-xl border border-border-soft px-4 py-2 text-xs text-muted transition-colors hover:border-accent/50 hover:text-foreground"
+                className="rounded-[var(--radius-md)] border border-border-soft px-4 py-2 text-xs text-muted transition-colors hover:border-accent/50 hover:text-foreground"
               >
                 توقف پس از این دسته
               </button>
@@ -498,7 +498,7 @@ function BulkJobProgressView({
                 type="button"
                 disabled={busy}
                 onClick={onChunk}
-                className="rounded-xl bg-accent px-5 py-2 text-xs font-medium text-background transition-colors hover:bg-accent/90 disabled:opacity-50"
+                className="rounded-[var(--radius-md)] btn-primary flex min-h-10 items-center justify-center rounded-full px-5 text-xs font-medium text-background transition-colors  disabled:opacity-50"
               >
                 {pending ? "شروع پردازش" : "ادامهٔ پردازش"}
               </button>
@@ -507,7 +507,7 @@ function BulkJobProgressView({
               type="button"
               disabled={busy || autoRunning || !running}
               onClick={onPause}
-              className="rounded-xl border border-border-soft px-4 py-2 text-xs text-muted transition-colors hover:border-accent/50 hover:text-foreground disabled:opacity-50"
+              className="rounded-[var(--radius-md)] border border-border-soft px-4 py-2 text-xs text-muted transition-colors hover:border-accent/50 hover:text-foreground disabled:opacity-50"
             >
               توقف
             </button>
@@ -518,7 +518,7 @@ function BulkJobProgressView({
             type="button"
             disabled={busy}
             onClick={onResume}
-            className="rounded-xl bg-accent px-5 py-2 text-xs font-medium text-background transition-colors hover:bg-accent/90 disabled:opacity-50"
+            className="rounded-[var(--radius-md)] btn-primary flex min-h-10 items-center justify-center rounded-full px-5 text-xs font-medium text-background transition-colors  disabled:opacity-50"
           >
             ادامه
           </button>
@@ -528,7 +528,7 @@ function BulkJobProgressView({
             type="button"
             disabled={busy}
             onClick={onRetryFailed}
-            className="rounded-xl border border-border-soft px-4 py-2 text-xs text-muted transition-colors hover:border-accent/50 hover:text-foreground disabled:opacity-50"
+            className="rounded-[var(--radius-md)] border border-border-soft px-4 py-2 text-xs text-muted transition-colors hover:border-accent/50 hover:text-foreground disabled:opacity-50"
           >
             تلاش مجدد برای موارد ناموفق
           </button>
@@ -548,7 +548,7 @@ function BulkJobProgressView({
 
 function FailedItemRow({ item }: { item: BulkFailedItemView }) {
   return (
-    <li className="flex flex-col gap-0.5 rounded-xl border border-border-soft bg-surface-2 p-3 text-xs">
+    <li className="flex flex-col gap-0.5 rounded-[var(--radius-md)] border border-border-soft bg-surface-2 p-3 text-xs">
       <span className="font-medium">{item.perfumeName ?? "—"}</span>
       <span className="text-muted">{item.errorMessage}</span>
     </li>

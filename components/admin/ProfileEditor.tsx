@@ -76,7 +76,7 @@ export default function ProfileEditor({ profile, errors, perfumeId, storeId }: P
   };
 
   return (
-    <fieldset className="flex flex-col gap-5 rounded-3xl border border-border-soft bg-surface p-5 sm:p-6">
+    <fieldset className="flex flex-col gap-5 rounded-[var(--radius-lg)] border border-border-soft bg-surface p-5 sm:p-6">
       <legend className="px-2 text-sm font-semibold text-accent">
         پروفایل عطری
       </legend>
@@ -90,7 +90,7 @@ export default function ProfileEditor({ profile, errors, perfumeId, storeId }: P
           type="button"
           onClick={generate}
           disabled={pending}
-          className="flex min-h-11 items-center justify-center rounded-2xl border border-accent/50 px-4 text-sm text-accent transition-colors hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex min-h-11 items-center justify-center rounded-[var(--radius-md)] border border-accent/50 px-4 text-sm text-accent transition-colors hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? "در حال تولید…" : "تولید پروفایل با هوش مصنوعی"}
         </button>
@@ -99,10 +99,10 @@ export default function ProfileEditor({ profile, errors, perfumeId, storeId }: P
       {feedback ? (
         <p
           role={feedback.ok ? "status" : "alert"}
-          className={`rounded-2xl border p-4 text-sm ${
+          className={`rounded-[var(--radius-md)] border p-4 text-sm ${
             feedback.ok
               ? "border-accent/40 bg-accent-soft text-accent"
-              : "border-red-500/40 bg-red-500/10 text-red-300"
+              : "border border-nebula/40 bg-nebula/10 text-nebula"
           }`}
         >
           {feedback.message}
@@ -127,10 +127,10 @@ export default function ProfileEditor({ profile, errors, perfumeId, storeId }: P
               defaultValue={profile?.matching[dimension] ?? 50}
               aria-invalid={errors?.[dimension] ? true : undefined}
               aria-describedby={errors?.[dimension] ? `error-${dimension}` : undefined}
-              className="tnum h-11 rounded-2xl border border-border-soft bg-surface-2 px-4 text-sm focus:border-accent focus:outline-none"
+              className="tnum h-11 rounded-[var(--radius-md)] border border-border-soft bg-surface-2 px-4 text-sm focus:border-accent focus:outline-none"
             />
             {errors?.[dimension] ? (
-              <span id={`error-${dimension}`} role="alert" className="text-xs text-red-400">
+              <span id={`error-${dimension}`} role="alert" className="text-xs text-nebula">
                 {errors[dimension]}
               </span>
             ) : null}
@@ -161,7 +161,7 @@ export default function ProfileEditor({ profile, errors, perfumeId, storeId }: P
               step={1}
               defaultValue={profile?.descriptors[dimension] ?? ""}
               aria-invalid={errors?.[dimension] ? true : undefined}
-              className="tnum h-11 rounded-2xl border border-border-soft bg-surface-2 px-4 text-sm focus:border-accent focus:outline-none"
+              className="tnum h-11 rounded-[var(--radius-md)] border border-border-soft bg-surface-2 px-4 text-sm focus:border-accent focus:outline-none"
             />
           </div>
         ))}

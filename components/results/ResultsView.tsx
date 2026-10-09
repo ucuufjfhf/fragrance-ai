@@ -1,10 +1,15 @@
-import { BrandMark, BottleMark } from "@/components/ui-icons";
+import { BrandMark, BottleMark, CompassMark, MoonMark, StarMark } from "@/components/ui-icons";
 import TraitBars from "@/components/results/TraitBars";
 
 import type { CSSProperties } from "react";
 import Link from "next/link";
 
+import { CosmicBackdrop } from "@/components/cosmic/cosmic-visuals";
+import SectionHeading from "@/components/cosmic/SectionHeading";
 import RecommendationCard from "@/components/results/RecommendationCard";
+import { PERSONALITY_LABELS } from "@/lib/personality/labels";
+import { formatPersianPercent } from "@/lib/persian";
+import { PERSONALITY_DIMENSIONS } from "@/types/personality";
 import type { Archetype, PersonalityVector } from "@/types/personality";
 import type { ResultsViewData } from "@/lib/results/service";
 
@@ -17,92 +22,143 @@ interface ResultsViewProps {
 }
 
 /**
- * The full results screen: profile header, ranked recommendations, states.
+ * The full results screen: a night-sky profile reveal, then the editorial
+ * recommendation list on ivory paper.
  *
  * Presentational and server-rendered. The ranked list is exactly the engine
  * output; the AI explanations map is consulted per perfume and its absence is
  * rendered as nothing (or the global notice) — never as a substitute text.
+ *
+ * The archetype accent colour is passed down as `--accent`, so the trait bars
+ * and match meters below inherit the personality's own hue. Inside the dark
+ * reveal the accent is used for decoration only (text stays ivory/champagne) to
+ * keep contrast accessible for every archetype colour.
  */
-export default function ResultsView({
-  vector,
-  archetype,
-  data,
-}: ResultsViewProps) {
+export default function ResultsView({ vector, archetype, data }: ResultsViewProps) {
   const { recommendations, explanations, aiAvailable, isEmpty } = data;
+
+  // The three strongest dimensions — real engine values, no recomputation.
+  const topDimensions = [...PERSONALITY_DIMENSIONS]
+    .sort((a, b) => vector[b] - vector[a])
+    .slice(0, 3);
 
   return (
     <div
-      className="flex flex-col gap-6 transition-colors duration-300"
-      style={{
-        "--accent": archetype.accentColor,
-        "--accent-soft": `color-mix(in srgb, ${archetype.accentColor} 14%, white)`,
-        "--accent-contrast": archetype.id === "clean-minimalist" || archetype.id === "elegant-classic" ? "#2A2420" : "#FFFFFF",
-      } as CSSProperties}
+      className="flex flex-1 flex-col"
+      style={
+        {
+          "--accent": archetype.accentColor,
+          "--accent-soft": `color-mix(in srgb, ${archetype.accentColor} 12%, transparent)`,
+        } as CSSProperties
+      }
     >
-      {/* --- profile header (Phase 1 data, same contract as the quiz card) --- */}
-      <section className="quiz-rise flex flex-col items-center gap-3 rounded-3xl border border-accent/40 bg-accent-soft p-6 text-center sm:p-8">
-        <span className="text-sm text-accent"><BrandMark className="ml-1 inline h-4 w-4" /> پروفایل عطری شما</span>
-        <BottleMark className="h-8 w-8 text-accent" />
-        <h1 className="text-2xl font-bold sm:text-3xl">{archetype.label}</h1>
-        <p className="text-sm leading-8 text-foreground/80">
-          {archetype.description}
-        </p>
-      </section>
+      {/* ---------------- profile reveal: the night sky ---------------- */}
+      <section data-surface="dark" className="relative isolate overflow-hidden horizon grain">
+        <CosmicBackdrop stars={48} seed={17} constellation intensity={0.9} />
+        <div className="relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center gap-5 px-5 py-16 text-center sm:px-8 sm:py-20">
+          <span className="eyebrow flex items-center gap-2 text-champagne">
+            <MoonMark className="h-3.5 w-3.5" />
+            پروفایل عطری شما
+          </span>
 
-      <section className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6">
-        <h2 className="font-semibold">رایحه‌ای که بهت میاد</h2>
-        <p className="text-sm leading-8 text-muted">{archetype.fragranceHint}</p>
-      </section>
+          <span
+            aria-hidden="true"
+            className="flex h-16 w-16 items-center justify-center rounded-full border"
+            style={{ borderColor: `color-mix(in srgb, ${archetype.accentColor} 75%, transparent)` }}
+          >
+            <BottleMark className="h-7 w-7 text-ivory/85" />
+          </span>
 
-      {/* --- top traits: the pronounced dimensions, engine values only --- */}
-      <TraitBars vector={vector} />
+          <h1 className="display-xl max-w-xl text-ivory">{archetype.label}</h1>
 
-      {/* --- recommendations --- */}
-      <section className="flex flex-col gap-4" aria-live="polite">
-        <h2 className="text-xl font-bold sm:text-2xl">عطرهایی که بهت میاد</h2>
+          <span aria-hidden="true" className="hairline w-24" />
 
-        {!aiAvailable && !isEmpty ? (
-          <p className="rounded-2xl border border-border-soft bg-surface-2 p-4 text-xs leading-7 text-muted">
-            {AI_UNAVAILABLE_NOTICE}
+          <p className="max-w-lg text-sm leading-9 text-muted sm:text-base">
+            {archetype.description}
           </p>
-        ) : null}
 
-        {isEmpty ? (
-          <div className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 text-center">
-            <p className="text-sm leading-8 text-muted">
-              فعلاً عطری مطابق با پروفایل تو پیدا نکردیم.
+          <p className="max-w-lg rounded-[var(--radius-md)] border border-border-soft bg-surface/50 px-5 py-4 text-xs leading-8 text-ivory/80">
+            <span className="me-1 inline-flex items-center gap-1.5 text-champagne">
+              <StarMark className="h-3 w-3" />
+              رایحه‌ای که بهت میاد:
+            </span>
+            {archetype.fragranceHint}
+          </p>
+
+          <dl className="mt-2 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+            {topDimensions.map((dimension) => (
+              <div key={dimension} className="flex flex-col items-center gap-0.5">
+                <dt className="text-[0.7rem] text-muted">{PERSONALITY_LABELS[dimension]}</dt>
+                <dd className="tnum display-md text-champagne">
+                  {formatPersianPercent(vector[dimension])}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      {/* ---------------- the editorial body: ivory paper ---------------- */}
+      <section className="bg-background">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-12 px-5 py-14 sm:px-8 sm:py-20">
+          <TraitBars vector={vector} />
+
+          <div className="flex flex-col gap-6" aria-live="polite">
+            <SectionHeading
+              eyebrow="پیشنهاد فیاج"
+              title="عطرهایی که بهت میاد"
+              description="رتبه‌بندی بر پایهٔ نمرهٔ نُه بُعد سلیقه‌ات و از میان عطرهای موجود فروشگاه انجام شده است."
+            />
+
+            {!aiAvailable && !isEmpty ? (
+              <p className="flex items-center gap-2 rounded-[var(--radius-md)] border border-border-soft bg-surface px-4 py-3 text-xs leading-7 text-muted">
+                <BrandMark className="h-3.5 w-3.5 shrink-0 text-champagne-deep/70" />
+                {AI_UNAVAILABLE_NOTICE}
+              </p>
+            ) : null}
+
+            {isEmpty ? (
+              <div className="flex flex-col items-center gap-4 rounded-[var(--radius-lg)] border border-border-soft bg-surface px-6 py-12 text-center">
+                <CompassMark className="h-8 w-8 text-champagne-deep/70" />
+                <h3 className="display-md text-ink">رایحهٔ مطابقی پیدا نشد</h3>
+                <p className="max-w-sm text-sm leading-8 text-muted">
+                  فعلاً عطری مطابق با پروفایل تو پیدا نکردیم. می‌توانی آزمون را دوباره
+                  انجام دهی یا فروشگاه دیگری را امتحان کنی.
+                </p>
+                <Link
+                  href="/quiz"
+                  className="btn-primary mt-1 flex min-h-12 items-center justify-center rounded-full px-7 text-sm font-medium"
+                >
+                  شروع دوباره آزمون
+                </Link>
+              </div>
+            ) : (
+              <ol className="flex list-none flex-col gap-5">
+                {recommendations.map((recommendation) => (
+                  <li key={recommendation.perfumeId}>
+                    <RecommendationCard
+                      recommendation={recommendation}
+                      explanation={explanations.get(recommendation.perfumeId)}
+                    />
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-border-soft pt-6">
+            <p className="text-xs leading-7 text-muted">
+              این نتیجه یک تحلیل سلیقه‌ای برای انتخاب عطر است، نه یک تست روانشناسی.
             </p>
             <Link
               href="/quiz"
-              className="mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
+              className="btn-ghost flex min-h-12 w-full items-center justify-center rounded-full text-sm sm:w-fit sm:px-8"
             >
-              شروع دوباره آزمون
+              شروع دوباره
             </Link>
           </div>
-        ) : (
-          <ol className="flex list-none flex-col gap-4">
-            {recommendations.map((recommendation) => (
-              <li key={recommendation.perfumeId}>
-                <RecommendationCard
-                  recommendation={recommendation}
-                  explanation={explanations.get(recommendation.perfumeId)}
-                />
-              </li>
-            ))}
-          </ol>
-        )}
+        </div>
       </section>
-
-      <p className="text-xs leading-7 text-muted">
-        این نتیجه یک تحلیل سلیقه‌ای برای انتخاب عطر است، نه یک تست روانشناسی.
-      </p>
-
-      <Link
-        href="/quiz"
-        className="flex min-h-12 items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50 hover:text-foreground"
-      >
-        شروع دوباره
-      </Link>
     </div>
   );
 }

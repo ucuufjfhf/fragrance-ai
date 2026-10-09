@@ -6,10 +6,12 @@ import {
   parseAnalyticsRange,
   type AnalyticsRangePreset,
 } from "@/lib/analytics/service";
+import AdminShell from "@/components/admin/AdminShell";
 import AnalyticsRangeNav from "@/components/admin/AnalyticsRangeNav";
 import { formatPersianPercent, toPersianDigits } from "@/lib/persian";
 import type { Metadata } from "next";
 
+import { CompassMark } from "@/components/ui-icons";
 import { requireAdmin } from "@/lib/admin/server-access";
 
 /**
@@ -50,22 +52,29 @@ export default async function AdminAnalyticsPage({ searchParams }: AdminAnalytic
 
   if (stores.length === 0) {
     return (
-      <main className="mx-auto max-w-4xl px-4 py-10">
-        <h1 className="mb-6 text-2xl font-bold">تحلیل عملکرد</h1>
-        <div
+      <AdminShell
+        title="تحلیل عملکرد"
+        description="آمار ناشناس آزمون‌ها، پیشنهادها و کلیک‌ها"
+        current="analytics"
+        width="xl"
+      >
+        <section
           role="status"
-          className="rounded-xl border border-accent/30 bg-accent-soft p-6 text-foreground border-accent/30 bg-accent-soft text-foreground"
+          className="flex flex-col items-center gap-3 rounded-[var(--radius-lg)] border border-border-soft bg-surface p-8 text-center"
         >
-          <p className="font-medium">هنوز فروشگاه فعالی وجود ندارد.</p>
-          <p className="mt-2 text-sm">برای دیدن تحلیل عملکرد، ابتدا یک فروشگاه فعال لازم است.</p>
-        </div>
-        <Link
-          href="/admin/perfumes"
-          className="mt-6 inline-block rounded-lg btn-primary bg-accent px-4 py-2 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 bg-accent text-white"
-        >
-          بازگشت به مدیریت عطرها
-        </Link>
-      </main>
+          <CompassMark className="h-7 w-7 text-champagne-deep/70" />
+          <p className="text-sm text-foreground">هنوز فروشگاه فعالی وجود ندارد.</p>
+          <p className="text-xs leading-7 text-muted">
+            برای دیدن تحلیل عملکرد، ابتدا یک فروشگاه فعال لازم است.
+          </p>
+          <Link
+            href="/admin/perfumes"
+            className="btn-primary mt-1 flex min-h-11 items-center justify-center rounded-full px-6 text-sm font-medium"
+          >
+            بازگشت به مدیریت عطرها
+          </Link>
+        </section>
+      </AdminShell>
     );
   }
 
@@ -75,14 +84,15 @@ export default async function AdminAnalyticsPage({ searchParams }: AdminAnalytic
   const data = await getAnalyticsDashboardData(selectedStore.id, params.range);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10">
-      <h1 className="mb-2 text-2xl font-bold">تحلیل عملکرد</h1>
-      <p className="mb-6 text-sm text-muted">
-        فروشگاه: <strong>{selectedStore.name}</strong>
-      </p>
+    <AdminShell
+      title="تحلیل عملکرد"
+      description={`فروشگاه: ${selectedStore.name}`}
+      current="analytics"
+      width="xl"
+    >
 
       {/* --- store selector (server-navigating links, like Phase 6A) --- */}
-      <nav aria-label="انتخاب فروشگاه" className="mb-4 flex flex-wrap gap-2">
+      <nav aria-label="انتخاب فروشگاه" className="flex flex-wrap gap-2">
         {stores.map((store) => (
           <Link
             key={store.id}
@@ -90,8 +100,8 @@ export default async function AdminAnalyticsPage({ searchParams }: AdminAnalytic
             aria-current={store.id === selectedStore.id ? "page" : undefined}
             className={`rounded-full border px-4 py-1.5 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
               store.id === selectedStore.id
-                ? "border-accent bg-accent-soft font-medium text-accent"
-                : "border-border-soft text-muted hover:border-accent/50 hover:text-accent"
+                ? "border-champagne-deep/50 bg-champagne/15 font-medium text-ink"
+                : "border-border-soft text-muted hover:border-champagne-deep/40 hover:text-foreground"
             }`}
           >
             {store.name}
@@ -104,13 +114,11 @@ export default async function AdminAnalyticsPage({ searchParams }: AdminAnalytic
       {!data.hasData ? (
         <div
           role="status"
-          className="mt-8 rounded-xl border border-border-soft bg-surface p-8 text-center"
+          className="mt-8 flex flex-col items-center gap-2 rounded-[var(--radius-lg)] border border-border-soft bg-surface p-8 text-center"
         >
-          <span aria-hidden="true" className="text-3xl">
-            📭
-          </span>
-          <p className="mt-3 font-medium">هنوز داده‌ای برای نمایش وجود ندارد.</p>
-          <p className="mt-1 text-sm text-muted">
+          <CompassMark className="h-7 w-7 text-champagne-deep/70" />
+          <p className="font-medium">هنوز داده‌ای برای نمایش وجود ندارد.</p>
+          <p className="text-xs leading-7 text-muted">
             با شروع ثبت رویدادها (شروع آزمون، مشاهده نتایج، کلیک روی عطر) این بخش فعال می‌شود.
           </p>
         </div>
@@ -140,19 +148,19 @@ export default async function AdminAnalyticsPage({ searchParams }: AdminAnalytic
 
           {/* --- top recommended perfumes --- */}
           <section className="mt-10">
-            <h2 className="mb-3 text-lg font-bold">عطرهای پرتکرار در پیشنهادها</h2>
+            <h2 className="mb-3 font-heading text-lg text-ink">عطرهای پرتکرار در پیشنهادها</h2>
             {data.topPerfumes.length === 0 ? (
-              <p className="rounded-xl border border-border-soft bg-surface p-4 text-sm text-muted">
+              <p className="rounded-[var(--radius-md)] border border-border-soft bg-surface p-4 text-sm text-muted">
                 هنوز داده‌ای برای نمایش وجود ندارد.
               </p>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-border-soft">
+              <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-border-soft bg-surface">
                 <table className="w-full text-sm">
                   <caption className="sr-only">
                     عطرهای پرتکرار در پیشنهادها و نرخ کلیک آن‌ها
                   </caption>
                   <thead>
-                    <tr className="bg-surface-2 text-right">
+                    <tr className="bg-surface-2 text-right text-xs text-muted">
                       <th scope="col" className="px-3 py-2">رتبه</th>
                       <th scope="col" className="px-3 py-2">عطر</th>
                       <th scope="col" className="px-3 py-2">برند</th>
@@ -186,12 +194,12 @@ export default async function AdminAnalyticsPage({ searchParams }: AdminAnalytic
 
           {/* --- daily roll-up --- */}
           <section className="mt-10">
-            <h2 className="mb-3 text-lg font-bold">روند روزانه</h2>
-            <div className="overflow-x-auto rounded-xl border border-border-soft">
+            <h2 className="mb-3 font-heading text-lg text-ink">روند روزانه</h2>
+            <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-border-soft bg-surface">
               <table className="w-full text-sm">
                 <caption className="sr-only">رویدادهای هر روز در بازه انتخابی</caption>
                 <thead>
-                  <tr className="bg-surface-2 text-right">
+                  <tr className="bg-surface-2 text-right text-xs text-muted">
                     <th scope="col" className="px-3 py-2">تاریخ</th>
                     <th scope="col" className="px-3 py-2">شروع آزمون</th>
                     <th scope="col" className="px-3 py-2">تکمیل آزمون</th>
@@ -216,11 +224,11 @@ export default async function AdminAnalyticsPage({ searchParams }: AdminAnalytic
         </>
       )}
 
-      <p className="mt-10 text-xs leading-7 text-muted">
+      <p className="text-xs leading-7 text-muted">
         این آمار از رویدادهای ناشناس ثبت‌شده محاسبه می‌شود؛ تقریبی است و برای تحلیل
         رفتار فردی کاربرد ندارد.
       </p>
-    </main>
+    </AdminShell>
   );
 }
 
@@ -234,9 +242,9 @@ function KpiCard({
   isPercent?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-border-soft bg-surface p-4">
-      <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 text-xl font-bold tnum" aria-label={label}>
+    <div className="rounded-[var(--radius-md)] border border-border-soft bg-surface p-4">
+      <p className="text-[0.7rem] text-muted">{label}</p>
+      <p className="tnum mt-1 font-heading text-xl text-ink" aria-label={label}>
         {value === null ? "—" : isPercent ? formatPersianPercent(value) : toPersianDigits(value)}
       </p>
     </div>

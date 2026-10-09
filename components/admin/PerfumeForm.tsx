@@ -72,12 +72,12 @@ export interface PerfumeFormProps {
 }
 
 const inputClass =
-  "h-11 w-full rounded-2xl border border-border-soft bg-surface-2 px-4 text-sm focus:border-accent focus:outline-none";
+  "h-11 w-full rounded-[var(--radius-md)] border border-border-soft bg-surface-2 px-4 text-sm focus:border-accent focus:outline-none";
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <span role="alert" className="text-xs text-red-400">
+    <span role="alert" className="text-xs text-nebula">
       {message}
     </span>
   );
@@ -96,7 +96,7 @@ export default function PerfumeForm({
 
   return (
     <form id="perfume-form" action={formAction} className="flex flex-col gap-6">
-      <fieldset className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-5 sm:p-6">
+      <fieldset className="flex flex-col gap-4 rounded-[var(--radius-lg)] border border-border-soft bg-surface p-5 sm:p-6">
         <legend className="px-2 text-sm font-semibold text-accent">
           اطلاعات محصول
         </legend>
@@ -220,7 +220,7 @@ export default function PerfumeForm({
             rows={3}
             maxLength={1000}
             defaultValue={values?.description ?? ""}
-            className="w-full rounded-2xl border border-border-soft bg-surface-2 p-4 text-sm focus:border-accent focus:outline-none"
+            className="w-full rounded-[var(--radius-md)] border border-border-soft bg-surface-2 p-4 text-sm focus:border-accent focus:outline-none"
           />
         </div>
 
@@ -254,7 +254,7 @@ export default function PerfumeForm({
         errors={fieldErrors}
       />
 
-      <fieldset className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-5 sm:p-6">
+      <fieldset className="flex flex-col gap-4 rounded-[var(--radius-lg)] border border-border-soft bg-surface p-5 sm:p-6">
         <legend className="px-2 text-sm font-semibold text-accent">
           خانواده رایحه و نُت‌ها
         </legend>
@@ -305,19 +305,19 @@ export default function PerfumeForm({
             name="notes"
             rows={3}
             defaultValue={values?.notes.join("\n") ?? ""}
-            className="w-full rounded-2xl border border-border-soft bg-surface-2 p-4 text-sm focus:border-accent focus:outline-none"
+            className="w-full rounded-[var(--radius-md)] border border-border-soft bg-surface-2 p-4 text-sm focus:border-accent focus:outline-none"
           />
         </div>
       </fieldset>
 
       {state && !state.ok ? (
-        <p role="alert" className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
+        <p role="alert" className="rounded-[var(--radius-md)] border border border-nebula/40 bg-nebula/10 p-4 text-sm text-nebula">
           {state.message}
         </p>
       ) : null}
 
       {state?.ok ? (
-        <p role="status" className="rounded-2xl border border-accent/40 bg-accent-soft p-4 text-sm text-accent">
+        <p role="status" className="rounded-[var(--radius-md)] border border-accent/40 bg-accent-soft p-4 text-sm text-accent">
           {state.message}
         </p>
       ) : null}
@@ -325,7 +325,7 @@ export default function PerfumeForm({
       <button
         type="submit"
         disabled={pending}
-        className="flex min-h-12 items-center justify-center rounded-2xl bg-accent px-8 font-medium text-background transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit"
+        className="flex min-h-12 items-center justify-center rounded-[var(--radius-md)] btn-primary flex min-h-12 items-center justify-center rounded-full px-7 text-sm font-medium text-background transition-colors  disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit"
       >
         {pending ? "در حال ذخیره…" : submitLabel}
       </button>

@@ -32,7 +32,7 @@ export default function WidgetEmbedCode({
   }
 
   return (
-    <section className="flex flex-col gap-2 rounded-2xl border border-border-soft bg-surface p-4">
+    <section className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-border-soft bg-surface p-4">
       <h2 className="text-sm font-semibold">کد نصب ویجت</h2>
       <p className="text-xs leading-6 text-muted">
         این کد را در صفحهٔ فروشگاه خود قرار دهید تا مشتریان بدون ترک سایت، آزمون سلیقهٔ
@@ -40,7 +40,7 @@ export default function WidgetEmbedCode({
       </p>
       <pre
         dir="ltr"
-        className="tnum overflow-x-auto rounded-xl bg-surface-2 p-3 text-left text-xs leading-6"
+        className="tnum overflow-x-auto rounded-[var(--radius-md)] bg-surface-2 p-3 text-left text-xs leading-6"
         aria-label="کد نصب ویجت"
       >
         {snippet}
@@ -48,7 +48,7 @@ export default function WidgetEmbedCode({
       <button
         type="button"
         onClick={() => void handleCopy()}
-        className="w-fit rounded-xl border border-border-soft px-4 py-2 text-xs font-medium text-muted transition-colors hover:border-accent/50 hover:text-accent"
+        className="w-fit rounded-[var(--radius-md)] border border-border-soft px-4 py-2 text-xs font-medium text-muted transition-colors hover:border-accent/50 hover:text-accent"
       >
         {copied ? "کپی شد ✓" : "کپی کد"}
       </button>

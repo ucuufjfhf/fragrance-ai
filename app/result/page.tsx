@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import ResultsView from "@/components/results/ResultsView";
+import { CompassMark } from "@/components/ui-icons";
 import { parseResultsParams } from "@/lib/results/params";
 import { getResultsViewData } from "@/lib/results/service";
 
@@ -19,7 +20,7 @@ import { getResultsViewData } from "@/lib/results/service";
  */
 
 export const metadata: Metadata = {
-  title: "پروفایل عطری تو | عطر خودتو پیدا کن",
+  title: "پروفایل عطری تو | فیاج",
   description:
     "عطرهایی که با پروفایل عطری تو هماهنگ‌ترند، به همراه توضیح فارسی «چرا این عطر؟».",
 };
@@ -40,7 +41,7 @@ export default async function ResultPage({ searchParams }: ResultPageProps) {
   const data = await getResultsViewData(params.value, params.value.source);
 
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
+    <main className="flex flex-1 flex-col">
       <ResultsView
         vector={params.value.vector}
         archetype={params.value.archetype}
@@ -52,24 +53,22 @@ export default async function ResultPage({ searchParams }: ResultPageProps) {
 
 function ResultErrorState() {
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
-      <section className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 text-center sm:p-8">
-        <span aria-hidden="true" className="text-4xl">
-          🧭
-        </span>
-        <h1 className="text-xl font-bold sm:text-2xl">
-          چیزی برای نمایش پیدا نکردیم
-        </h1>
-        <p className="text-sm leading-8 text-muted">
-          برای دیدن پروفایل عطری و پیشنهادهای مناسب تو، اول آزمون کوتاه رو کامل کن.
-        </p>
-        <a
-          href="/quiz"
-          className="mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
-        >
-          شروع آزمون
-        </a>
-      </section>
+    <main className="flex flex-1 flex-col bg-background">
+      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center gap-6 px-5 py-16 sm:px-8">
+        <section className="flex flex-col items-center gap-4 rounded-[var(--radius-lg)] border border-border-soft bg-surface px-6 py-12 text-center">
+          <CompassMark className="h-9 w-9 text-champagne-deep/70" />
+          <h1 className="display-md text-ink">چیزی برای نمایش پیدا نکردیم</h1>
+          <p className="max-w-sm text-sm leading-8 text-muted">
+            برای دیدن پروفایل عطری و پیشنهادهای مناسب تو، اول آزمون کوتاه رو کامل کن.
+          </p>
+          <a
+            href="/quiz"
+            className="btn-primary mt-1 flex min-h-12 items-center justify-center rounded-full px-7 text-sm font-medium"
+          >
+            شروع آزمون
+          </a>
+        </section>
+      </div>
     </main>
   );
 }

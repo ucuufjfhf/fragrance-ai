@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { ArrowLeftMark, BottleMark, StarMark } from "@/components/ui-icons";
+
+import { CosmicBackdrop } from "@/components/cosmic/cosmic-visuals";
 import ProgressBar from "@/components/quiz/ProgressBar";
-import { BrandMark } from "@/components/ui-icons";
 
 import Question from "@/components/quiz/Question";
 import WidgetRecommendationCard from "@/components/widget/WidgetRecommendationCard";
@@ -178,14 +180,14 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
         <button
           type="button"
           onClick={() => void handleSubmit()}
-          className="mt-4 flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-white transition-colors hover:bg-accent/90"
+          className="btn-primary mt-4 flex min-h-12 w-full items-center justify-center rounded-full px-5 text-sm font-medium"
         >
           تلاش دوباره
         </button>
         <button
           type="button"
           onClick={handleRestart}
-          className="mt-2 flex min-h-12 w-full items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50"
+          className="btn-ghost mt-2 flex min-h-11 w-full items-center justify-center rounded-full px-5 text-xs"
         >
           شروع دوباره آزمون
         </button>
@@ -206,24 +208,36 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
 
   if (state.flow.phase === "intro") {
     return (
-      <section className="flex flex-col gap-5 rounded-3xl border border-border-soft bg-surface p-6">
-        <div className="flex flex-col gap-2">
-          <span className="w-fit rounded-full border border-border-soft bg-accent-soft px-4 py-1 text-sm text-accent">
-            <BrandMark className="mr-1 inline h-4 w-4" /> آزمون سلیقه عطری
-          </span>
-          <h1 className="text-2xl font-bold leading-10 text-foreground">عطر مناسب خودت رو پیدا کن</h1>
-          <p className="text-sm leading-8 text-muted">
-            فقط به ۱۰ سؤال کوتاه جواب بده تا ببینیم چه رایحه‌ای بیشتر با سلیقه و شخصیت عطری تو هماهنگه.
-          </p>
+      <section className="overflow-hidden rounded-[var(--radius-lg)] border border-border-soft bg-surface">
+        {/* Narrow night header — the widget's only atmospheric moment. */}
+        <div data-surface="dark" className="relative isolate overflow-hidden bg-night">
+          <CosmicBackdrop stars={14} seed={9} atmosphere={false} constellation={false} intensity={0.6} />
+          <div className="relative z-10 flex flex-col gap-2 px-5 py-6">
+            <span className="eyebrow flex items-center gap-2 text-champagne">
+              <StarMark className="h-3 w-3" />
+              آزمون سلیقه عطری
+            </span>
+            <h1 className="display-md text-ivory">عطر مناسب خودت رو پیدا کن</h1>
+            <p className="text-xs leading-7 text-muted">
+              فقط به ۱۰ سؤال کوتاه جواب بده تا ببینیم چه رایحه‌ای بیشتر با سلیقه و
+              شخصیت عطری تو هماهنگه.
+            </p>
+          </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleStart}
-          className="flex min-h-12 flex-1 items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-white transition-colors hover:bg-accent/90"
-        >
-          عطر خودتو پیدا کن
-        </button>
+        <div className="flex flex-col gap-3 px-5 py-5">
+          <button
+            type="button"
+            onClick={handleStart}
+            className="btn-primary flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-5 font-medium"
+          >
+            عطر خودتو پیدا کن
+            <ArrowLeftMark className="h-4 w-4" />
+          </button>
+          <span className="text-center text-[0.68rem] text-muted">
+            ۱۰ سؤال · کمتر از دو دقیقه · بدون ثبت‌نام
+          </span>
+        </div>
       </section>
     );
   }
@@ -235,7 +249,7 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
   const canContinue = typeof selectedOptionId === "string";
 
   return (
-    <section className="flex flex-col gap-5">
+    <section className="flex flex-col gap-5 rounded-[var(--radius-lg)] border border-border-soft bg-surface p-4 sm:p-5">
       <ProgressBar current={progress.current} total={progress.total} />
 
       <Question
@@ -251,7 +265,7 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
         <button
           type="button"
           onClick={() => setState((current) => ({ ...current, flow: goPrevious(current.flow) }))}
-          className="flex min-h-12 items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50"
+          className="btn-ghost flex min-h-12 items-center justify-center rounded-full px-5 text-sm"
         >
           قبلی
         </button>
@@ -265,9 +279,10 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
               setState((current) => ({ ...current, flow: goNext(current.flow) }));
             }
           }}
-          className="flex min-h-12 flex-1 items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-white transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn-primary flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full px-5 font-medium disabled:cursor-not-allowed"
         >
           {isLastQuestion ? "دیدن نتیجه" : "بعدی"}
+          {isLastQuestion ? <ArrowLeftMark className="h-4 w-4" /> : null}
         </button>
       </div>
     </section>
@@ -287,12 +302,26 @@ function WidgetResult({
 }) {
   return (
     <div className="flex flex-col gap-5">
-      <section className="flex flex-col items-center gap-2 rounded-3xl border border-accent/40 bg-accent-soft p-6 text-center">
-        <span aria-hidden="true" className="text-4xl">
-          {result.archetype.emoji}
-        </span>
-        <h1 className="text-xl font-bold text-foreground">{result.archetype.label}</h1>
-        <p className="text-sm leading-8 text-muted">{result.archetype.description}</p>
+      <section
+        data-surface="dark"
+        className="relative isolate overflow-hidden rounded-[var(--radius-lg)] border border-border-soft bg-night"
+      >
+        <CosmicBackdrop stars={18} seed={21} atmosphere={false} constellation={false} intensity={0.7} />
+        <div className="relative z-10 flex flex-col items-center gap-2 px-5 py-7 text-center">
+          <span
+            aria-hidden="true"
+            className="flex h-11 w-11 items-center justify-center rounded-full border"
+            style={{ borderColor: `color-mix(in srgb, ${result.archetype.accentColor} 75%, transparent)` }}
+          >
+            <BottleMark className="h-5 w-5 text-ivory/85" />
+          </span>
+          <span className="eyebrow flex items-center gap-2 text-champagne">
+            <StarMark className="h-3 w-3" />
+            پروفایل عطری تو
+          </span>
+          <h1 className="display-md text-ivory">{result.archetype.label}</h1>
+          <p className="text-xs leading-8 text-muted">{result.archetype.description}</p>
+        </div>
       </section>
 
       {data.recommendations.length === 0 ? (
@@ -313,7 +342,7 @@ function WidgetResult({
       <button
         type="button"
         onClick={onRestart}
-        className="flex min-h-12 items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50"
+        className="btn-ghost flex min-h-12 items-center justify-center rounded-full px-5 text-sm"
       >
         شروع دوباره
       </button>
@@ -329,8 +358,9 @@ function WidgetNotice({ children }: { children: React.ReactNode }) {
   return (
     <div
       role="status"
-      className="flex min-h-32 flex-col items-center justify-center rounded-3xl border border-border-soft bg-surface p-6 text-center text-sm leading-8 text-muted"
+      className="flex min-h-32 flex-col items-center justify-center gap-1 rounded-[var(--radius-lg)] border border-border-soft bg-surface p-6 text-center text-sm leading-8 text-muted"
     >
+      <StarMark className="h-4 w-4 text-champagne-deep/70" />
       {children}
     </div>
   );

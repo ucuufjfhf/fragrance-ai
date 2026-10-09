@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import AdminShell from "@/components/admin/AdminShell";
 import PerfumeForm from "@/components/admin/PerfumeForm";
 import { getActiveStores } from "@/lib/admin/repository";
 import { createPerfumeAction } from "@/app/admin/perfumes/actions";
@@ -35,11 +36,11 @@ export default async function NewPerfumePage({ searchParams }: NewPerfumePagePro
 
   if (!store) {
     return (
-      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-8">
-        <p className="rounded-3xl border border-border-soft bg-surface p-6 text-center text-sm text-muted">
+      <AdminShell title="افزودن عطر جدید" current="perfumes" width="md">
+        <p className="rounded-[var(--radius-lg)] border border-border-soft bg-surface p-6 text-center text-sm text-muted">
           فروشگاه فعالی وجود ندارد.
         </p>
-      </main>
+      </AdminShell>
     );
   }
 
@@ -50,12 +51,11 @@ export default async function NewPerfumePage({ searchParams }: NewPerfumePagePro
   const boundAction = createPerfumeAction.bind(null, store.id);
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold sm:text-3xl">افزودن عطر جدید</h1>
-        <p className="text-sm text-muted">فروشگاه: {store.name}</p>
-      </header>
-
+    <AdminShell
+      title="افزودن عطر جدید"
+      description={`فروشگاه: ${store.name}`}
+      current="perfumes"
+    >
       <PerfumeForm
         storeId={store.id}
         action={boundAction}
@@ -68,6 +68,6 @@ export default async function NewPerfumePage({ searchParams }: NewPerfumePagePro
       >
         بازگشت به فهرست عطرها
       </Link>
-    </main>
+    </AdminShell>
   );
 }

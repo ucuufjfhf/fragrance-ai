@@ -7,7 +7,7 @@ interface QuestionProps {
   onSelect: (questionId: string, optionId: string) => void;
 }
 
-/** One screen of the quiz: the prompt plus its answer cards. */
+/** One screen of the quiz: the prompt plus its answer rows. */
 export default function Question({
   question,
   selectedOptionId,
@@ -15,10 +15,10 @@ export default function Question({
 }: QuestionProps) {
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="mb-3 text-lg font-semibold leading-9 sm:text-xl">
+      <legend className="mb-4 max-w-xl font-heading text-xl leading-10 text-foreground sm:text-2xl sm:leading-[3rem]">
         {question.prompt}
       </legend>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col rounded-[var(--radius-md)] border border-border-soft bg-surface/40">
         {question.options.map((option) => (
           <QuizOption
             key={option.id}

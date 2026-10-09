@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   Fiage — "Cosmic Atelier" design system
+   --------------------------------------------------------------------------
+   One token layer, two deliberate environments:
+
+     • light editorial  — the default scope (:root), moonlight-ivory paper
+     • dark atmospheric — any [data-surface="dark"] wrapper, night-plum sky
+
+   Both scopes expose the SAME semantic variables (--background, --surface,
+   --accent, …), so existing utility classes (bg-surface, text-muted,
+   border-border-soft, bg-accent) automatically follow the environment they
+   are placed in. No page forks the token system.
+
+   Persian-first: no letter-spacing on Persian text (it visually breaks the
+   connected script), and line heights stay roomy for Persian ascenders.
+   ========================================================================== */
+
 @font-face {
   font-family: "SG Kara";
   src: url('/fonts/SGKara-SemiBold.woff2') format('woff2');
@@ -14,27 +31,61 @@
   font-display: swap;
 }
 
-/*
- * Fragrance AI — base styles
- *
- * Persian-first, RTL, mobile-first. The palette is a single premium dark theme
- * suited to a perfume storefront (Phase 5 polishes the result UI on top of it).
- */
-
 :root {
-  --background: #faf7f2;
-  --foreground: #2a2420;
-  --surface: #ffffff;
-  --surface-2: #f5f0e8;
-  --border-soft: #eae2d4;
-  --accent: #b5652d;
-  --accent-soft: #f3e5d8;
-  --muted: #756b5e;
-  --forest: #4a5d4e;
-  --forest-soft: #e7eee7;
-  --shadow-soft: 0 12px 32px rgba(74, 55, 39, 0.08);
-  --shadow-card: 0 4px 18px rgba(74, 55, 39, 0.06);
-  --shadow-accent: 0 8px 18px rgba(181, 101, 45, 0.22);
+  /* ---- raw palette (Cosmic Atelier) ---------------------------------- */
+  --night-plum: #191725;
+  --night-deep: #12111d;
+  --dusk-indigo: #34374d;
+  --celestial-blue: #8295b0;
+  --champagne: #d0b78e;
+  --moonlight-ivory: #f1eae0;
+  --dusty-nebula: #b99aa9;
+  --ink: #24212a;
+  --muted-text: #77717d;
+  --border: #d8d0c7;
+  /* Champagne deepened so it can carry text on ivory surfaces (AA). */
+  --champagne-deep: #8a7040;
+  /* Celestial blue deepened for the same reason. */
+  --celestial-deep: #4a6182;
+
+  /* ---- geometry ------------------------------------------------------ */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+  --shadow-soft: 0 1px 2px rgba(25, 23, 37, 0.05), 0 22px 44px -34px rgba(25, 23, 37, 0.45);
+  --shadow-lift: 0 2px 4px rgba(25, 23, 37, 0.06), 0 30px 60px -40px rgba(25, 23, 37, 0.55);
+
+  /* ---- semantic: light editorial (default) ---------------------------- */
+  --background: #f6f0e7;
+  --foreground: var(--ink);
+  --surface: #fbf7f0;
+  --surface-2: #ece3d6;
+  --border-soft: #ded4c6;
+  --accent: var(--champagne-deep);
+  --accent-soft: rgba(138, 112, 64, 0.1);
+  --muted: #6f6975;
+
+  /* Legacy alias kept so older components keep rendering in-palette. */
+  --forest: var(--celestial-deep);
+  --forest-soft: rgba(74, 97, 130, 0.12);
+  --shadow-card: var(--shadow-soft);
+}
+
+/*
+ * Dark atmospheric environment. Applied to <section> / <header> wrappers or to
+ * a whole page shell; everything inside inherits the night palette.
+ */
+[data-surface="dark"] {
+  --background: var(--night-plum);
+  --foreground: var(--moonlight-ivory);
+  --surface: #221f30;
+  --surface-2: #2b2840;
+  --border-soft: rgba(241, 234, 224, 0.16);
+  --accent: var(--champagne);
+  --accent-soft: rgba(208, 183, 142, 0.14);
+  --muted: #aaa6b9;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -48,24 +99,35 @@
   --color-muted: var(--muted);
   --color-forest: var(--forest);
   --color-forest-soft: var(--forest-soft);
-  --font-heading: "SG Kara", "Vazirmatn", sans-serif;
-  --font-body: "Estedad", "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
+
+  /* raw brand hues, usable directly (bg-night, text-champagne, …) */
+  --color-night: var(--night-plum);
+  --color-night-deep: var(--night-deep);
+  --color-indigo: var(--dusk-indigo);
+  --color-celestial: var(--celestial-blue);
+  --color-celestial-deep: var(--celestial-deep);
+  --color-champagne: var(--champagne);
+  --color-champagne-deep: var(--champagne-deep);
+  --color-ivory: var(--moonlight-ivory);
+  --color-nebula: var(--dusty-nebula);
+  --color-ink: var(--ink);
+  --color-hairline: var(--border);
+
+  --radius-card: var(--radius-lg);
+
+  --font-heading: "SG Kara", var(--font-persian), "Segoe UI", sans-serif;
+  --font-body: "Estedad", var(--font-persian), "Segoe UI", Tahoma, sans-serif;
+  --font-display: "SG Kara", var(--font-persian), "Segoe UI", sans-serif;
   --font-sans: var(--font-body);
 }
 
-.btn-primary {
-  background-image: linear-gradient(180deg, color-mix(in srgb, var(--accent) 92%, white) 0%, var(--accent) 58%, color-mix(in srgb, var(--accent) 88%, black) 100%);
-  box-shadow: var(--shadow-accent);
-  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
-}
-.btn-primary:hover { transform: translateY(-1px) scale(1.02); box-shadow: 0 12px 24px rgba(181, 101, 45, 0.3); filter: saturate(1.05); }
-.btn-primary:active { transform: translateY(1px) scale(0.98); box-shadow: 0 4px 10px rgba(181, 101, 45, 0.2); }
-.btn-primary:focus-visible { outline: 3px solid color-mix(in srgb, var(--forest) 45%, white); outline-offset: 3px; }
-.results-accent-text { color: var(--accent-contrast); }
-@media (prefers-reduced-motion: reduce) { .btn-primary { transform: none !important; transition: none; } }
+/* ==========================================================================
+   Base
+   ========================================================================== */
 
 html {
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -75,76 +137,265 @@ body {
   /* Persian script needs a roomier line height than Latin text. */
   line-height: 1.9;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 600;
+  letter-spacing: 0;
 }
-/* Persian digits are long by nature; tabular figures keep progress labels stable. */
+
+::selection {
+  background: color-mix(in srgb, var(--champagne) 45%, transparent);
+  color: var(--night-plum);
+}
+
+:focus-visible {
+  outline: 2px solid var(--celestial-blue);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+[data-surface="dark"] :focus-visible {
+  outline-color: var(--champagne);
+}
+
+/* Persian digits are long by nature; tabular figures keep counters stable. */
 .tnum {
   font-variant-numeric: tabular-nums;
 }
 
-/* Question and result screens rise into place; skipped for reduced-motion users. */
+/* ==========================================================================
+   Editorial typography scale (fluid, Persian-aware line heights)
+   ========================================================================== */
+
+.display-xl {
+  font-family: var(--font-display);
+  font-size: clamp(1.95rem, 7vw, 3.5rem);
+  line-height: 1.55;
+}
+.display-lg {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 5vw, 2.5rem);
+  line-height: 1.6;
+}
+.display-md {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 3.6vw, 1.85rem);
+  line-height: 1.7;
+}
+.lead {
+  font-size: clamp(0.98rem, 2.5vw, 1.1rem);
+  line-height: 2.15;
+  color: var(--muted);
+}
+/* No letter-spacing here on purpose: the Persian script stays connected. */
+.eyebrow {
+  font-size: 0.78rem;
+  line-height: 2;
+  color: var(--muted);
+}
+
+/* ==========================================================================
+   Cosmic visuals
+   ========================================================================== */
+
+/*
+ * Decorative layers are always non-interactive: they sit behind content and
+ * can never swallow a click or a tab stop.
+ */
+.cosmic-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* Soft atmospheric radial light — used sparingly (hero, profile reveal). */
+.atmosphere {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 45% at 78% 12%, rgba(130, 149, 176, 0.22), transparent 70%),
+    radial-gradient(45% 40% at 12% 78%, rgba(185, 154, 169, 0.16), transparent 72%),
+    radial-gradient(120% 80% at 50% -10%, rgba(208, 183, 142, 0.1), transparent 60%);
+}
+
+/* A quiet horizon gradient — the only broad gradient in the system. */
+.horizon {
+  background:
+    linear-gradient(180deg, var(--night-deep) 0%, var(--night-plum) 46%, #1f1c2e 100%);
+}
+
+/* Fine grain, only where it helps the atmosphere read as printed matter. */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.star-twinkle {
+  animation: star-twinkle 5.5s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+.orbit-drift {
+  animation: orbit-drift 90s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes orbit-drift {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   Surfaces & components
+   ========================================================================== */
+
+.card {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  background-color: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.card-quiet {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  background-color: var(--surface);
+}
+
+/* Hairline rule that reads on both ivory and night surfaces. */
+.hairline {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--champagne) 55%, transparent),
+    transparent
+  );
+}
+
+.btn-primary {
+  background-color: var(--accent);
+  color: var(--background);
+  border: 1px solid color-mix(in srgb, var(--accent) 78%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 16px 34px -22px color-mix(in srgb, var(--accent) 70%, transparent);
+  transition: filter 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+}
+.btn-primary:hover {
+  filter: brightness(1.05) saturate(1.03);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  filter: brightness(0.98);
+}
+.btn-primary:disabled {
+  filter: grayscale(0.15) opacity(0.55);
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-ghost {
+  border: 1px solid var(--border-soft);
+  color: var(--foreground);
+  transition: border-color 200ms ease, background-color 200ms ease, color 200ms ease;
+}
+.btn-ghost:hover {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  background-color: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* Readable accent text derived from the (archetype-scoped) --accent. */
+.accent-ink {
+  color: color-mix(in srgb, var(--accent) 58%, var(--foreground));
+}
+
+/* ==========================================================================
+   Motion
+   ========================================================================== */
+
+/* Question and result screens rise into place. */
 @keyframes quiz-rise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
 .quiz-rise {
-  animation: quiz-rise 0.28s ease-out;
+  animation: quiz-rise 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .quiz-rise {
-    animation: none;
-  }
+/* Hero / section entrance — one deliberate reveal per page, not per element. */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
 }
+.reveal {
+  animation: reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.reveal-delay-1 { animation-delay: 90ms; }
+.reveal-delay-2 { animation-delay: 180ms; }
+.reveal-delay-3 { animation-delay: 270ms; }
 
-/* Trait bars (results page): the fill's leading edge glows while it grows, and
- * each bar plays a brief completion pulse once it settles. Both are decorative
- * and skipped for reduced-motion users. Colors come from the scoped --accent
- * custom property so they follow the user's archetype. */
+/* Trait bars: leading-edge glow while filling, brief settle pulse. */
 .trait-bar-tip {
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 35%, white), transparent);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 45%, transparent), transparent);
   filter: blur(2px);
   animation: trait-bar-tip-pulse 700ms ease-in-out infinite alternate;
 }
-
 @keyframes trait-bar-tip-pulse {
-  from {
-    opacity: 0.45;
-  }
-  to {
-    opacity: 0.95;
-  }
+  from { opacity: 0.4; }
+  to { opacity: 0.95; }
 }
 
 .trait-bar-pulse {
-  animation: trait-bar-pulse 480ms ease-out forwards;
+  animation: trait-bar-pulse 520ms ease-out forwards;
 }
-
 @keyframes trait-bar-pulse {
   0% {
-    opacity: 0.85;
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+    opacity: 0.8;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent);
   }
   100% {
     opacity: 0;
-    box-shadow: 0 0 0 7px transparent;
+    box-shadow: 0 0 0 8px transparent;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .quiz-rise,
+  .reveal,
+  .star-twinkle,
+  .orbit-drift,
   .trait-bar-tip,
   .trait-bar-pulse {
     animation: none;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+  .btn-primary:hover {
+    transform: none;
   }
 }
