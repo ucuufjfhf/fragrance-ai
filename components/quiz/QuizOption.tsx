@@ -27,7 +27,7 @@ export default function QuizOption({
 }: QuizOptionProps) {
   return (
     <label
-      className={`group flex cursor-pointer items-start gap-3 border-b border-border-soft px-3 py-4 transition-colors first:border-t ${
+      className={`group flex cursor-pointer items-start gap-3 border-b border-border-soft px-3 py-4 text-foreground transition-colors first:border-t ${
         selected ? "bg-champagne/12" : "hover:bg-champagne/6"
       } focus-within:bg-champagne/10 focus-within:ring-1 focus-within:ring-champagne/50`}
     >
@@ -47,7 +47,7 @@ export default function QuizOption({
       >
         <CheckMark className="h-3 w-3" />
       </span>
-      <span className="text-[0.98rem] leading-8">{label}</span>
+      <span className="text-[0.98rem] leading-8 text-foreground">{label}</span>
     </label>
   );
 }

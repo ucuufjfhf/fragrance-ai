@@ -26,7 +26,7 @@ export default function ProgressBar({ current, total }: ProgressBarProps) {
           سؤال {toPersianDigits(current)} از {toPersianDigits(total)}
         </span>
         <span className="h-px flex-1 bg-border-soft" aria-hidden="true" />
-        <span className="tnum text-xs">{formatPersianPercent(percent)}</span>
+        <span className="tnum text-xs text-muted">{formatPersianPercent(percent)}</span>
       </div>
 
       <div

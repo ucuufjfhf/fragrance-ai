@@ -140,7 +140,7 @@ export default function TraitBars({ vector }: { vector: PersonalityVector }) {
           <StarMark className="h-3 w-3" />
           نُه بُعد سلیقه‌ات
         </span>
-        <h2 className="display-md text-ink">پروفایل شخصیتی تو</h2>
+        <h2 className="display-md text-foreground">پروفایل شخصیتی تو</h2>
         <p className="max-w-md text-xs leading-7 text-muted">
           هر بُعد از ۰ تا ۱۰۰ سنجیده می‌شود؛ همین نمره‌ها مبنای رتبه‌بندی عطرها هستند.
         </p>
@@ -154,7 +154,7 @@ export default function TraitBars({ vector }: { vector: PersonalityVector }) {
           return (
             <li key={dimension} className="flex flex-col gap-2">
               <div className="flex items-baseline justify-between gap-3 text-sm">
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2 text-foreground">
                   <span
                     aria-hidden="true"
                     className="h-1 w-1 rounded-full bg-champagne-deep/70"

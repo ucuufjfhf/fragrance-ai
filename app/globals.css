@@ -75,6 +75,12 @@
 /*
  * Dark atmospheric environment. Applied to <section> / <header> wrappers or to
  * a whole page shell; everything inside inherits the night palette.
+ *
+ * `color` is declared here on purpose: `color` inherits as a RESOLVED value, so
+ * text inside a dark section would otherwise keep the light-surface ink it
+ * inherited from <body> (near-black on night plum). Re-declaring the property
+ * at the scope boundary means no text ever has to fight inheritance — and any
+ * element without its own text token still lands on a readable ivory.
  */
 [data-surface="dark"] {
   --background: var(--night-plum);
@@ -85,6 +91,7 @@
   --accent: var(--champagne);
   --accent-soft: rgba(208, 183, 142, 0.14);
   --muted: #aaa6b9;
+  color: var(--foreground);
   color-scheme: dark;
 }
 
@@ -309,7 +316,7 @@ h1, h2, h3, h4, h5, h6 {
   filter: brightness(0.98);
 }
 .btn-primary:disabled {
-  filter: grayscale(0.15) opacity(0.55);
+  filter: grayscale(0.1) opacity(0.7);
   transform: none;
   box-shadow: none;
 }

@@ -33,7 +33,7 @@ const primaryButton =
   "btn-primary flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full px-6 font-medium disabled:cursor-not-allowed";
 
 const secondaryButton =
-  "btn-ghost flex min-h-12 items-center justify-center rounded-full px-6 text-sm disabled:cursor-not-allowed disabled:opacity-40";
+  "btn-ghost flex min-h-12 items-center justify-center rounded-full px-6 text-sm disabled:cursor-not-allowed disabled:opacity-60";
 
 const OFFLINE_NOTICE =
   "ارتباط با سرور برقرار نشد؛ پروفایل با همون محاسبه قطعی و به‌صورت آفلاین ساخته شد.";
