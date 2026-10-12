@@ -77,6 +77,6 @@
     { "id": "demo-56", "brand": "By Kilian", "name": "Angels' Share", "referenceBrandSlug": "by-kilian", "referencePerfumeSlug": "angels-share", "targetGender": "unisex" },
     { "id": "demo-57", "brand": "Xerjoff", "name": "Naxos", "referenceBrandSlug": "xerjoff", "referencePerfumeSlug": "xj-1861-naxos", "targetGender": "unisex" },
     { "id": "demo-58", "brand": "Parfums de Marly", "name": "Layton", "referenceBrandSlug": "parfums-de-marly", "referencePerfumeSlug": "layton", "targetGender": "unisex" },
-    { "id": "demo-59", "brand": "Amouage", "name": "Reflection Man", "referenceBrandSlug": "amouage", "referencePerfumeSlug": "reflection-man", "targetGender": "unisex" }
+    { "id": "demo-59", "brand": "Amouage", "name": "Reflection Man", "referenceBrandSlug": "amouage", "referencePerfumeSlug": "reflection-man", "targetGender": "men" }
   ]
 }
