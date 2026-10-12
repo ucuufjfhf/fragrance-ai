@@ -37,7 +37,7 @@ import type { Archetype, PersonalityVector } from "@/types/personality";
 export const DEFAULT_RESULTS_STORE_ID = "store-demo-perfume-shop";
 
 /** Upper bound on candidates shown, matching the engine's default Top-N. */
-export const RESULTS_TOP_N = 5;
+export const RESULTS_TOP_N = 3;
 
 /** Query-string key for the recommendation source (demo vs merchant). */
 const SOURCE_KEY = "source";

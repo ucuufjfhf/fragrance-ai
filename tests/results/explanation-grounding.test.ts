@@ -164,7 +164,7 @@ describe("recommendation metadata is identical with and without AI", () => {
 
     // The explanations differ; the recommendation metadata must not.
     expect(metadata(withAi.recommendations)).toEqual(metadata(withoutAi.recommendations));
-    expect(metadata(withAi.recommendations)).toHaveLength(5);
+    expect(metadata(withAi.recommendations)).toHaveLength(3);
   });
 
   it("does not re-sort or re-rank after explanations are attached", async () => {
@@ -204,7 +204,7 @@ describe("a missing API key still returns recommendations", () => {
 
     expect(data.isEmpty).toBe(false);
     expect(data.aiAvailable).toBe(false);
-    expect(data.recommendations).toHaveLength(5);
+    expect(data.recommendations).toHaveLength(3);
     expect(data.explanations.size).toBe(0);
 
     // Scoring is completely untouched by the missing credential.
@@ -364,7 +364,7 @@ describe("partial AI failure degrades per item", () => {
     const data = await getResultsViewData(paramsWith({ store: STORE }));
 
     expect(data.explanations.size).toBe(4);
-    expect(data.recommendations).toHaveLength(5);
+    expect(data.recommendations).toHaveLength(3);
     expect(metadata(data.recommendations)).toEqual(metadata(ranked(5)));
   });
 
@@ -385,7 +385,7 @@ describe("partial AI failure degrades per item", () => {
 
     const data = await getResultsViewData(paramsWith({ store: STORE }));
     expect(data.isEmpty).toBe(false);
-    expect(data.recommendations).toHaveLength(5);
+    expect(data.recommendations).toHaveLength(3);
     expect(metadata(data.recommendations)).toEqual(metadata(ranked(5)));
   });
 });
