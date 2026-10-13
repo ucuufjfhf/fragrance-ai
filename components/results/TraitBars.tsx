@@ -130,8 +130,11 @@ export default function TraitBars({ vector }: { vector: PersonalityVector }) {
   }, []);
 
   return (
-    <section ref={sectionRef} className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6">
-      <h2 className="font-semibold">پروفایل شخصیتی تو</h2>
+    <section ref={sectionRef} className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 shadow-[var(--shadow-card)]">
+      <div className="flex flex-col gap-3">
+        <h2 className="font-heading font-semibold text-foreground">پروفایل شخصیتی تو</h2>
+        <span aria-hidden="true" className="h-px w-10 bg-border-soft" />
+      </div>
       <ul className="flex flex-col gap-3">
         {PERSONALITY_DIMENSIONS.map((dimension, index) => {
           const target = vector[dimension];
@@ -140,7 +143,7 @@ export default function TraitBars({ vector }: { vector: PersonalityVector }) {
           return (
             <li key={dimension} className="flex flex-col gap-1">
               <div className="flex items-center justify-between text-sm">
-                <span>{PERSONALITY_LABELS[dimension]}</span>
+                <span className="text-foreground/90">{PERSONALITY_LABELS[dimension]}</span>
                 <span className="tnum text-muted">{formatPersianPercent(displayValues[index])}</span>
               </div>
               <div className="relative">

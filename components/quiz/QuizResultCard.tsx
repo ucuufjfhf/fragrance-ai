@@ -45,6 +45,13 @@ interface QuizResultCardProps {
  *
  * Perfume recommendations, match percentages and the AI-written «چرا این عطر؟»
  * explanation belong to later phases and are deliberately absent here.
+ *
+ * Presentation only: the archetype reveal is a choreographed entrance (each
+ * line rises in turn via the shared `quiz-rise` keyframe, held hidden until its
+ * delay so the cascade reads as a reveal) and it names the selection basis — the
+ * complete nine-axis profile — so the archetype never reads as "the tallest bar".
+ * The archetype itself, the vector, the scoring and every link target come
+ * straight from the Phase 1 engine and are unchanged.
  */
 export default function QuizResultCard({
   result,
@@ -77,7 +84,7 @@ export default function QuizResultCard({
 
   return (
     <section
-      className="quiz-rise flex flex-col gap-5 transition-colors duration-300"
+      className="relative flex flex-col gap-5 transition-colors duration-300"
       style={{
         "--accent": archetype.accentColor,
         "--accent-soft": `color-mix(in srgb, ${archetype.accentColor} 14%, white)`,
@@ -88,21 +95,80 @@ export default function QuizResultCard({
           Recommendations screen (components/results/ResultsView.tsx). */}
       <AmbientParticles />
 
-      <div className="flex flex-col items-center gap-3 rounded-3xl border border-accent/30 bg-accent-soft p-7 text-center shadow-[var(--shadow-soft)] sm:p-9">
-        <span className="text-sm tracking-wide text-accent">پروفایل عطری تو</span>
-        <BottleMark className="h-8 w-8 text-accent" />
-        <h1 className="font-heading text-2xl font-bold text-foreground sm:text-3xl">
-          {archetype.label}
-        </h1>
-        <p className="max-w-md text-sm leading-8 text-foreground/80">
-          {archetype.description}
-        </p>
+      {/* --- archetype reveal ---
+          A choreographed entrance: label, seal, name, rule, copy and the
+          selection-basis line each rise in turn. Every element keeps the
+          reduced-motion bypass baked into the shared `quiz-rise` keyframe. */}
+      <div className="relative overflow-hidden rounded-[2rem] border border-accent/30 bg-accent-soft px-6 py-10 text-center shadow-[var(--shadow-soft)] sm:px-10 sm:py-12">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-0 h-64 w-64 -translate-x-1/2 -translate-y-1/3 rounded-full blur-2xl"
+          style={{
+            background:
+              "radial-gradient(closest-side, color-mix(in srgb, var(--accent) 30%, white), transparent)",
+          }}
+        />
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-12 top-0 h-px bg-accent/20"
+        />
+
+        <div className="relative flex flex-col items-center gap-3">
+          <span
+            className="quiz-rise text-sm font-medium text-accent"
+            style={{ animationDelay: "40ms", animationFillMode: "backwards" }}
+          >
+            پروفایل عطری تو
+          </span>
+
+          <span
+            className="quiz-rise relative mt-2 flex h-16 w-16 items-center justify-center rounded-full border border-accent/30 bg-background/70 text-accent shadow-[var(--shadow-card)]"
+            style={{ animationDelay: "120ms", animationFillMode: "backwards" }}
+          >
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 -m-2.5 rounded-full border border-accent/20"
+            />
+            <BottleMark className="h-8 w-8" />
+          </span>
+
+          <h1
+            className="quiz-rise mt-2 font-heading text-3xl font-bold leading-tight text-foreground sm:text-4xl"
+            style={{ animationDelay: "200ms", animationFillMode: "backwards" }}
+          >
+            {archetype.label}
+          </h1>
+
+          <span
+            aria-hidden="true"
+            className="quiz-rise mt-1 h-px w-16 bg-accent/40"
+            style={{ animationDelay: "260ms", animationFillMode: "backwards" }}
+          />
+
+          <p
+            className="quiz-rise max-w-md text-sm leading-8 text-foreground/80"
+            style={{ animationDelay: "320ms", animationFillMode: "backwards" }}
+          >
+            {archetype.description}
+          </p>
+
+          {/* Selection basis — the profile is matched against the WHOLE nine-axis
+              vector, not the single strongest one. Copy only: no scoring, no
+              selection and no archetype lookup changes anywhere. */}
+          <p
+            className="quiz-rise mt-1 max-w-md text-xs leading-7 text-muted"
+            style={{ animationDelay: "380ms", animationFillMode: "backwards" }}
+          >
+            این پروفایل از روی همهٔ ۹ محور شخصیتت انتخاب شده است — نه فقط بالاترین محور.
+          </p>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 rounded-3xl border border-border-soft bg-surface p-6 shadow-[var(--shadow-card)]">
         <h2 className="font-heading font-semibold text-foreground">
           رایحه‌ای که بهت میاد
         </h2>
+        <span aria-hidden="true" className="h-px w-10 bg-border-soft" />
         <p className="text-sm leading-8 text-muted">{archetype.fragranceHint}</p>
         <Link
           href={resultsHref}
@@ -120,7 +186,7 @@ export default function QuizResultCard({
             // navigation and again for a future attempt (Phase 7, §12).
             resetAnalyticsFlow();
           }}
-          className="flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-6 font-medium text-background"
+          className="btn-primary flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-6 font-medium text-background"
         >
           دیدن عطرهای پیشنهادی
         </Link>
@@ -143,7 +209,7 @@ export default function QuizResultCard({
       <button
         type="button"
         onClick={onRestart}
-        className="flex min-h-12 items-center justify-center rounded-2xl btn-primary bg-accent px-6 font-medium text-background"
+        className="btn-primary flex min-h-12 items-center justify-center rounded-2xl bg-accent px-6 font-medium text-background"
       >
         شروع دوباره
       </button>

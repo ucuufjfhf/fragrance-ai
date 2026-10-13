@@ -81,10 +81,14 @@ describe("results view rendering", () => {
       />,
     );
 
+    // The deterministic list is the product: it renders cleanly and in full
+    // whether or not the optional AI copy is present.
     for (const recommendation of engineResult.recommendations) {
       expect(html).toContain(recommendation.name);
     }
-    expect(html).toContain("توضیحات هوشمند فعلاً در دسترس نیست.");
+    // There is no "explanations unavailable" dead-end notice, and no
+    // fabricated per-perfume explanation either.
+    expect(html).not.toContain("توضیحات هوشمند فعلاً در دسترس نیست.");
     expect(html).not.toContain("چرا بهت میاد؟");
   });
 

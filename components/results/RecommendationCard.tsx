@@ -18,6 +18,9 @@ interface RecommendationCardProps {
  * — this component never recomputes, re-rounds or re-orders anything. The
  * presentation score is displayed as-is; the AI explanation, when present, is
  * decoration on top and its absence never blocks or alters the card.
+ *
+ * Presentation only: a luxury surface with a hairline, a soft accent glow and a
+ * gradient match bar. Rank, score, product link and analytics are unchanged.
  */
 export default function RecommendationCard({
   recommendation,
@@ -27,7 +30,12 @@ export default function RecommendationCard({
     recommendation;
 
   return (
-    <article className="quiz-rise flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-5 sm:p-6">
+    <article className="quiz-rise relative flex flex-col gap-4 overflow-hidden rounded-3xl border border-border-soft bg-surface p-5 shadow-[var(--shadow-card)] sm:p-6">
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-accent/15"
+      />
+
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-4">
           {imageUrl ? (
@@ -42,14 +50,14 @@ export default function RecommendationCard({
           ) : (
             <span
               aria-hidden="true"
-              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-border-soft bg-surface-2 text-2xl"
+              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-border-soft bg-surface-2 text-accent"
             >
               <BottleMark className="h-7 w-7" />
             </span>
           )}
 
           <div className="flex flex-col gap-1">
-            <h3 className="text-lg font-bold leading-8">{name}</h3>
+            <h3 className="font-heading text-lg font-bold leading-8 text-foreground">{name}</h3>
             <span className="text-sm text-muted">{brand}</span>
           </div>
         </div>
@@ -72,8 +80,12 @@ export default function RecommendationCard({
           aria-label={`میزان تطابق ${name}`}
         >
           <div
-            className="h-full rounded-full bg-accent"
-            style={{ width: `${presentationScore}%` }}
+            className="h-full rounded-full"
+            style={{
+              width: `${presentationScore}%`,
+              backgroundImage:
+                "linear-gradient(to left, var(--accent) 0%, var(--accent) 55%, color-mix(in srgb, var(--accent) 55%, white) 100%)",
+            }}
           />
         </div>
         <span className="tnum shrink-0 text-sm font-semibold text-accent">

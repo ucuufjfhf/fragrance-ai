@@ -9,8 +9,6 @@ import RecommendationCard from "@/components/results/RecommendationCard";
 import type { Archetype, PersonalityVector } from "@/types/personality";
 import type { ResultsViewData } from "@/lib/results/service";
 
-const AI_UNAVAILABLE_NOTICE = "توضیحات هوشمند فعلاً در دسترس نیست.";
-
 interface ResultsViewProps {
   vector: PersonalityVector;
   archetype: Archetype;
@@ -27,8 +25,14 @@ interface ResultsViewProps {
  * The full results screen: profile header, ranked recommendations, states.
  *
  * Presentational and server-rendered. The ranked list is exactly the engine
- * output; the AI explanations map is consulted per perfume and its absence is
- * rendered as nothing (or the global notice) — never as a substitute text.
+ * output; a per-perfume AI explanation is rendered as decoration when present
+ * and its absence is simply rendered as nothing — the deterministic list is
+ * always shown cleanly, never behind a "explanations unavailable" dead end.
+ *
+ * The archetype header is a choreographed reveal (a staggered `quiz-rise`
+ * cascade, reduced-motion aware) and names the selection basis: the complete
+ * nine-axis profile, not the single strongest one. No archetype math, scoring
+ * or ordering lives here.
  */
 export default function ResultsView({
   vector,
@@ -36,7 +40,7 @@ export default function ResultsView({
   data,
   contextRelaxHref = null,
 }: ResultsViewProps) {
-  const { recommendations, explanations, aiAvailable, isEmpty } = data;
+  const { recommendations, explanations, isEmpty } = data;
 
   return (
     <div
@@ -51,18 +55,74 @@ export default function ResultsView({
           Fragrance Profile screen (components/quiz/QuizResultCard.tsx). */}
       <AmbientParticles />
 
-      {/* --- profile header (Phase 1 data, same contract as the quiz card) --- */}
-      <section className="quiz-rise flex flex-col items-center gap-3 rounded-3xl border border-accent/40 bg-accent-soft p-6 text-center sm:p-8">
-        <span className="text-sm text-accent"><BrandMark className="ml-1 inline h-4 w-4" /> پروفایل عطری شما</span>
-        <BottleMark className="h-8 w-8 text-accent" />
-        <h1 className="text-2xl font-bold sm:text-3xl">{archetype.label}</h1>
-        <p className="text-sm leading-8 text-foreground/80">
-          {archetype.description}
-        </p>
+      {/* --- archetype reveal (Phase 1 data, same contract as the quiz card) --- */}
+      <section className="relative overflow-hidden rounded-[2rem] border border-accent/30 bg-accent-soft px-6 py-10 text-center shadow-[var(--shadow-soft)] sm:px-10 sm:py-12">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-0 h-64 w-64 -translate-x-1/2 -translate-y-1/3 rounded-full blur-2xl"
+          style={{
+            background:
+              "radial-gradient(closest-side, color-mix(in srgb, var(--accent) 30%, white), transparent)",
+          }}
+        />
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-12 top-0 h-px bg-accent/20"
+        />
+
+        <div className="relative flex flex-col items-center gap-3">
+          <span
+            className="quiz-rise text-sm font-medium text-accent"
+            style={{ animationDelay: "40ms", animationFillMode: "backwards" }}
+          >
+            <BrandMark className="ml-1 inline h-4 w-4" /> پروفایل عطری شما
+          </span>
+
+          <span
+            className="quiz-rise relative mt-2 flex h-16 w-16 items-center justify-center rounded-full border border-accent/30 bg-background/70 text-accent shadow-[var(--shadow-card)]"
+            style={{ animationDelay: "120ms", animationFillMode: "backwards" }}
+          >
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 -m-2.5 rounded-full border border-accent/20"
+            />
+            <BottleMark className="h-8 w-8" />
+          </span>
+
+          <h1
+            className="quiz-rise mt-2 font-heading text-3xl font-bold leading-tight text-foreground sm:text-4xl"
+            style={{ animationDelay: "200ms", animationFillMode: "backwards" }}
+          >
+            {archetype.label}
+          </h1>
+
+          <span
+            aria-hidden="true"
+            className="quiz-rise mt-1 h-px w-16 bg-accent/40"
+            style={{ animationDelay: "260ms", animationFillMode: "backwards" }}
+          />
+
+          <p
+            className="quiz-rise max-w-md text-sm leading-8 text-foreground/80"
+            style={{ animationDelay: "320ms", animationFillMode: "backwards" }}
+          >
+            {archetype.description}
+          </p>
+
+          {/* Selection basis — the archetype is the nearest match across the
+              WHOLE nine-axis vector, not the single strongest axis. Copy only. */}
+          <p
+            className="quiz-rise mt-1 max-w-md text-xs leading-7 text-muted"
+            style={{ animationDelay: "380ms", animationFillMode: "backwards" }}
+          >
+            این پروفایل از روی همهٔ ۹ محور شخصیتت انتخاب شده است — نه فقط بالاترین محور.
+          </p>
+        </div>
       </section>
 
-      <section className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6">
-        <h2 className="font-semibold">رایحه‌ای که بهت میاد</h2>
+      <section className="flex flex-col gap-3 rounded-3xl border border-border-soft bg-surface p-6">
+        <h2 className="font-heading font-semibold text-foreground">رایحه‌ای که بهت میاد</h2>
+        <span aria-hidden="true" className="h-px w-10 bg-border-soft" />
         <p className="text-sm leading-8 text-muted">{archetype.fragranceHint}</p>
       </section>
 
@@ -71,13 +131,7 @@ export default function ResultsView({
 
       {/* --- recommendations --- */}
       <section className="flex flex-col gap-4" aria-live="polite">
-        <h2 className="text-xl font-bold sm:text-2xl">عطرهایی که بهت میاد</h2>
-
-        {!aiAvailable && !isEmpty ? (
-          <p className="rounded-2xl border border-border-soft bg-surface-2 p-4 text-xs leading-7 text-muted">
-            {AI_UNAVAILABLE_NOTICE}
-          </p>
-        ) : null}
+        <h2 className="font-heading text-xl font-bold sm:text-2xl">عطرهایی که بهت میاد</h2>
 
         {isEmpty ? (
           <div className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 text-center">
@@ -94,7 +148,7 @@ export default function ResultsView({
                 </p>
                 <Link
                   href={contextRelaxHref}
-                  className="mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
+                  className="btn-primary mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background sm:w-fit sm:px-8"
                 >
                   حذف فیلتر فصل و موقعیت
                 </Link>
@@ -112,7 +166,7 @@ export default function ResultsView({
                 </p>
                 <Link
                   href="/quiz"
-                  className="mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
+                  className="btn-primary mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background sm:w-fit sm:px-8"
                 >
                   شروع دوباره آزمون
                 </Link>

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 
 import ResultsView from "@/components/results/ResultsView";
+import SiteFooter from "@/components/site/SiteFooter";
+import SiteHeader from "@/components/site/SiteHeader";
+import { BrandMark } from "@/components/ui-icons";
 import { parseResultsParams, serializeResultsParams } from "@/lib/results/params";
 import { getResultsViewData } from "@/lib/results/service";
 
@@ -56,37 +59,47 @@ export default async function ResultPage({ searchParams }: ResultPageProps) {
     : null;
 
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
-      <ResultsView
-        vector={params.value.vector}
-        archetype={params.value.archetype}
-        data={data}
-        contextRelaxHref={contextRelaxHref}
-      />
-    </main>
+    <div className="flex flex-1 flex-col">
+      <SiteHeader />
+
+      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6 sm:py-14">
+        <ResultsView
+          vector={params.value.vector}
+          archetype={params.value.archetype}
+          data={data}
+          contextRelaxHref={contextRelaxHref}
+        />
+      </main>
+
+      <SiteFooter />
+    </div>
   );
 }
 
 function ResultErrorState() {
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
-      <section className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 text-center sm:p-8">
-        <span aria-hidden="true" className="text-4xl">
-          🧭
-        </span>
-        <h1 className="text-xl font-bold sm:text-2xl">
-          چیزی برای نمایش پیدا نکردیم
-        </h1>
-        <p className="text-sm leading-8 text-muted">
-          برای دیدن پروفایل عطری و پیشنهادهای مناسب تو، اول آزمون کوتاه رو کامل کن.
-        </p>
-        <a
-          href="/quiz"
-          className="mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
-        >
-          شروع آزمون
-        </a>
-      </section>
-    </main>
+    <div className="flex flex-1 flex-col">
+      <SiteHeader />
+
+      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6 sm:py-14">
+        <section className="flex flex-col items-center gap-4 rounded-3xl border border-border-soft bg-surface p-6 text-center shadow-[var(--shadow-card)] sm:p-8">
+          <BrandMark className="mx-auto h-8 w-8 text-accent" />
+          <h1 className="font-heading text-xl font-bold sm:text-2xl">
+            چیزی برای نمایش پیدا نکردیم
+          </h1>
+          <p className="text-sm leading-8 text-muted">
+            برای دیدن پروفایل عطری و پیشنهادهای مناسب تو، اول آزمون کوتاه رو کامل کن.
+          </p>
+          <a
+            href="/quiz"
+            className="btn-primary mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background sm:w-fit sm:px-8"
+          >
+            شروع آزمون
+          </a>
+        </section>
+      </main>
+
+      <SiteFooter />
+    </div>
   );
 }
