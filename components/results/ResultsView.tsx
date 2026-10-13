@@ -1,4 +1,6 @@
-import { BrandMark, BottleMark } from "@/components/ui-icons";
+import { BrandMark } from "@/components/ui-icons";
+import { ARCHETYPE_ICON_POP_CSS } from "@/components/archetype-icons";
+import { ArchetypeEmblem } from "@/components/archetype-icon-map";
 import AmbientParticles from "@/components/AmbientParticles";
 import TraitBars from "@/components/results/TraitBars";
 
@@ -31,8 +33,9 @@ interface ResultsViewProps {
  *
  * The archetype header is a choreographed reveal (a staggered `quiz-rise`
  * cascade, reduced-motion aware) and names the selection basis: the complete
- * nine-axis profile, not the single strongest one. No archetype math, scoring
- * or ordering lives here.
+ * nine-axis profile, not the single strongest one. Its seal shows the
+ * archetype's own emblem, which pops in after the seal lands. No archetype math,
+ * scoring or ordering lives here.
  */
 export default function ResultsView({
   vector,
@@ -57,6 +60,8 @@ export default function ResultsView({
 
       {/* --- archetype reveal (Phase 1 data, same contract as the quiz card) --- */}
       <section className="relative overflow-hidden rounded-[2rem] border border-accent/30 bg-accent-soft px-6 py-10 text-center shadow-[var(--shadow-soft)] sm:px-10 sm:py-12">
+        {/* Emblem motion contract — reduced-motion bypass included. */}
+        <style>{ARCHETYPE_ICON_POP_CSS}</style>
         <span
           aria-hidden="true"
           className="pointer-events-none absolute left-1/2 top-0 h-64 w-64 -translate-x-1/2 -translate-y-1/3 rounded-full blur-2xl"
@@ -79,6 +84,8 @@ export default function ResultsView({
           </span>
 
           <span
+            role="img"
+            aria-label={archetype.label}
             className="quiz-rise relative mt-2 flex h-16 w-16 items-center justify-center rounded-full border border-accent/30 bg-background/70 text-accent shadow-[var(--shadow-card)]"
             style={{ animationDelay: "120ms", animationFillMode: "backwards" }}
           >
@@ -86,7 +93,12 @@ export default function ResultsView({
               aria-hidden="true"
               className="absolute inset-0 -m-2.5 rounded-full border border-accent/20"
             />
-            <BottleMark className="h-8 w-8" />
+            {/* Emblem for this archetype — a pure id lookup, never an engine
+                value. */}
+            <ArchetypeEmblem
+              archetypeId={archetype.id}
+              className="archetype-icon-pop h-8 w-8"
+            />
           </span>
 
           <h1

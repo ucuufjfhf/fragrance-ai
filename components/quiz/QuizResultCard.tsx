@@ -2,7 +2,8 @@ import Link from "next/link";
 
 import TraitBars from "@/components/results/TraitBars";
 import AmbientParticles from "@/components/AmbientParticles";
-import { BottleMark } from "@/components/ui-icons";
+import { ARCHETYPE_ICON_POP_CSS } from "@/components/archetype-icons";
+import { ArchetypeEmblem } from "@/components/archetype-icon-map";
 
 import { resetAnalyticsFlow } from "@/lib/analytics/flow-tracker";
 import type { AudienceGender } from "@/lib/audience";
@@ -52,6 +53,11 @@ interface QuizResultCardProps {
  * complete nine-axis profile — so the archetype never reads as "the tallest bar".
  * The archetype itself, the vector, the scoring and every link target come
  * straight from the Phase 1 engine and are unchanged.
+ *
+ * The reveal seal carries the archetype's own emblem (`ArchetypeEmblem`, keyed
+ * by id alone) and pops it into place after the seal lands. The seal keeps an
+ * accessible name — the archetype label — while the emblem itself stays
+ * decorative.
  */
 export default function QuizResultCard({
   result,
@@ -100,6 +106,8 @@ export default function QuizResultCard({
           selection-basis line each rise in turn. Every element keeps the
           reduced-motion bypass baked into the shared `quiz-rise` keyframe. */}
       <div className="relative overflow-hidden rounded-[2rem] border border-accent/30 bg-accent-soft px-6 py-10 text-center shadow-[var(--shadow-soft)] sm:px-10 sm:py-12">
+        {/* Emblem motion contract — reduced-motion bypass included. */}
+        <style>{ARCHETYPE_ICON_POP_CSS}</style>
         <span
           aria-hidden="true"
           className="pointer-events-none absolute left-1/2 top-0 h-64 w-64 -translate-x-1/2 -translate-y-1/3 rounded-full blur-2xl"
@@ -122,6 +130,8 @@ export default function QuizResultCard({
           </span>
 
           <span
+            role="img"
+            aria-label={archetype.label}
             className="quiz-rise relative mt-2 flex h-16 w-16 items-center justify-center rounded-full border border-accent/30 bg-background/70 text-accent shadow-[var(--shadow-card)]"
             style={{ animationDelay: "120ms", animationFillMode: "backwards" }}
           >
@@ -129,7 +139,12 @@ export default function QuizResultCard({
               aria-hidden="true"
               className="absolute inset-0 -m-2.5 rounded-full border border-accent/20"
             />
-            <BottleMark className="h-8 w-8" />
+            {/* Emblem for this archetype — a pure id lookup, never an engine
+                value. */}
+            <ArchetypeEmblem
+              archetypeId={archetype.id}
+              className="archetype-icon-pop h-8 w-8"
+            />
           </span>
 
           <h1
