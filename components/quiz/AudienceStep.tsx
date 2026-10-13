@@ -24,22 +24,25 @@ export default function AudienceStep({
   onSelect,
 }: AudienceStepProps) {
   return (
-    <fieldset className="flex flex-col gap-2">
-      <legend className="mb-3 text-lg font-semibold leading-9 sm:text-xl">
-        {AUDIENCE_QUESTION}
-      </legend>
-      <div className="flex flex-col gap-3">
-        {AUDIENCE_OPTIONS.map((option) => (
-          <QuizOption
-            key={option.id}
-            name="audience"
-            optionId={option.id}
-            label={option.label}
-            selected={selected === option.id}
-            onSelect={() => onSelect(option.id)}
-          />
-        ))}
-      </div>
-    </fieldset>
+    <div className="flex flex-col gap-4">
+      <span aria-hidden="true" className="h-px w-12 bg-accent/50" />
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-2 font-heading text-lg font-semibold leading-9 text-foreground sm:text-xl">
+          {AUDIENCE_QUESTION}
+        </legend>
+        <div className="flex flex-col gap-3">
+          {AUDIENCE_OPTIONS.map((option) => (
+            <QuizOption
+              key={option.id}
+              name="audience"
+              optionId={option.id}
+              label={option.label}
+              selected={selected === option.id}
+              onSelect={() => onSelect(option.id)}
+            />
+          ))}
+        </div>
+      </fieldset>
+    </div>
   );
 }

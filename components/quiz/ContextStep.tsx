@@ -72,8 +72,9 @@ export default function ContextStep({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-xl font-bold leading-8 sm:text-2xl">
+      <div className="flex flex-col gap-3">
+        <span aria-hidden="true" className="h-px w-12 bg-accent/50" />
+        <h2 className="font-heading text-xl font-bold leading-8 text-foreground sm:text-2xl">
           {CONTEXT_HEADING}
         </h2>
         <p className="text-sm leading-7 text-muted">
@@ -82,7 +83,7 @@ export default function ContextStep({
       </div>
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-3 text-lg font-semibold leading-9 sm:text-xl">
+        <legend className="mb-3 font-heading text-lg font-semibold leading-9 text-foreground sm:text-xl">
           {SEASON_QUESTION}
         </legend>
         <div className="flex flex-col gap-3">
@@ -107,7 +108,7 @@ export default function ContextStep({
       </fieldset>
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-3 text-lg font-semibold leading-9 sm:text-xl">
+        <legend className="mb-3 font-heading text-lg font-semibold leading-9 text-foreground sm:text-xl">
           {OCCASION_QUESTION}
         </legend>
         <div className="flex flex-col gap-3">
@@ -148,7 +149,7 @@ export default function ContextStep({
             // personality result card's legacy behaviour.
             resetAnalyticsFlow();
           }}
-          className="flex min-h-12 flex-1 items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90"
+          className="btn-primary flex min-h-12 flex-1 items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background"
         >
           دیدن عطرهای پیشنهادی
         </Link>

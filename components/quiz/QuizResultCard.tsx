@@ -88,17 +88,21 @@ export default function QuizResultCard({
           Recommendations screen (components/results/ResultsView.tsx). */}
       <AmbientParticles />
 
-      <div className="flex flex-col items-center gap-3 rounded-3xl border border-accent/40 bg-accent-soft p-6 text-center sm:p-8">
-        <span className="text-sm text-accent">پروفایل عطری تو</span>
+      <div className="flex flex-col items-center gap-3 rounded-3xl border border-accent/30 bg-accent-soft p-7 text-center shadow-[var(--shadow-soft)] sm:p-9">
+        <span className="text-sm tracking-wide text-accent">پروفایل عطری تو</span>
         <BottleMark className="h-8 w-8 text-accent" />
-        <h1 className="text-2xl font-bold sm:text-3xl">{archetype.label}</h1>
-        <p className="text-sm leading-8 text-foreground/80">
+        <h1 className="font-heading text-2xl font-bold text-foreground sm:text-3xl">
+          {archetype.label}
+        </h1>
+        <p className="max-w-md text-sm leading-8 text-foreground/80">
           {archetype.description}
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-3xl border border-border-soft bg-surface p-6">
-        <h2 className="font-semibold">رایحه‌ای که بهت میاد</h2>
+      <div className="flex flex-col gap-3 rounded-3xl border border-border-soft bg-surface p-6 shadow-[var(--shadow-card)]">
+        <h2 className="font-heading font-semibold text-foreground">
+          رایحه‌ای که بهت میاد
+        </h2>
         <p className="text-sm leading-8 text-muted">{archetype.fragranceHint}</p>
         <Link
           href={resultsHref}
@@ -116,7 +120,7 @@ export default function QuizResultCard({
             // navigation and again for a future attempt (Phase 7, §12).
             resetAnalyticsFlow();
           }}
-          className="flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90"
+          className="flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-6 font-medium text-background"
         >
           دیدن عطرهای پیشنهادی
         </Link>
@@ -139,7 +143,7 @@ export default function QuizResultCard({
       <button
         type="button"
         onClick={onRestart}
-        className="flex min-h-12 items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90"
+        className="flex min-h-12 items-center justify-center rounded-2xl btn-primary bg-accent px-6 font-medium text-background"
       >
         شروع دوباره
       </button>

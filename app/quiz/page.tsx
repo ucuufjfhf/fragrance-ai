@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
 import Quiz from "@/components/quiz/Quiz";
+import SiteFooter from "@/components/site/SiteFooter";
+import SiteHeader from "@/components/site/SiteHeader";
 
 export const metadata: Metadata = {
   title: "عطر خودتو پیدا کن | آزمون سلیقه عطری",
@@ -27,8 +29,14 @@ export default async function QuizPage({ searchParams }: QuizPageProps) {
   const storeId = (Array.isArray(rawStore) ? rawStore[0] : rawStore)?.trim() || undefined;
 
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 sm:py-12">
-      <Quiz storeId={storeId} />
-    </main>
+    <div className="flex flex-1 flex-col">
+      <SiteHeader />
+
+      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6 sm:py-14">
+        <Quiz storeId={storeId} />
+      </main>
+
+      <SiteFooter />
+    </div>
   );
 }
