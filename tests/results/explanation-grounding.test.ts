@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * These cover the four properties the explanation layer must hold in
  * production:
  *  1. AI presence/absence cannot change perfume IDs, ranks, scores or order;
- *  2. a missing API key still returns the full deterministic Top 5;
+ *  2. a missing API key still returns the full deterministic Top 3;
  *  3. real perfume facts (family / notes / description) actually reach the
  *     Qwen prompt;
  *  4. one failed or timed-out explanation degrades to a missing explanation
@@ -124,7 +124,7 @@ beforeEach(() => {
   // The prompt-hash cache is process-local: these tests assert real provider
   // call counts, so each case must start from an empty cache.
   resetExplanationCacheForTests();
-  mocks.getRecommendations.mockResolvedValue({ recommendations: ranked(5), excluded: 0 });
+  mocks.getRecommendations.mockResolvedValue({ recommendations: ranked(3), excluded: 0 });
   mocks.generateExplanations.mockResolvedValue(new Map<string, string>());
   mocks.createAIProvider.mockReturnValue(healthyProvider());
   mocks.createControlledAIProvider.mockImplementation(
@@ -152,7 +152,7 @@ describe("recommendation metadata is identical with and without AI", () => {
     // 2. AI healthy and fully successful.
     mocks.createAIProvider.mockReturnValue(healthyProvider());
     mocks.generateExplanations.mockResolvedValue(
-      new Map(ranked(5).map((r) => [r.perfumeId, `توضیح برای ${r.perfumeId}`])),
+      new Map(ranked(3).map((r) => [r.perfumeId, `توضیح برای ${r.perfumeId}`])),
     );
 
     const withAi = await getResultsViewData(paramsWith({ store: STORE }));
@@ -160,7 +160,7 @@ describe("recommendation metadata is identical with and without AI", () => {
     expect(withoutAi.aiAvailable).toBe(false);
     expect(withAi.aiAvailable).toBe(true);
     expect(withoutAi.explanations.size).toBe(0);
-    expect(withAi.explanations.size).toBe(5);
+    expect(withAi.explanations.size).toBe(3);
 
     // The explanations differ; the recommendation metadata must not.
     expect(metadata(withAi.recommendations)).toEqual(metadata(withoutAi.recommendations));
@@ -169,7 +169,7 @@ describe("recommendation metadata is identical with and without AI", () => {
 
   it("does not re-sort or re-rank after explanations are attached", async () => {
     mocks.generateExplanations.mockResolvedValue(
-      new Map(ranked(5).map((r) => [r.perfumeId, "یک توضیح فارسی کوتاه و طبیعی برای تو"])),
+      new Map(ranked(3).map((r) => [r.perfumeId, "یک توضیح فارسی کوتاه و طبیعی برای تو"])),
     );
 
     const data = await getResultsViewData(paramsWith({ store: STORE }));
@@ -178,16 +178,14 @@ describe("recommendation metadata is identical with and without AI", () => {
       "p-1",
       "p-2",
       "p-3",
-      "p-4",
-      "p-5",
     ]);
-    expect(data.recommendations.map((r) => r.rank)).toEqual([1, 2, 3, 4, 5]);
-    expect(data.recommendations.map((r) => r.score)).toEqual([95, 94, 93, 92, 91]);
+    expect(data.recommendations.map((r) => r.rank)).toEqual([1, 2, 3]);
+    expect(data.recommendations.map((r) => r.score)).toEqual([95, 94, 93]);
   });
 });
 
 describe("a missing API key still returns recommendations", () => {
-  it("returns the full Top 5 with unchanged scores and no explanations", async () => {
+  it("returns the full Top 3 with unchanged scores and no explanations", async () => {
     mocks.createAIProvider.mockReturnValue({
       id: "unavailable",
       isAvailable: () => false,
@@ -208,7 +206,7 @@ describe("a missing API key still returns recommendations", () => {
     expect(data.explanations.size).toBe(0);
 
     // Scoring is completely untouched by the missing credential.
-    expect(metadata(data.recommendations)).toEqual(metadata(ranked(5)));
+    expect(metadata(data.recommendations)).toEqual(metadata(ranked(3)));
   });
 
   it("still records the analytics events when AI is unavailable", async () => {
@@ -327,7 +325,7 @@ describe("partial AI failure degrades per item", () => {
   }
 
   const inputsFor = () =>
-    ranked(5).map((r) => ({
+    ranked(3).map((r) => ({
       recommendation: r,
       archetypeLabel: "کاشف مرموز",
       perfume: { perfumeId: r.perfumeId, name: r.name, brand: r.brand },
@@ -350,11 +348,11 @@ describe("partial AI failure degrades per item", () => {
     const generateExplanations = await realGenerateExplanations();
     const partial = await generateExplanations(provider, inputsFor());
 
-    // 4 of 5 survive; only the timed-out item is absent — not an empty map.
-    expect(partial.size).toBe(4);
+    // 2 of 3 survive; only the timed-out item is absent — not an empty map.
+    expect(partial.size).toBe(2);
     expect(partial.has("p-3")).toBe(false);
     expect(partial.get("p-1")).toBeTruthy();
-    expect(partial.get("p-5")).toBeTruthy();
+    expect(partial.get("p-2")).toBeTruthy();
 
     mocks.createAIProvider.mockReturnValue(provider);
     mocks.generateExplanations.mockImplementation(() =>
@@ -363,9 +361,9 @@ describe("partial AI failure degrades per item", () => {
 
     const data = await getResultsViewData(paramsWith({ store: STORE }));
 
-    expect(data.explanations.size).toBe(4);
+    expect(data.explanations.size).toBe(2);
     expect(data.recommendations).toHaveLength(3);
-    expect(metadata(data.recommendations)).toEqual(metadata(ranked(5)));
+    expect(metadata(data.recommendations)).toEqual(metadata(ranked(3)));
   });
 
   it("does not fail the whole page when every explanation fails", async () => {
@@ -377,7 +375,7 @@ describe("partial AI failure degrades per item", () => {
     const generateExplanations = await realGenerateExplanations();
     const none = await generateExplanations(provider, inputsFor());
     // A real attempt was made for every item, and all of them failed.
-    expect(provider.generateRecommendationExplanation).toHaveBeenCalledTimes(5);
+    expect(provider.generateRecommendationExplanation).toHaveBeenCalledTimes(3);
     expect(none.size).toBe(0);
 
     mocks.createAIProvider.mockReturnValue(provider);
@@ -386,7 +384,7 @@ describe("partial AI failure degrades per item", () => {
     const data = await getResultsViewData(paramsWith({ store: STORE }));
     expect(data.isEmpty).toBe(false);
     expect(data.recommendations).toHaveLength(3);
-    expect(metadata(data.recommendations)).toEqual(metadata(ranked(5)));
+    expect(metadata(data.recommendations)).toEqual(metadata(ranked(3)));
   });
 });
 
