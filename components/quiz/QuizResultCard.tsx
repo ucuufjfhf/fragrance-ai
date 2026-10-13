@@ -1,17 +1,28 @@
+"use client";
+
 import Link from "next/link";
 
 import TraitBars from "@/components/results/TraitBars";
 import AmbientParticles from "@/components/AmbientParticles";
-import { ARCHETYPE_ICON_POP_CSS } from "@/components/archetype-icons";
-import { ArchetypeEmblem } from "@/components/archetype-icon-map";
+import ArchetypeRevealModal from "@/components/quiz/ArchetypeRevealModal";
+import { archetypeEmblemImageFor } from "@/components/archetype-emblems";
 
 import { resetAnalyticsFlow } from "@/lib/analytics/flow-tracker";
 import type { AudienceGender } from "@/lib/audience";
 import type { SeasonFilter } from "@/lib/context";
 import { serializeResultsParams } from "@/lib/results/params";
 import type { Occasion } from "@/types/fragrance";
-import type { CSSProperties } from "react";
+import { useCallback, useRef, type CSSProperties } from "react";
 import type { QuizResult } from "@/types/personality";
+
+/**
+ * The selection basis, in the shopper's words: the profile is matched against
+ * the WHOLE nine-axis vector, not the single strongest one. Copy only — no
+ * scoring, no selection and no archetype lookup changes anywhere. Shared by the
+ * reveal pop-up and the profile card so both name the same basis verbatim.
+ */
+const SELECTION_BASIS =
+  "این پروفایل از روی همهٔ ۹ محور شخصیتت انتخاب شده است — نه فقط بالاترین محور.";
 
 interface QuizResultCardProps {
   result: QuizResult;
@@ -54,10 +65,16 @@ interface QuizResultCardProps {
  * The archetype itself, the vector, the scoring and every link target come
  * straight from the Phase 1 engine and are unchanged.
  *
- * The reveal seal carries the archetype's own emblem (`ArchetypeEmblem`, keyed
- * by id alone) and pops it into place after the seal lands. The seal keeps an
- * accessible name — the archetype label — while the emblem itself stays
- * decorative.
+ * The result phase then opens with the archetype reveal pop-up
+ * (`ArchetypeRevealModal`): the archetype's emblem large over a dimmed backdrop,
+ * staggered in behind the card. Dismissing it hands control straight back to
+ * this screen, so the flow to the optional refinement step and `/result` is
+ * untouched.
+ *
+ * The card's own seal carries the archetype's emblem (a bundled image keyed by
+ * id alone, `archetypeEmblemImageFor`) in place of the generic glyph. The seal
+ * keeps an accessible name — the archetype label — while the picture itself
+ * stays decorative.
  */
 export default function QuizResultCard({
   result,
@@ -70,6 +87,13 @@ export default function QuizResultCard({
   onContinue,
 }: QuizResultCardProps) {
   const { archetype, vector } = result;
+
+  // Focus target for the reveal pop-up's dismissal: keyboard users continue
+  // from the archetype heading, not from the top of the document.
+  const labelRef = useRef<HTMLHeadingElement>(null);
+  const handleRevealDismiss = useCallback(() => {
+    labelRef.current?.focus();
+  }, []);
 
   // The results page is a server component: the profile travels in the URL and
   // the engine + AI run server-side (Phase 5). Works offline too, because the
@@ -97,6 +121,16 @@ export default function QuizResultCard({
         "--accent-contrast": archetype.id === "clean-minimalist" || archetype.id === "elegant-classic" ? "#2A2420" : "#FFFFFF",
       } as CSSProperties}
     >
+      {/* The dramatic reveal: the archetype's emblem, large, over a dimmed
+          backdrop. It is dismissible three ways (CTA, backdrop, Escape) and
+          dismissal simply reveals the screen below, whose flow is unchanged. */}
+      <ArchetypeRevealModal
+        archetypeId={archetype.id}
+        label={archetype.label}
+        selectionBasis={SELECTION_BASIS}
+        onDismiss={handleRevealDismiss}
+      />
+
       {/* Shared ambient background — identical implementation to the
           Recommendations screen (components/results/ResultsView.tsx). */}
       <AmbientParticles />
@@ -106,8 +140,6 @@ export default function QuizResultCard({
           selection-basis line each rise in turn. Every element keeps the
           reduced-motion bypass baked into the shared `quiz-rise` keyframe. */}
       <div className="relative overflow-hidden rounded-[2rem] border border-accent/30 bg-accent-soft px-6 py-10 text-center shadow-[var(--shadow-soft)] sm:px-10 sm:py-12">
-        {/* Emblem motion contract — reduced-motion bypass included. */}
-        <style>{ARCHETYPE_ICON_POP_CSS}</style>
         <span
           aria-hidden="true"
           className="pointer-events-none absolute left-1/2 top-0 h-64 w-64 -translate-x-1/2 -translate-y-1/3 rounded-full blur-2xl"
@@ -132,22 +164,36 @@ export default function QuizResultCard({
           <span
             role="img"
             aria-label={archetype.label}
-            className="quiz-rise relative mt-2 flex h-16 w-16 items-center justify-center rounded-full border border-accent/30 bg-background/70 text-accent shadow-[var(--shadow-card)]"
+            className="quiz-rise relative mt-2 flex h-24 w-24 items-center justify-center rounded-full border border-accent/30 bg-surface-2 shadow-[var(--shadow-card)]"
             style={{ animationDelay: "120ms", animationFillMode: "backwards" }}
           >
             <span
               aria-hidden="true"
               className="absolute inset-0 -m-2.5 rounded-full border border-accent/20"
             />
-            {/* Emblem for this archetype — a pure id lookup, never an engine
-                value. */}
-            <ArchetypeEmblem
-              archetypeId={archetype.id}
-              className="archetype-icon-pop h-8 w-8"
-            />
+            {/* The archetype's emblem — a pure id lookup, never an engine
+                value — clipped to the seal. Decorative: the seal above already
+                carries the accessible name. */}
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 overflow-hidden rounded-full"
+            >
+              {/* Bundled public/ asset, not merchant data: a plain <img> keeps
+                  the exact file, so the emblem is never re-encoded. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={archetypeEmblemImageFor(archetype.id)}
+                alt=""
+                width={1600}
+                height={1600}
+                className="h-full w-full object-cover"
+              />
+            </span>
           </span>
 
           <h1
+            ref={labelRef}
+            tabIndex={-1}
             className="quiz-rise mt-2 font-heading text-3xl font-bold leading-tight text-foreground sm:text-4xl"
             style={{ animationDelay: "200ms", animationFillMode: "backwards" }}
           >
@@ -167,14 +213,12 @@ export default function QuizResultCard({
             {archetype.description}
           </p>
 
-          {/* Selection basis — the profile is matched against the WHOLE nine-axis
-              vector, not the single strongest one. Copy only: no scoring, no
-              selection and no archetype lookup changes anywhere. */}
+          {/* Selection basis — see SELECTION_BASIS above. */}
           <p
             className="quiz-rise mt-1 max-w-md text-xs leading-7 text-muted"
             style={{ animationDelay: "380ms", animationFillMode: "backwards" }}
           >
-            این پروفایل از روی همهٔ ۹ محور شخصیتت انتخاب شده است — نه فقط بالاترین محور.
+            {SELECTION_BASIS}
           </p>
         </div>
       </div>
