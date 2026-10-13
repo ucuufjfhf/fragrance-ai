@@ -1,116 +1,111 @@
-import { BrandMark } from "@/components/ui-icons";
-
+import Image from "next/image";
 import Link from "next/link";
 
-type PhaseStatus = "done" | "next" | "planned";
+import SiteFooter from "@/components/site/SiteFooter";
+import SiteHeader from "@/components/site/SiteHeader";
 
-const phases: { title: string; status: PhaseStatus; detail: string }[] = [
+/**
+ * GET / — the public landing page.
+ *
+ * This is a brand page, not a project dashboard: a single editorial hero
+ * (headline on the right, dark perfume visual on the left — asymmetric, RTL),
+ * a short three-step explainer, and one confident trust line. Operational
+ * detail (phase roadmap, status cards, admin routes) belongs to the repo, not
+ * to the shopper.
+ */
+
+const steps = [
   {
-    title: "فاز ۰ — راه‌اندازی پروژه",
-    status: "done",
-    detail: "Next.js + TypeScript + Tailwind + Prisma + ساختار پوشه‌ها",
+    n: "۱",
+    title: "به ۱۰ سوال جواب بده",
+    detail: "سوال‌های کوتاه و ساده؛ فقط سلیقه‌ات رو بگو.",
   },
   {
-    title: "فاز ۱ — موتور آزمون شخصیت عطری",
-    status: "done",
-    detail: "۱۰ سؤال، امتیازدهی قطعی، نرمال‌سازی ۰ تا ۱۰۰، ۸ کهن‌الگو",
+    n: "۲",
+    title: "پروفایل عطری‌ات ساخته میشه",
+    detail: "از جواب‌هات یک پروفایل رایحه با ۸ محور درست میشه.",
   },
   {
-    title: "فاز ۲ — پایگاه داده و داده عطر",
-    status: "next",
-    detail: "PostgreSQL، مهاجرت‌ها، داده‌های نمونه و پروفایل رایحه",
-  },
-  {
-    title: "فاز ۳ — موتور تطبیق عطر",
-    status: "planned",
-    detail: "فیلتر موجودی، امتیازدهی وزنی و رتبه‌بندی قطعی",
-  },
-  {
-    title: "فاز ۴ — لایه هوش مصنوعی",
-    status: "planned",
-    detail: "توضیح فارسی «چرا این عطر؟» با فالبک کامل",
+    n: "۳",
+    title: "۳ عطر منتخب رو ببین",
+    detail: "با توضیح اینکه هر کدوم چرا با پروفایل تو جور است.",
   },
 ];
 
-const statusLabel: Record<PhaseStatus, string> = {
-  done: "انجام شده",
-  next: "مرحله بعد",
-  planned: "برنامه‌ریزی شده",
-};
-
-const statusClass: Record<PhaseStatus, string> = {
-  done: "bg-accent-soft text-accent border-accent/40",
-  next: "bg-surface-2 text-foreground border-border-soft",
-  planned: "bg-transparent text-muted border-border-soft",
-};
-
 export default function Home() {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 px-5 py-12 sm:px-8 sm:py-20">
-      <header className="flex flex-col gap-4">
-        <span className="w-fit rounded-full border border-border-soft bg-surface px-4 py-1 text-sm text-accent">
-          Fragrance AI — نسخهٔ MVP
-        </span>
-        <h1 className="text-3xl font-bold sm:text-4xl"><BrandMark className="ml-2 inline h-8 w-8 text-accent" />عطر خودتو پیدا کن</h1>
-        <p className="text-muted sm:text-lg">
-          عطری که بهت میاد چیه؟ فقط به ۱۰ سؤال کوتاه جواب بده تا ببینیم چه رایحه‌ای بیشتر با
-          سلیقه و شخصیت عطری تو هماهنگه.
-        </p>
-      </header>
+    <div className="flex flex-1 flex-col">
+      <SiteHeader />
 
-      <section className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 sm:p-8">
-        <h2 className="text-xl font-semibold">وضعیت پروژه</h2>
-        <p className="text-muted text-sm">
-          آزمون سلیقه عطری آماده است: ۱۰ سؤال، امتیازدهی قطعی، نرمال‌سازی ۰ تا ۱۰۰ و ۸
-          کهن‌الگو. پایگاه داده، موتور تطبیق عطر و توضیح فارسی هوش مصنوعی در فازهای بعدی
-          اضافه می‌شوند.
-        </p>
-        <Link
-          href="/quiz"
-          className="flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
-        >
-          شروع آزمون
-        </Link>
-        <ul className="flex flex-col gap-3">
-          {phases.map((phase) => (
-            <li
-              key={phase.title}
-              className="flex flex-col gap-2 rounded-2xl border border-border-soft bg-surface-2 p-4 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="flex flex-col gap-1">
-                <span className="font-medium">{phase.title}</span>
-                <span className="text-muted text-sm">{phase.detail}</span>
-              </div>
-              <span
-                className={`w-fit shrink-0 rounded-full border px-3 py-1 text-xs ${statusClass[phase.status]}`}
+      <main className="flex flex-1 flex-col">
+        {/* Hero — asymmetric editorial split: copy on the right, moody visual on the left. */}
+        <section className="relative">
+          <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-5 pb-14 pt-12 sm:px-8 lg:grid-cols-[1fr_0.92fr] lg:gap-16 lg:pb-24 lg:pt-20">
+            <div className="flex flex-col items-start gap-6">
+              <h1 className="font-heading text-4xl font-bold leading-[1.3] text-foreground sm:text-5xl lg:text-6xl">
+                عطر خودتو پیدا کن
+              </h1>
+              <p className="max-w-xl text-lg leading-loose text-muted">
+                فقط ۱۰ سوال کوتاه؛ بعدش می‌فهمی کدوم رایحه واقعاً به سلیقه و شخصیتت می‌خوره —
+                نه بر اساس تبلیغ، بر اساس خودت.
+              </p>
+              <Link
+                href="/quiz"
+                className="btn-primary flex min-h-14 items-center justify-center rounded-2xl bg-accent px-9 text-lg font-medium text-background"
               >
-                {statusLabel[phase.status]}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
+                شروع آزمون
+              </Link>
+              <p className="text-sm text-muted">حدود دو دقیقه وقت می‌گیره · بدون ثبت‌نام</p>
+            </div>
 
-      <section className="flex flex-col gap-3 rounded-3xl border border-border-soft bg-surface p-6 sm:p-8">
-        <h2 className="text-xl font-semibold">اصل معماری پروژه</h2>
-        <p className="text-muted text-sm leading-loose">
-          امتیازدهی، فیلتر موجودی، رتبه‌بندی و انتخاب بهترین عطرها کاملاً قطعی و در کد
-          برنامه انجام می‌شود. هوش مصنوعی فقط پروفایل عطر را غنی می‌کند و متن فارسی
-          «چرا این عطر؟» را می‌نویسد؛ اگر سرویس هوش مصنوعی در دسترس نباشد، پیشنهادها همچنان
-          کار می‌کنند.
-        </p>
-      </section>
+            <div className="relative">
+              <div className="relative aspect-4/5 w-full overflow-hidden rounded-[2rem] border border-border-soft shadow-[var(--shadow-soft)] sm:aspect-3/4 lg:aspect-4/5">
+                <Image
+                  src="/hero/perfume-hero.jpg"
+                  alt="شیشه عطر کهربایی در نور کم، با دود و بافت زغالی"
+                  fill
+                  priority
+                  sizes="(min-width: 1024px) 45vw, 100vw"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/10 to-transparent" />
+              </div>
+            </div>
+          </div>
+        </section>
 
-      <nav className="flex flex-col gap-3 text-sm text-muted">
-        <span>مسیرهای در دست ساخت:</span>
-        <ul className="flex flex-wrap gap-2">
-          {["/result", "/admin", "/admin/perfumes", "/admin/analytics"].map((route) => (
-            <li key={route} className="rounded-full border border-border-soft px-3 py-1">
-              <span dir="ltr">{route}</span>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </main>
+        {/* How it works — three steps, numbers only. */}
+        <section id="how" className="border-y border-border-soft bg-surface-2">
+          <div className="mx-auto w-full max-w-6xl px-5 py-14 sm:px-8 lg:py-20">
+            <h2 className="font-heading text-2xl font-semibold text-foreground sm:text-3xl">
+              سه قدم تا عطرت
+            </h2>
+            <ol className="mt-10 grid gap-10 sm:grid-cols-3 sm:gap-8">
+              {steps.map((step) => (
+                <li key={step.n} className="flex flex-col gap-3">
+                  <span className="font-heading text-4xl font-semibold text-accent">
+                    {step.n}
+                  </span>
+                  <span className="h-px w-10 bg-border-soft" />
+                  <h3 className="font-heading text-lg font-semibold text-foreground">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm leading-loose text-muted">{step.detail}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* Trust line — said once, with confidence. */}
+        <section className="mx-auto w-full max-w-3xl px-5 py-16 text-center sm:px-8 lg:py-24">
+          <p className="font-heading text-xl font-semibold leading-loose text-foreground sm:text-2xl">
+            بدون حدس و گمان؛ انتخاب بر اساس پروفایل دقیق تو
+          </p>
+        </section>
+      </main>
+
+      <SiteFooter />
+    </div>
   );
 }
