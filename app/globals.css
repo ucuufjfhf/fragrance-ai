@@ -193,3 +193,136 @@ h1, h2, h3, h4, h5, h6 {
     animation: none;
   }
 }
+
+/* Quiz ambience — the two layers of quiet depth behind the quiz flow (see
+ * components/quiz/QuizAmbience.tsx). Decorative, CSS-only, and BOTH layers go
+ * static under `prefers-reduced-motion`.
+ *
+ * Layer 1 — ambient breathing gradient. The cream base is kept as-is; three
+ * very soft warm washes sit on it and drift on 13–19s loops. Their colours are
+ * mixed from the existing tokens only (`--accent` terracotta + `--accent-soft`),
+ * so no new palette enters the project. Only `transform` and `opacity` animate,
+ * which keeps the whole effect on the compositor: no layout, no per-frame
+ * paint, no blur to re-evaluate.
+ *
+ * Layer 2 — film grain. One static feTurbulence tile (desaturated, and stitched
+ * so it repeats seamlessly) at 4% over the whole route. That is the
+ * editorial-magazine texture: the quiz surfaces read as paper rather than as a
+ * flat white card.
+ *
+ * Readability first: the washes only tint the page base — they never sit under
+ * the card's text — and 4% greyscale noise moves the card's body text
+ * (`--foreground` on `--surface`) from ~15.3:1 to ~12.3:1 in the worst case
+ * (noise driven to both extremes at once; measured, and locked by
+ * tests/quiz/quiz-ambience.test.tsx). Both are far above AAA, so the contrast of
+ * the question text, options and buttons is untouched in practice.
+ */
+.quiz-ambience {
+  background-color: var(--background);
+}
+
+.quiz-wash {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(
+    closest-side,
+    var(--wash-color) 0%,
+    color-mix(in srgb, var(--wash-color) 40%, transparent) 46%,
+    transparent 78%
+  );
+  opacity: var(--wash-opacity, 0.1);
+  animation-name: quiz-wash-breathe;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform, opacity;
+}
+
+/* The breath: a slow drift plus a shallow opacity swell. `transform` and
+ * `opacity` only, and small enough (≤3.5% of the wash) that the air reads as
+ * warm and moving rather than as a screensaver. */
+@keyframes quiz-wash-breathe {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: calc(var(--wash-opacity, 0.1) * 0.7);
+  }
+  50% {
+    transform: translate3d(3%, -3.5%, 0) scale(1.08);
+    opacity: var(--wash-opacity, 0.1);
+  }
+  100% {
+    transform: translate3d(-3%, 2.5%, 0) scale(0.95);
+    opacity: calc(var(--wash-opacity, 0.1) * 0.78);
+  }
+}
+
+/* Three washes, each with its own loop length (13–19s, inside the 12–20s band)
+ * and a negative delay, so they never breathe in sync. Peak opacities stay in
+ * the 0.06–0.12 band: barely-there is the target. */
+.quiz-wash-a {
+  left: -14%;
+  top: -20%;
+  width: 76vmax;
+  height: 58vmax;
+  --wash-color: var(--accent);
+  --wash-opacity: 0.1;
+  animation-duration: 19s;
+  animation-delay: -3s;
+}
+
+.quiz-wash-b {
+  right: -18%;
+  top: 26%;
+  width: 68vmax;
+  height: 54vmax;
+  --wash-color: color-mix(in srgb, var(--accent) 55%, var(--accent-soft));
+  --wash-opacity: 0.12;
+  animation-duration: 16s;
+  animation-delay: -9s;
+}
+
+.quiz-wash-c {
+  left: 16%;
+  top: 58%;
+  width: 62vmax;
+  height: 48vmax;
+  --wash-color: color-mix(in srgb, var(--accent) 70%, var(--accent-soft));
+  --wash-opacity: 0.06;
+  animation-duration: 13s;
+  animation-delay: -5s;
+}
+
+/* The grain tile: 200×200 feTurbulence, desaturated to greyscale, made OPAQUE
+ * and contrast-stretched, with the filter region clamped to the tile so
+ * `stitchTiles` seams land on the tile edge and the repeat is invisible.
+ *
+ * All three parts are load-bearing, and measured rather than guessed:
+ *  - opacity 1 in the tile (feFuncA) — feTurbulence's own alpha is noisy, so
+ *    leaving it in would give a faint tint instead of grain;
+ *  - the slope/intercept stretch — fractalNoise clusters around mid-grey
+ *    (central limit over its octaves), so an unstretched tile is nearly flat;
+ *  - the clamp of the filter region to 100% — the default region is larger than
+ *    the tile, which would put the stitch seams in the wrong place.
+ * Measured on the built app at 4× zoom: a flat #ffffff card becomes 248–255
+ * with a per-pixel σ ≈ 1.5 — paper texture, not dirt. Inline, so nothing is
+ * fetched. */
+.quiz-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='grain' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.2' intercept='-0.6'/%3E%3CfeFuncG type='linear' slope='2.2' intercept='-0.6'/%3E%3CfeFuncB type='linear' slope='2.2' intercept='-0.6'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23grain)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+}
+
+/* Both layers static: the washes freeze mid-tint (never disappearing) and the
+ * grain needs nothing — it has no animation to stop. */
+@media (prefers-reduced-motion: reduce) {
+  .quiz-wash {
+    animation: none;
+    transform: none;
+    opacity: calc(var(--wash-opacity, 0.1) * 0.85);
+  }
+}

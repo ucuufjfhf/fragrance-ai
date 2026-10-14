@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import Quiz from "@/components/quiz/Quiz";
+import QuizAmbience from "@/components/quiz/QuizAmbience";
 import SiteFooter from "@/components/site/SiteFooter";
 import SiteHeader from "@/components/site/SiteHeader";
 
@@ -30,6 +31,11 @@ export default async function QuizPage({ searchParams }: QuizPageProps) {
 
   return (
     <div className="flex flex-1 flex-col">
+      {/* The quiz's own atmosphere: warm washes behind the flow and a film-grain
+          overlay on top of it. Both layers are decorative and inert — see
+          components/quiz/QuizAmbience.tsx. */}
+      <QuizAmbience />
+
       <SiteHeader />
 
       <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6 sm:py-14">
