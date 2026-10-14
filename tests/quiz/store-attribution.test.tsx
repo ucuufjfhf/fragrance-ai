@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import Quiz from "@/components/quiz/Quiz";
-import QuizResultCard from "@/components/quiz/QuizResultCard";
+import FragranceProfileCard from "@/components/quiz/FragranceProfileCard";
 import {
   DEFAULT_RESULTS_STORE_ID,
   parseResultsParams,
@@ -108,11 +108,11 @@ describe("Quiz component — store context flows through (Phase 9)", () => {
   });
 });
 
-describe("QuizResultCard — results URL carries the pinned store (Phase 9)", () => {
+describe("the result phase's profile card — results URL carries the pinned store (Phase 9)", () => {
   it("links to /result with the store param when a store context exists", () => {
     const result = makeResult();
     const html = render(
-      <QuizResultCard
+      <FragranceProfileCard
         result={result}
         onRestart={() => undefined}
         storeId="store-merchant-x"
@@ -124,7 +124,7 @@ describe("QuizResultCard — results URL carries the pinned store (Phase 9)", ()
 
   it("links to /result without a store param when the quiz had none", () => {
     const result = makeResult();
-    const html = render(<QuizResultCard result={result} onRestart={() => undefined} />);
+    const html = render(<FragranceProfileCard result={result} onRestart={() => undefined} />);
 
     expect(html).not.toContain("store=");
   });

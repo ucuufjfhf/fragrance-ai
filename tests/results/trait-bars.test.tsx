@@ -6,7 +6,7 @@ import TraitBars, {
   TRAIT_ANIMATION_DURATION_MS,
   TRAIT_ANIMATION_STAGGER_MS,
 } from "@/components/results/TraitBars";
-import QuizResultCard from "@/components/quiz/QuizResultCard";
+import FragranceProfileCard from "@/components/quiz/FragranceProfileCard";
 import ResultsView from "@/components/results/ResultsView";
 import { QUIZ_QUESTIONS } from "@/lib/personality/questions";
 import { scoreQuiz } from "@/lib/personality/scoring";
@@ -50,7 +50,7 @@ describe("shared trait bars — timing contract", () => {
 });
 
 describe("shared trait bars — rendered by BOTH results screens", () => {
-  it("screen 1 (QuizResultCard) renders the shared animated implementation", () => {
+  it("screen 1 (the result phase's profile step) renders the shared animated implementation", () => {
     const result = scoreQuiz(
       QUIZ_QUESTIONS.map((question) => ({
         questionId: question.id,
@@ -58,7 +58,7 @@ describe("shared trait bars — rendered by BOTH results screens", () => {
       })),
     );
 
-    const html = render(<QuizResultCard result={result} onRestart={() => undefined} />);
+    const html = render(<FragranceProfileCard result={result} onRestart={() => undefined} />);
 
     // The shared component's structural signature must be present.
     expect(html).toContain("پروفایل شخصیتی تو");
