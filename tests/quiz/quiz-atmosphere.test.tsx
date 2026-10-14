@@ -31,8 +31,22 @@ import QuizAtmosphere, {
 
 const CSS = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
 
-/** The whole act-2 section: from the first ink rule to the end of the file. */
-const ACT2 = CSS.slice(CSS.indexOf(".quiz-ink {"));
+/**
+ * Act 2's own section of the stylesheet: from its first rule to the start of
+ * act 3's. The bound is explicit — the file keeps growing (act 3 was appended
+ * after this suite was written), so "the rest of the file" is not a slice this
+ * suite is allowed to rely on.
+ */
+function sectionBetween(startSelector: string, endSelector: string): string {
+  const start = CSS.indexOf(`${startSelector} {`);
+  const end = CSS.indexOf(`${endSelector} {`);
+  if (start < 0 || end <= start) {
+    throw new Error(`stylesheet section not found: ${startSelector} → ${endSelector}`);
+  }
+  return CSS.slice(start, end);
+}
+
+const ACT2 = sectionBetween(".quiz-ink", ".quiz-plume-layer");
 
 /** The full text of one `selector { … }` rule (brace-matched, no nesting). */
 function block(source: string, selector: string): string {

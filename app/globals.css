@@ -479,3 +479,149 @@ h1, h2, h3, h4, h5, h6 {
     display: none;
   }
 }
+
+/* ── Quiz ambience, act 3 — the spray ──────────────────────────────────────
+ * See components/quiz/QuizSpray.tsx. Two ambient layers that sit between the
+ * clearing fog and the cards:
+ *
+ *   washes → ink blooms → fog → MIST PLUMES → GOLDEN MOTES → cards → grain → pulse
+ *
+ * Both are fixed `-z-10` siblings declared immediately after QuizAtmosphere, so
+ * DOM order (equal z-index) paints them above the fog and still behind the cards
+ * — which is also what guarantees they can never sit over the question text.
+ *
+ * Perf: transform/opacity only, no filters, no shadows, and the node counts are
+ * fixed by construction (3 plumes, 24 motes). Both layers are continuous loops,
+ * so `will-change` is set here — the same trade act 1's washes already make.
+ */
+.quiz-plume-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* One puff per cycle: a burst that expands and drifts while it dissipates, then
+ * silence for the rest of the cycle (the node waits, invisible, for its next
+ * puff). The puff is the first ~38% of a 14–16s cycle — ~5s, as specified.
+ *
+ * The tint is measured, not guessed: 30% accent over white, held at a 0.4 peak,
+ * puts the core of a puff ~Δ12 below the page base in green/blue — visible as a
+ * warm puff of mist, and still only about two thirds of act 2's full fog at its
+ * strongest. (A whiter mix — which is what a real spray looks like — measured as
+ * no change at all on a cream page, like act 2's first fog recipe did.) */
+.quiz-plume {
+  --plume-peak: 0.4;
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--accent) 30%, white) 0%,
+    color-mix(in srgb, var(--accent) 18%, white) 40%,
+    transparent 76%
+  );
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.32);
+  animation-name: quiz-plume-puff;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes quiz-plume-puff {
+  0% {
+    transform: translate(-50%, -50%) scale(0.32);
+    opacity: 0;
+  }
+  7% {
+    opacity: var(--plume-peak);
+  }
+  38% {
+    transform: translate(calc(-50% + var(--plume-dx, 0px)), calc(-50% + var(--plume-dy, 0px)))
+      scale(1.5);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--plume-dx, 0px)), calc(-50% + var(--plume-dy, 0px)))
+      scale(1.5);
+    opacity: 0;
+  }
+}
+
+.quiz-mote-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Dust in low sunlight: a slow rise, a gentle sway, a twinkle. 2–4px specks
+ * carrying a warm gold mixed from `--accent`; size, loop length, phase and
+ * twinkle depth are per node, set by the component.
+ *
+ * The rise is 134px, measured rather than arbitrary: a longer climb carried the
+ * motes out of the air the card leaves free (up behind the fixed header and off
+ * the top of the viewport) for most of every loop. Shortening it keeps the dust
+ * in the visible margins while it fades in and out. */
+.quiz-mote {
+  --mote-opacity: 0.5;
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at center,
+    color-mix(in srgb, var(--accent) 45%, white) 0%,
+    color-mix(in srgb, var(--accent) 22%, white) 45%,
+    transparent 72%
+  );
+  opacity: 0;
+  animation-name: quiz-mote-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes quiz-mote-drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--mote-opacity);
+  }
+  25% {
+    transform: translate3d(9px, -34px, 0);
+    opacity: calc(var(--mote-opacity) * 0.42);
+  }
+  45% {
+    transform: translate3d(-8px, -62px, 0);
+    opacity: var(--mote-opacity);
+  }
+  70% {
+    transform: translate3d(7px, -96px, 0);
+    opacity: calc(var(--mote-opacity) * 0.45);
+  }
+  88% {
+    transform: translate3d(-6px, -120px, 0);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(-6px, -134px, 0);
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: the plumes keep a faint presence but stop puffing entirely
+ * (no burst, no drift — the static state is the whole effect), and the mote
+ * field is removed rather than frozen. */
+@media (prefers-reduced-motion: reduce) {
+  .quiz-plume {
+    animation: none;
+    opacity: calc(var(--plume-peak) * 0.45);
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  .quiz-mote-layer {
+    display: none;
+  }
+}

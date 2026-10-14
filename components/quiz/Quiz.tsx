@@ -22,6 +22,7 @@ import QuizAtmosphere, {
   type InkBloom,
 } from "@/components/quiz/QuizAtmosphere";
 import QuizResultCard from "@/components/quiz/QuizResultCard";
+import QuizSpray from "@/components/quiz/QuizSpray";
 import type { AudienceGender } from "@/lib/audience";
 import type { Occasion } from "@/types/fragrance";
 import type { SeasonFilter } from "@/lib/context";
@@ -347,6 +348,10 @@ export default function Quiz({ storeId }: { storeId?: string }) {
         answeredCount={answeredCount}
         totalQuestions={QUIZ_QUESTIONS.length}
       />
+      {/* Act 3 — the abstract spray: ambient air of its own, ordered after the
+          fog and still behind the cards. It takes no props: nothing about it is
+          tied to an answer. */}
+      <QuizSpray />
       {screen}
     </>
   );
