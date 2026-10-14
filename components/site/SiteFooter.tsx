@@ -42,7 +42,7 @@ export default function SiteFooter() {
         </nav>
 
         <p className="text-xs leading-relaxed text-muted">
-          © ۱۴۰۵ Fragrance AI — انتخاب عطر بر اساس پروفایل تو.
+          © ۱۴۰۵ FIAGE — انتخاب عطر بر اساس پروفایل تو.
         </p>
       </div>
     </footer>

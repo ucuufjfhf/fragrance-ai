@@ -14,9 +14,9 @@ const persianFont = Vazirmatn({
 });
 
 export const metadata: Metadata = {
-  title: "عطر خودتو پیدا کن | Fragrance AI",
+  title: "عطرتان را پیدا کنید | FIAGE",
   description:
-    "سیستم پیشنهاد عطر شخصی‌سازی‌شده بر پایهٔ پروفایل عطری؛ همراه فروشگاه‌های عطر فارسی‌زبان.",
+    "تست بدهید، آرکتایپ عطری‌تان را بشناسید؛ FIAGE عطری را پیدا می‌کند که واقعاً شماست.",
   /**
    * The FIAGE mark is the tab icon and the iOS home-screen icon: one bundled
    * PNG serves both, so there is no .ico copy to keep in sync with the brand.
