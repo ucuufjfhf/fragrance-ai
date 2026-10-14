@@ -194,9 +194,15 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* Quiz ambience — the two layers of quiet depth behind the quiz flow (see
- * components/quiz/QuizAmbience.tsx). Decorative, CSS-only, and BOTH layers go
+/* Quiz ambience — the layers of quiet depth behind the quiz flow (see
+ * components/quiz/QuizAmbience.tsx). Decorative, CSS-only, and every layer goes
  * static under `prefers-reduced-motion`.
+ *
+ * Layer 0 — bokeh orbs. A handful of large, very soft out-of-focus warm light
+ * circles drifting on 60–110s loops in the DEEP background (behind the washes).
+ * They read as depth — a near/far separation in the air — and their
+ * out-of-focus softness is the radial-gradient falloff itself, never a blur
+ * filter.
  *
  * Layer 1 — ambient breathing gradient. The cream base is kept as-is; three
  * very soft warm washes sit on it and drift on 13–19s loops. Their colours are
@@ -210,15 +216,74 @@ h1, h2, h3, h4, h5, h6 {
  * editorial-magazine texture: the quiz surfaces read as paper rather than as a
  * flat white card.
  *
- * Readability first: the washes only tint the page base — they never sit under
- * the card's text — and 4% greyscale noise moves the card's body text
+ * Readability first: the orbs and washes only tint the page base — they never
+ * sit under the card's text — and 4% greyscale noise moves the card's body text
  * (`--foreground` on `--surface`) from ~15.3:1 to ~12.3:1 in the worst case
  * (noise driven to both extremes at once; measured, and locked by
- * tests/quiz/quiz-ambience.test.tsx). Both are far above AAA, so the contrast of
- * the question text, options and buttons is untouched in practice.
+ * tests/quiz/quiz-ambience.test.tsx). The wash peaks were nudged up ~30% for a
+ * fuller air, and the header's muted links still hold ≥4.5:1 over the strongest
+ * wash behind their 85% cream plate (locked by the same suite). Everything is
+ * far above AAA, so the contrast of the question text, options and buttons is
+ * untouched in practice.
  */
 .quiz-ambience {
   background-color: var(--background);
+}
+
+/* The deep background. As the FIRST child of `.quiz-ambience`, this layer paints
+ * above the container's opaque cream base but beneath the washes (equal
+ * positioning, DOM order), which is exactly the depth order the brief asks for.
+ * No z-index is needed — and none is used, so the orbs can never rise out of the
+ * deep background. */
+.quiz-bokeh-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* One out-of-focus warm highlight. The softness IS the gradient: a wide,
+ * graduated falloff with no flat plateau, so the core melts outward across the
+ * whole circle — a blur filter on an animated layer is deliberately avoided.
+ * Only `transform` and `opacity` animate (60–110s loops, ≤3% drift), so the
+ * whole layer stays on the compositor. Opacity is per node and very low. */
+.quiz-bokeh {
+  --orb-color: var(--accent);
+  --orb-opacity: 0.08;
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--orb-color) 54%, transparent) 0%,
+    color-mix(in srgb, var(--orb-color) 34%, transparent) 34%,
+    color-mix(in srgb, var(--orb-color) 16%, transparent) 62%,
+    transparent 100%
+  );
+  opacity: var(--orb-opacity, 0.08);
+  /* Centred on its declared origin (like the plumes): the component's `left` /
+   * `top` are the orb's CENTRE, so the transform carries the -50% that a big
+   * soft circle needs. Without it the box sits down-and-right of its origin and
+   * hides behind the card on narrow viewports. */
+  transform: translate(-50%, -50%);
+  animation-name: quiz-bokeh-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform, opacity;
+}
+
+@keyframes quiz-bokeh-drift {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: calc(var(--orb-opacity, 0.08) * 0.72);
+  }
+  50% {
+    transform: translate(-47.5%, -53%) scale(1.07);
+    opacity: var(--orb-opacity, 0.08);
+  }
+  100% {
+    transform: translate(-52.5%, -47.5%) scale(0.95);
+    opacity: calc(var(--orb-opacity, 0.08) * 0.78);
+  }
 }
 
 .quiz-wash {
@@ -257,15 +322,16 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Three washes, each with its own loop length (13–19s, inside the 12–20s band)
- * and a negative delay, so they never breathe in sync. Peak opacities stay in
- * the 0.06–0.12 band: barely-there is the target. */
+ * and a negative delay, so they never breathe in sync. Peak opacities sit in the
+ * 0.08–0.16 band — ~30% fuller than the first pass, and still barely-there: the
+ * air reads as warm and moving, not as a tint. */
 .quiz-wash-a {
   left: -14%;
   top: -20%;
   width: 76vmax;
   height: 58vmax;
   --wash-color: var(--accent);
-  --wash-opacity: 0.1;
+  --wash-opacity: 0.13;
   animation-duration: 19s;
   animation-delay: -3s;
 }
@@ -276,7 +342,7 @@ h1, h2, h3, h4, h5, h6 {
   width: 68vmax;
   height: 54vmax;
   --wash-color: color-mix(in srgb, var(--accent) 55%, var(--accent-soft));
-  --wash-opacity: 0.12;
+  --wash-opacity: 0.16;
   animation-duration: 16s;
   animation-delay: -9s;
 }
@@ -287,7 +353,7 @@ h1, h2, h3, h4, h5, h6 {
   width: 62vmax;
   height: 48vmax;
   --wash-color: color-mix(in srgb, var(--accent) 70%, var(--accent-soft));
-  --wash-opacity: 0.06;
+  --wash-opacity: 0.08;
   animation-duration: 13s;
   animation-delay: -5s;
 }
@@ -317,9 +383,12 @@ h1, h2, h3, h4, h5, h6 {
   background-size: 200px 200px;
 }
 
-/* Both layers static: the washes freeze mid-tint (never disappearing) and the
- * grain needs nothing — it has no animation to stop. */
+/* Everything static: the orbs and washes freeze mid-tint (never disappearing)
+ * and the grain needs nothing — it has no animation to stop. */
 @media (prefers-reduced-motion: reduce) {
+  .quiz-bokeh {
+    animation: none;
+  }
   .quiz-wash {
     animation: none;
     transform: none;
@@ -491,7 +560,7 @@ h1, h2, h3, h4, h5, h6 {
  * — which is also what guarantees they can never sit over the question text.
  *
  * Perf: transform/opacity only, no filters, no shadows, and the node counts are
- * fixed by construction (3 plumes, 24 motes). Both layers are continuous loops,
+ * fixed by construction (3 plumes, 48 motes). Both layers are continuous loops,
  * so `will-change` is set here — the same trade act 1's washes already make.
  */
 .quiz-plume-layer {
@@ -504,7 +573,9 @@ h1, h2, h3, h4, h5, h6 {
 
 /* One puff per cycle: a burst that expands and drifts while it dissipates, then
  * silence for the rest of the cycle (the node waits, invisible, for its next
- * puff). The puff is the first ~38% of a 14–16s cycle — ~5s, as specified.
+ * puff). The puff is the first ~38% of a shared 12s cycle — ~4.5s — and the three
+ * nodes run that cycle at phases 0/−4/−8s, so a fresh puff starts every ~4s, the
+ * livelier cadence the brief asks for.
  *
  * The tint is measured, not guessed: 30% accent over white, held at a 0.4 peak,
  * puts the core of a puff ~Δ12 below the page base in green/blue — visible as a
@@ -557,22 +628,23 @@ h1, h2, h3, h4, h5, h6 {
   overflow: hidden;
 }
 
-/* Dust in low sunlight: a slow rise, a gentle sway, a twinkle. 2–4px specks
+/* Dust in low sunlight: a slow rise, a gentle sway, a twinkle. 2–5px specks
  * carrying a warm gold mixed from `--accent`; size, loop length, phase and
- * twinkle depth are per node, set by the component.
+ * twinkle depth are per node, set by the component. 48 of them fill the air
+ * without becoming clutter — the field is denser but still dust.
  *
  * The rise is 134px, measured rather than arbitrary: a longer climb carried the
  * motes out of the air the card leaves free (up behind the fixed header and off
  * the top of the viewport) for most of every loop. Shortening it keeps the dust
  * in the visible margins while it fades in and out. */
 .quiz-mote {
-  --mote-opacity: 0.5;
+  --mote-opacity: 0.6;
   position: absolute;
   border-radius: 9999px;
   background: radial-gradient(
     circle at center,
-    color-mix(in srgb, var(--accent) 45%, white) 0%,
-    color-mix(in srgb, var(--accent) 22%, white) 45%,
+    color-mix(in srgb, var(--accent) 40%, white) 0%,
+    color-mix(in srgb, var(--accent) 20%, white) 44%,
     transparent 72%
   );
   opacity: 0;
@@ -592,7 +664,7 @@ h1, h2, h3, h4, h5, h6 {
   }
   25% {
     transform: translate3d(9px, -34px, 0);
-    opacity: calc(var(--mote-opacity) * 0.42);
+    opacity: calc(var(--mote-opacity) * 0.55);
   }
   45% {
     transform: translate3d(-8px, -62px, 0);
@@ -600,7 +672,7 @@ h1, h2, h3, h4, h5, h6 {
   }
   70% {
     transform: translate3d(7px, -96px, 0);
-    opacity: calc(var(--mote-opacity) * 0.45);
+    opacity: calc(var(--mote-opacity) * 0.58);
   }
   88% {
     transform: translate3d(-6px, -120px, 0);

@@ -9,7 +9,7 @@ import QuizPage from "@/app/quiz/page";
  * Quiz ambience, act 3 — the spray.
  *
  * Four halves, because this act has to hold four different promises:
- *  - the node caps (3 plumes, 24 motes) are structural, not aspirational;
+ *  - the node caps (3 plumes, 48 motes) are structural, not aspirational;
  *  - both layers are decorative and inert (aria-hidden, pointer-events: none);
  *  - the paint order is the specification (behind the cards, above the fog);
  *  - the motion is ambient and compositor-only, and reduced-motion is honoured.
@@ -61,8 +61,8 @@ describe("node caps", () => {
     expect((plumeLayer.match(/class="quiz-plume"/g) ?? []).length).toBeLessThanOrEqual(MAX_PLUMES);
   });
 
-  it("holds the mote field at 24 specks, each 2–4px", () => {
-    expect(MAX_MOTES).toBe(24);
+  it("holds the mote field at 48 specks, each 2–5px", () => {
+    expect(MAX_MOTES).toBe(48);
     expect((moteLayer.match(/class="quiz-mote"/g) ?? []).length).toBe(MAX_MOTES);
 
     const sizes = numbers(moteLayer, SIZES);
@@ -157,19 +157,19 @@ describe("the plume puff", () => {
     DURATIONS,
   );
 
-  it("puffs on its own cycle: ~5s of mist, then silence until the next one", () => {
+  it("puffs on its own cycle: ~4.5s of mist, then silence until the next one", () => {
     expect(rule).toContain("animation-name: quiz-plume-puff;");
     expect(rule).toContain("animation-iteration-count: infinite;");
     expect(durations).toHaveLength(MAX_PLUMES);
 
-    // The puff is the first 38% of each node's 14–16s cycle (the stop where the
-    // mist has fully dissipated), which is the ~5s the brief asks for.
+    // The puff is the first 38% of each node's shared 12s cycle (the stop where
+    // the mist has fully dissipated), which is the ~4.5s of visible mist.
     expect(keyframes).toContain("38% {");
     const puffShare = 0.38;
     for (const duration of durations) {
       expect(duration).toBeGreaterThanOrEqual(12);
       const puffSeconds = duration * puffShare;
-      expect(puffSeconds).toBeGreaterThanOrEqual(4); // dissipates over ~5s…
+      expect(puffSeconds).toBeGreaterThanOrEqual(3.5);
       expect(puffSeconds).toBeLessThanOrEqual(7);
     }
 
@@ -181,6 +181,30 @@ describe("the plume puff", () => {
     expect(stops[1]).toContain("opacity: var(--plume-peak);");
     expect(stops[2]).toContain("opacity: 0;");
     expect(stops[3]).toContain("opacity: 0;");
+  });
+
+  it("starts a fresh puff every ~3.5–4s: one shared cycle, evenly phased", () => {
+    const delays = numbers(
+      html.slice(html.indexOf("quiz-plume-layer"), html.indexOf("quiz-mote-layer")),
+      DELAYS,
+    );
+
+    // A single shared cycle length is what keeps the three starts evenly spaced;
+    // unequal periods drift out of phase and open real lulls (measured).
+    const cycle = durations[0];
+    expect(new Set(durations).size).toBe(1);
+
+    const onsets = delays
+      .map((delay) => (((-delay) % cycle) + cycle) % cycle)
+      .sort((a, b) => a - b);
+    const gaps = onsets.map((onset, index) =>
+      index === 0 ? onsets[0] + cycle - onsets.at(-1)! : onset - onsets[index - 1],
+    );
+
+    for (const gap of gaps) {
+      expect(gap, `gap of ${gap}s is outside the brief's ~3.5–4s`).toBeGreaterThanOrEqual(3.5);
+      expect(gap).toBeLessThanOrEqual(4);
+    }
   });
 
   it("expands, drifts, and stays a whisper", () => {
@@ -254,14 +278,14 @@ describe("composition — the origins sit in air the card leaves free", () => {
     }
   });
 
-  it("keeps six or more motes in the edge columns a phone still shows", () => {
-    expect(motes.filter(([left]) => left <= 3 || left >= 97).length).toBeGreaterThanOrEqual(6);
+  it("keeps twelve or more motes in the edge columns a phone still shows", () => {
+    expect(motes.filter(([left]) => left <= 3 || left >= 97).length).toBeGreaterThanOrEqual(12);
   });
 
   it("starts every middle-column mote high enough to rise through that band", () => {
     const middle = motes.filter(([left]) => left >= 34 && left <= 66);
 
-    expect(middle.length).toBeGreaterThanOrEqual(8);
+    expect(middle.length).toBeGreaterThanOrEqual(16);
     for (const [left, top] of middle) {
       // The climb is 134px, so a start at 26% or below reaches the free band
       // (which ends around 12% of the viewport) while the mote is still lit.
