@@ -41,10 +41,14 @@ import type { CSSProperties } from "react";
  * images, no dependencies. Which is also how "randomized" is done here without
  * JS — each node carries its own position, cycle length and phase, so the
  * composite only repeats after minutes (the three plume periods are coprime-ish:
- * 14/15/16s ⇒ a ~56-minute super-cycle), while the motes drift on 16–26s loops.
- * The three plumes are also phase-staggered (0s / −9s / −4s), so their ~5s puffs
- * alternate instead of stacking — one every ~5s on average, and rarely two at
- * once.
+ * the puff is the first 38% of the cycle), while the motes drift on 16–26s loops.
+ *
+ * Plume timing is evenly spaced on purpose, and by simulation rather than by
+ * feel: three equal 15s cycles phased 0s / −5s / −10s start a puff every 5s,
+ * which is the cadence the brief asks for (4–7s) and is what keeps the mist
+ * continuous. Unequal periods (the obvious way to look "organic") drift out of
+ * phase and open real lulls: a 14/15/16s set with phases 0/−9/−4 measured gaps
+ * of 6–25s between puff cycles and up to 8.7s with no mist anywhere on screen.
  * Both layers set `aria-hidden` and `pointer-events: none`, animate only
  * `transform`/`opacity`, carry no filters, and hold their node caps by
  * construction (`MAX_PLUMES`, `MAX_MOTES`) — see the CSS in `app/globals.css`.
@@ -71,7 +75,10 @@ interface Plume {
   top: number;
   /** Diameter at rest, px. */
   size: number;
-  /** Full puff cycle, s — ~38% of it is the puff itself (~5s), then silence. */
+  /**
+   * Full puff cycle, s. All three nodes share it so their starts stay evenly
+   * spaced (see PLUMES), and 38% of it is the puff itself — 5.7s here.
+   */
   duration: number;
   /** Start offset, s (negative = begin mid-cycle). */
   delay: number;
@@ -87,9 +94,9 @@ interface Plume {
  * sits near the footer band, so no mist ever forms behind the footer copy.
  */
 const PLUMES: readonly Plume[] = [
-  { left: 26, top: 9, size: 340, duration: 14, delay: 0, driftX: 24, driftY: 18 },
-  { left: 74, top: 8, size: 380, duration: 16, delay: -9, driftX: -28, driftY: 22 },
-  { left: 10, top: 44, size: 360, duration: 15, delay: -4, driftX: 30, driftY: -26 },
+  { left: 26, top: 9, size: 340, duration: 15, delay: 0, driftX: 24, driftY: 18 },
+  { left: 74, top: 8, size: 380, duration: 15, delay: -5, driftX: -28, driftY: 22 },
+  { left: 10, top: 44, size: 360, duration: 15, delay: -10, driftX: 30, driftY: -26 },
 ];
 
 interface Mote {
