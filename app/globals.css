@@ -29,7 +29,21 @@
   --border-soft: #eae2d4;
   --accent: #b5652d;
   --accent-soft: #f3e5d8;
+  /* Deep wine — the quiz glow orbs' second family, and the palette's one new
+   * tone. Chosen by measurement, not taste alone: of the burgundies in the
+   * depth range the brief asks for, this one leaves the most contrast headroom
+   * for the frosted plates (`--muted` measures 4.565:1 over its core at the 0.26
+   * the orbs use, against the 4.5 AA floor). Hue 351 sits ~34° from the
+   * terracotta accent, close enough to read as the same warm family rather than
+   * a purple intruder. */
+  --wine: #8a2333;
   --muted: #756b5e;
+  /* Muted text that lands on a TRANSLUCENT plate, where the plate plus the
+   * ambience behind it are darker than the plain page this token was chosen
+   * against. Measured on the built app: the plain token falls to 4.42:1 at the
+   * worst phase of the quiz orb loop, and this palette-derived mix (muted +
+   * black) measures ≥5.2:1 over the same plate. */
+  --muted-on-plate: color-mix(in srgb, var(--muted) 90%, black);
   --forest: #4a5d4e;
   --forest-soft: #e7eee7;
   --shadow-soft: 0 12px 32px rgba(74, 55, 39, 0.08);
@@ -45,6 +59,7 @@
   --color-border-soft: var(--border-soft);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-wine: var(--wine);
   --color-muted: var(--muted);
   --color-forest: var(--forest);
   --color-forest-soft: var(--forest-soft);
@@ -206,27 +221,33 @@ h1, h2, h3, h4, h5, h6 {
  * Layer 1 — ambient breathing gradient. The cream base is kept as-is; three very
  * soft warm washes sit on it and drift on 13–19s loops.
  *
- * Layer 2 — big glow orbs. Six large (150–350px) warm light circles — terracotta,
- * amber and gold, all mixed from `--accent` — with a soft radial falloff and a
- * core that is clearly visible (0.25–0.4). They drift on ~70–120s loops and are
- * the stars of the background. Two parts of the brief are load-bearing: only
- * `transform` animates (compositor-only), and the softness is the GRADIENT —
- * never a `blur()` filter on the animated layer.
+ * Layer 2 — big glow orbs. Six large (150–350px) light circles with a soft radial
+ * falloff and a core that is clearly visible (0.26–0.34). Four are warm —
+ * terracotta, amber and gold, mixed from `--accent` — and two are the deep wine
+ * tone (`--wine`), giving the wine-and-gold pairing this pass is after. They
+ * float on 36–60s loops with a gentle vertical bob and are the stars of the
+ * background. Two parts of the brief are load-bearing: only `transform` animates
+ * (compositor-only), and the softness is the GRADIENT — never a `blur()` filter
+ * on the animated layer.
  *
  * Layer 3 — film grain. One static feTurbulence tile (desaturated, and stitched
  * so it repeats seamlessly) at 4% over the whole route. That is the
  * editorial-magazine texture.
  *
- * The quiz cards are translucent (`.quiz-frost`): a warm-white plate at ~78%
- * plus ONE `backdrop-filter` per card, so the orbs read both AROUND and THROUGH
- * the card — which is what makes the background visible on a phone, where the
- * card fills the viewport.
+ * The quiz cards are translucent (`.quiz-frost`): a warm-white plate at 78% plus
+ * ONE `backdrop-filter` per card, so the orbs read both AROUND and THROUGH the
+ * card — which is what makes the background visible on a phone, where the card
+ * fills the viewport.
  *
  * Readability first, and MEASURED rather than assumed: the frosted plate keeps
  * `--foreground` far above AAA and `--muted` ≥4.5:1 over the strongest orb core,
  * the washes and the 4% grain combined (locked by
  * tests/quiz/quiz-ambience.test.tsx, and re-measured in the browser on the built
- * app). `--orb-opacity` is the knob if that budget ever needs tightening.
+ * app). Three knobs move that budget, and all three have been used: the plate's
+ * alpha (held at 78% so the glow survives), the `--muted-on-plate` token for the
+ * labels that sit on it, and the two wine orbs' 0.26 core — the bottom of the band
+ * — because the darker tone spends contrast budget faster per unit of alpha than
+ * the gold orb's 0.34 does.
  */
 .quiz-ambience {
   background-color: var(--background);
@@ -259,14 +280,16 @@ h1, h2, h3, h4, h5, h6 {
   pointer-events: none;
 }
 
-/* One big warm glow. `--orb-opacity` IS the core opacity — the gradient's first
- * stop is the full colour — so the component's per-node value is exactly the
- * alpha the centre shows. Centred on its declared origin with the -50%
- * translate, and only `transform` animates (a very slow drift), so the whole
+/* One big glow. `--orb-opacity` IS the core opacity — the gradient's first stop
+ * is the full colour — so the component's per-node value is exactly the alpha the
+ * centre shows. `--orb-bob` is the float's vertical amplitude, a percentage of
+ * the orb's own size so the bigger orbs travel further. Centred on its declared
+ * origin with the -50% translate, and only `transform` animates, so the whole
  * layer stays on the compositor. */
 .quiz-orb {
   --orb-color: var(--accent);
   --orb-opacity: 0.3;
+  --orb-bob: 6%;
   position: absolute;
   border-radius: 9999px;
   background: radial-gradient(
@@ -285,7 +308,10 @@ h1, h2, h3, h4, h5, h6 {
   will-change: transform;
 }
 
-/* Palette-only tones: terracotta, amber and gold — no new hex anywhere. */
+/* Palette tones: terracotta, amber and gold are all mixed from `--accent`, and
+ * the wine tone names the one new palette token (`--wine`) instead of spelling a
+ * hex out here — so the tone classes themselves stay hex-free and every glow
+ * still traces back to the palette. */
 .quiz-orb-terracotta {
   --orb-color: var(--accent);
 }
@@ -295,16 +321,26 @@ h1, h2, h3, h4, h5, h6 {
 .quiz-orb-gold {
   --orb-color: color-mix(in srgb, var(--accent) 58%, white);
 }
+.quiz-orb-wine {
+  --orb-color: var(--wine);
+}
 
+/* The float: a gentle vertical bob — the -50% centre offset plus/minus
+ * `--orb-bob` — carried on a shallow horizontal sway, with the scale breathing
+ * once per pass. `alternate` plays the three stops out and back, so over a full
+ * cycle the orb traces centre → up → centre → down → centre: a soft sine in the
+ * vertical, which is what makes it read as floating in liquid air rather than
+ * sliding across. The bob is the dominant term; the sway only stops it looking
+ * mechanical. `transform` only, so it stays on the compositor. */
 @keyframes quiz-orb-drift {
   0% {
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate(-50%, calc(-50% - var(--orb-bob, 6%))) scale(1);
   }
   50% {
-    transform: translate(-46%, -54%) scale(1.08);
+    transform: translate(-46%, -50%) scale(1.08);
   }
   100% {
-    transform: translate(-54%, -46%) scale(0.94);
+    transform: translate(-54%, calc(-50% + var(--orb-bob, 6%))) scale(0.94);
   }
 }
 
@@ -388,14 +424,32 @@ h1, h2, h3, h4, h5, h6 {
   background-size: 200px 200px;
 }
 
-/* Frosted-glass quiz card. ONE `backdrop-filter` layer per card (the brief
- * allows exactly that) over a warm-white plate at ~78%, so the big glow orbs
- * read THROUGH the card while the text stays dark and readable. The plate is the
- * other half of the contrast budget noted at the top of this section. */
+/* Frosted-glass quiz card. ONE `backdrop-filter` layer per card (the brief allows
+ * exactly that) over a warm-white plate at 78%, so the big glow orbs read THROUGH
+ * the card while the text stays dark and readable.
+ *
+ * The plate is the other half of the contrast budget, and it is MEASURED rather
+ * than assumed (see the section header). Two consequences:
+ *  - the alpha stays at 78% deliberately. Every extra point of white buys contrast
+ *    at the cost of the glow, and the glow through the card is the whole feature on
+ *    a phone. Measured on the built app, sampling the exact pixels the glyphs land
+ *    on, the muted labels dipped to 4.42:1 at the worst phase of the orb loop with
+ *    the site's `--muted`. Fixing that by thickening the glass would have bought
+ *    ~0.2 of contrast by giving up a third of the glow — so the labels moved
+ *    instead, to `--muted-on-plate` below, which measures ≥5.2:1 over the SAME
+ *    plate;
+ *  - every muted label inside a card sits on the plate, whether directly or on one
+ *    of the card's own fills, so the plate re-points the token for its subtree
+ *    rather than every component remembering to ask for it. */
 .quiz-frost {
   background-color: color-mix(in srgb, var(--surface) 78%, transparent);
   -webkit-backdrop-filter: blur(14px) saturate(1.05);
   backdrop-filter: blur(14px) saturate(1.05);
+  /* Two names rather than `--muted: color-mix(… var(--muted) …)`, which CSS
+   * Variables rejects as a self-reference (the whole declaration would become the
+   * guaranteed-invalid value and every muted label would silently inherit the body
+   * colour instead). */
+  --muted: var(--muted-on-plate);
 }
 
 /* The intro badge's label sits on its own opaque `--accent-soft` pill. Plain

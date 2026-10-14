@@ -12,10 +12,12 @@ import type { CSSProperties } from "react";
  *
  *  1. ambient breathing gradient — three very soft warm washes on the cream
  *     base, drifting on 13–19s loops;
- *  2. big glow orbs — six large warm light circles (150–350px) with a soft
- *     radial falloff and a clearly visible core, drifting slowly. They are the
- *     stars of the background, and they read twice over: AROUND the cards on a
- *     wide screen and THROUGH the frosted cards on any screen;
+ *  2. big glow orbs — six large light circles (150–350px) with a soft radial
+ *     falloff and a clearly visible core, floating on a gentle vertical bob.
+ *     Four are warm (terracotta, amber, gold) and two are deep wine: the
+ *     wine-and-gold pairing is the luxury-perfume note. They are the stars of
+ *     the background, and they read twice over: AROUND the cards on a wide
+ *     screen and THROUGH the frosted cards on any screen;
  *  3. film grain — one static noise tile over the whole route.
  *
  * The orbs are declared AFTER the washes inside `.quiz-ambience`, so DOM order
@@ -30,14 +32,18 @@ import type { CSSProperties } from "react";
  * `app/globals.css`). The orbs' softness is the radial-gradient falloff itself —
  * never a blur filter on an animated layer.
  *
- * Colours come from the existing tokens only — `--accent` terracotta (plus
- * white, for the amber and gold tones) — so no layer introduces a new palette.
+ * Colours come from tokens: `--accent` terracotta and white for the amber and
+ * gold tones, plus the one new palette tone this pass adds — `--wine`. The wine
+ * orbs sit at the LOW end of the opacity band (0.26) precisely because wine is
+ * the darkest tone: it dims the page more per unit of alpha than gold does, so
+ * the same visual weight costs less of the contrast budget the frosted plate
+ * spends.
  *
  * Readability first: the glow shows through the cards because they are frosted
- * (`.quiz-frost`, ~78% warm-white plus one backdrop-blur), and that plate is
- * sized so the dark body text and the muted labels stay above WCAG AA over the
- * strongest orb — measured in the browser on the built app, not assumed, and
- * locked by `tests/quiz/quiz-ambience.test.tsx`.
+ * (`.quiz-frost`: a warm-white plate at 78% plus one backdrop-blur), and that plate
+ * plus its own `--muted-on-plate` token keep the dark body text and the muted
+ * labels above WCAG AA over the strongest orb — measured in the browser on the
+ * built app, not assumed, and locked by `tests/quiz/quiz-ambience.test.tsx`.
  */
 
 /** The three washes; only the CSS modifier differs (see `app/globals.css`). */
@@ -53,8 +59,8 @@ export const MAX_ORBS = 6;
 export const ORB_MIN_SIZE_PX = 150;
 export const ORB_MAX_SIZE_PX = 350;
 
-/** The three palette-only tones (see the matching CSS classes). */
-type Tone = "terracotta" | "amber" | "gold";
+/** The palette-only tones (see the matching CSS classes). */
+type Tone = "terracotta" | "amber" | "gold" | "wine";
 
 interface Orb {
   /** Position of the orb's centre, % of the viewport. */
@@ -62,33 +68,47 @@ interface Orb {
   top: number;
   /** Diameter, px (150–350). */
   size: number;
-  /** Drift loop, s — slow, so the drift is a mood rather than motion. */
+  /** Float loop, s — halved from the first pass, so the float reads as motion. */
   duration: number;
   /** Start offset, s (negative = begin mid-loop). */
   delay: number;
   /** CORE opacity: the gradient's first stop is the full colour, so this is
    * exactly the alpha the centre of the orb shows. Bold by design (0.25–0.4). */
   opacity: number;
-  /** Palette tone — terracotta, amber or gold. */
+  /** Vertical bob, % of the orb's own size — the sine-like float's amplitude. */
+  bob: number;
+  /** Palette tone — terracotta, amber, gold or wine. */
   tone: Tone;
 }
 
 /**
  * Six orbs, spread across the whole viewport.
  *
- * Placement is deliberately unconstrained about the card this time: because the
- * cards are frosted, an orb behind one still reads — blurred and softened — so
- * the orbs can sit where they make the best composition rather than only in the
- * margins. Nothing starts in the footer band, so no glow ever drifts up to the
- * footer copy.
+ * Two of them — upper-left and lower-right, the diagonal — are the wine pair;
+ * the other four stay warm. The wine orbs carry the LOWEST cores (0.26, the
+ * bottom of the band) because wine is the darkest tone: its alpha dims the page
+ * far more per unit than gold's does, so the same visual weight costs less
+ * contrast budget. The sweep in tests/quiz/quiz-ambience.test.tsx checks every
+ * tone against its own core rather than assuming the accent for all of them.
+ *
+ * The float loops are half their first-pass length and every orb carries a
+ * gentle vertical bob (6–8% of its own size), so the rise and fall reads as
+ * floating in liquid air rather than as a slow diagonal creep. The negative
+ * delays keep the original phases, so the six never sync up.
+ *
+ * Placement is deliberately unconstrained about the card: because the cards are
+ * frosted, an orb behind one still reads — blurred and softened — so the orbs
+ * can sit where they make the best composition rather than only in the margins.
+ * Nothing starts in the footer band, so no glow ever drifts up to the footer
+ * copy.
  */
 const ORBS: readonly Orb[] = [
-  { left: 16, top: 24, size: 300, duration: 78, delay: -12, opacity: 0.32, tone: "terracotta" },
-  { left: 84, top: 18, size: 260, duration: 96, delay: -44, opacity: 0.3, tone: "amber" },
-  { left: 50, top: 66, size: 350, duration: 108, delay: -66, opacity: 0.34, tone: "gold" },
-  { left: 24, top: 74, size: 240, duration: 72, delay: -28, opacity: 0.28, tone: "amber" },
-  { left: 88, top: 62, size: 280, duration: 88, delay: -54, opacity: 0.3, tone: "terracotta" },
-  { left: 46, top: 32, size: 200, duration: 120, delay: -8, opacity: 0.26, tone: "gold" },
+  { left: 16, top: 24, size: 300, duration: 39, delay: -6, opacity: 0.26, bob: 7, tone: "wine" },
+  { left: 84, top: 18, size: 260, duration: 48, delay: -22, opacity: 0.3, bob: 7, tone: "amber" },
+  { left: 50, top: 66, size: 350, duration: 54, delay: -33, opacity: 0.34, bob: 8, tone: "gold" },
+  { left: 24, top: 74, size: 240, duration: 36, delay: -14, opacity: 0.28, bob: 7, tone: "amber" },
+  { left: 88, top: 62, size: 280, duration: 44, delay: -27, opacity: 0.26, bob: 8, tone: "wine" },
+  { left: 46, top: 32, size: 200, duration: 60, delay: -4, opacity: 0.26, bob: 6, tone: "gold" },
 ];
 
 export default function QuizAmbience() {
@@ -118,6 +138,7 @@ export default function QuizAmbience() {
                   width: `${orb.size}px`,
                   height: `${orb.size}px`,
                   "--orb-opacity": orb.opacity,
+                  "--orb-bob": `${orb.bob}%`,
                   animationDuration: `${orb.duration}s`,
                   animationDelay: `${orb.delay}s`,
                 } as CSSProperties
