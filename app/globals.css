@@ -326,3 +326,156 @@ h1, h2, h3, h4, h5, h6 {
     opacity: calc(var(--wash-opacity, 0.1) * 0.85);
   }
 }
+
+/* ── Quiz ambience, act 2 — the flow's own layers ──────────────────────────
+ * See components/quiz/QuizAtmosphere.tsx. Act 1 is weather that never changes;
+ * these three are a read-out of progress. Paint order, back to front:
+ *
+ *   washes → ink blooms → clearing fog → cards → grain → answer pulse
+ *
+ * Position and z-index live here rather than in utility classes, because that
+ * order IS the feature: blooms and fog are fixed `-z-10` layers declared inside
+ * the quiz (so they are later in the DOM than the washes — above them — and
+ * still behind the cards), while the pulse is the one positive-z layer, above
+ * the grain, because the ripple has to travel over everything.
+ *
+ * Perf: transform/opacity only, no filters anywhere, and the blooms are capped
+ * at ten nodes by the component. `will-change` is deliberately absent — these
+ * are one-shot animations that then sit at rest, and promoting ten permanent
+ * layers for that would be the wrong trade on mobile.
+ */
+.quiz-ink {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+}
+
+/* Ink in water: a soft radial bloom that expands and diffuses over 2s, then
+ * settles at low opacity and stays there — the base state IS the rest state, so
+ * `prefers-reduced-motion` only has to switch the animation off. The gradient is
+ * its own softness (peak at ~1/3, gone by 78%): no blur filter on an animated
+ * layer, as the brief requires. */
+.quiz-bloom {
+  --bloom-color: var(--accent);
+  --bloom-rest: 0.07;
+  --bloom-peak: 0.2;
+  --bloom-rest-scale: 1.55;
+  position: absolute;
+  width: 460px;
+  height: 460px;
+  border-radius: 9999px;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--bloom-color) 62%, transparent) 0%,
+    color-mix(in srgb, var(--bloom-color) 38%, transparent) 34%,
+    transparent 78%
+  );
+  opacity: var(--bloom-rest);
+  transform: translate(-50%, -50%) scale(var(--bloom-rest-scale));
+  animation: quiz-bloom-diffuse 2000ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes quiz-bloom-diffuse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.32);
+    opacity: 0;
+  }
+  20% {
+    opacity: var(--bloom-peak);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(var(--bloom-rest-scale));
+    opacity: var(--bloom-rest);
+  }
+}
+
+/* Three tints, cycled per question, all mixed from the existing tokens. */
+.quiz-bloom-tint-0 {
+  --bloom-color: var(--accent);
+}
+.quiz-bloom-tint-1 {
+  --bloom-color: color-mix(in srgb, var(--accent) 55%, var(--accent-soft));
+}
+.quiz-bloom-tint-2 {
+  --bloom-color: color-mix(in srgb, var(--accent) 72%, var(--accent-soft));
+}
+
+/* Clearing fog: ONE layer, opacity only (1s, so it eases between questions).
+ *
+ * A warm veil anchored to the TOP of the viewport (the sky) and fully transparent
+ * by ~72% of its radius — i.e. it never reaches the footer, whose muted text
+ * therefore keeps its un-fogged contrast. The colour is mixed from the existing
+ * tokens; it lands at ~Δ(−6, −12, −17) on the page base at full fog, measured on
+ * the built app, which is a visible haze that clears to nothing by Q10.
+ *
+ * The gradient tail is what keeps this honest: the veil thins as it descends, and
+ * the only text inside it is the header's — whose 85% cream plate absorbs the tint
+ * (measured: the muted link keeps ≥4.5:1 at full fog). Dialling the effect down
+ * beats dialling any text up. */
+.quiz-fog {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  background: radial-gradient(
+    130% 88% at 50% -14%,
+    color-mix(in srgb, var(--accent-soft) 80%, var(--accent)) 0%,
+    color-mix(in srgb, var(--accent-soft) 86%, var(--accent)) 38%,
+    transparent 72%
+  );
+  opacity: 0;
+  transition: opacity 1000ms ease;
+}
+
+/* Answer pulse: the ripple lives above the grain and disappears from the DOM
+ * after ~600ms (the component removes the node; this only choreographs it). */
+.quiz-pulse-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.quiz-pulse {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  border-radius: 9999px;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--accent) 32%, transparent) 0%,
+    color-mix(in srgb, var(--accent) 14%, transparent) 55%,
+    transparent 100%
+  );
+  opacity: 0;
+  animation: quiz-pulse-ripple 600ms ease-out forwards;
+}
+
+@keyframes quiz-pulse-ripple {
+  0% {
+    transform: translate(-50%, -50%) scale(0.4);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: the blooms render INSTANTLY at their rest state (the base
+ * state above is already that state, so switching the animation off is the
+ * whole fix), the fog jumps between values with no transition, and the ripple
+ * never appears — the component also declines to spawn one, this is the belt to
+ * that brace. */
+@media (prefers-reduced-motion: reduce) {
+  .quiz-bloom {
+    animation: none;
+  }
+  .quiz-fog {
+    transition: none;
+  }
+  .quiz-pulse-layer {
+    display: none;
+  }
+}

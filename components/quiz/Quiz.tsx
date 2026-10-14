@@ -13,6 +13,14 @@ import AudienceStep from "@/components/quiz/AudienceStep";
 import ContextStep from "@/components/quiz/ContextStep";
 import ProgressBar from "@/components/quiz/ProgressBar";
 import Question from "@/components/quiz/Question";
+import QuizAtmosphere, {
+  ANSWER_PULSE_MS,
+  MAX_LIVE_PULSES,
+  bloomTintFor,
+  withInkBloom,
+  type AnswerPulse,
+  type InkBloom,
+} from "@/components/quiz/QuizAtmosphere";
 import QuizResultCard from "@/components/quiz/QuizResultCard";
 import type { AudienceGender } from "@/lib/audience";
 import type { Occasion } from "@/types/fragrance";
@@ -47,6 +55,65 @@ const secondaryButton =
 
 const OFFLINE_NOTICE =
   "ارتباط با سرور برقرار نشد؛ پروفایل با همون محاسبه قطعی و به‌صورت آفلاین ساخته شد.";
+
+/** How long a recorded pointer position stays usable as a ripple origin. */
+const POINTER_FRESH_MS = 1500;
+
+interface PointerRecord {
+  x: number;
+  y: number;
+  at: number;
+}
+
+/**
+ * The answered option card's centre, in viewport coordinates — the bloom's
+ * anchor, and the ripple's fallback origin for keyboard answers.
+ *
+ * Read from the DOM rather than threaded through `Question`/`QuizOption`: the
+ * radio input already carries `name={questionId}` / `value={optionId}`, so
+ * measuring here keeps this strictly presentational wiring (no component API
+ * changes) and it works for a keyboard answer exactly like a tap. Returns null
+ * where there is no layout (SSR), and the decoration is then simply skipped.
+ */
+function optionCenter(questionId: string, optionId: string): { x: number; y: number } | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  const escape = (value: string) =>
+    typeof CSS !== "undefined" && CSS.escape ? CSS.escape(value) : value;
+  const input = document.querySelector<HTMLInputElement>(
+    `input[name="${escape(questionId)}"][value="${escape(optionId)}"]`,
+  );
+  const card = input?.closest("label") ?? null;
+  if (!card) {
+    return null;
+  }
+
+  const rect = card.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) {
+    return null;
+  }
+
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+}
+
+/** The last pointer position — only while it is recent enough to be "this tap". */
+function freshPointerPoint(record: PointerRecord | null): { x: number; y: number } | null {
+  if (!record || Date.now() - record.at > POINTER_FRESH_MS) {
+    return null;
+  }
+  return { x: record.x, y: record.y };
+}
+
+/** Read at interaction time (never during render), so SSR can never disagree. */
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
 
 /** A quiet framed mark for the intro's three supporting notes (no emoji). */
 function IntroGlyph({ children }: { children: ReactNode }) {
@@ -118,9 +185,74 @@ export default function Quiz({ storeId }: { storeId?: string }) {
     return () => cancelAnimationFrame(frame);
   }, [screenKey]);
 
-  const handleSelect = useCallback((questionId: string, optionId: string) => {
-    setFlow((current) => selectAnswer(current, questionId, optionId));
+  // Act 2's layers are presentation only: they READ the flow (selections) and
+  // the pointer, and write nothing back into it.
+  const [blooms, setBlooms] = useState<readonly InkBloom[]>([]);
+  const [pulses, setPulses] = useState<readonly AnswerPulse[]>([]);
+
+  // The last pointer press, in viewport coordinates — the ripple's origin. A
+  // passive window listener, so it can never delay or swallow the tap itself.
+  const pointer = useRef<PointerRecord | null>(null);
+  useEffect(() => {
+    const record = (event: PointerEvent) => {
+      pointer.current = { x: event.clientX, y: event.clientY, at: Date.now() };
+    };
+    window.addEventListener("pointerdown", record, { passive: true });
+    return () => window.removeEventListener("pointerdown", record);
   }, []);
+
+  // Ripples remove themselves from the DOM; the timers are tracked so a restart
+  // or an unmount cannot leave a stray node or a stray callback behind.
+  const pulseId = useRef(0);
+  const pulseTimers = useRef<number[]>([]);
+  useEffect(
+    () => () => {
+      pulseTimers.current.forEach((handle) => window.clearTimeout(handle));
+      pulseTimers.current = [];
+    },
+    [],
+  );
+
+  const spawnPulse = useCallback((x: number, y: number) => {
+    pulseId.current += 1;
+    const id = pulseId.current;
+    setPulses((current) => [...current, { id, x, y }].slice(-MAX_LIVE_PULSES));
+    const handle = window.setTimeout(() => {
+      setPulses((current) => current.filter((pulse) => pulse.id !== id));
+      pulseTimers.current = pulseTimers.current.filter((value) => value !== handle);
+    }, ANSWER_PULSE_MS + 120);
+    pulseTimers.current.push(handle);
+  }, []);
+
+  const handleSelect = useCallback(
+    (questionId: string, optionId: string) => {
+      // The answer is recorded first: the flow never depends on the decoration.
+      setFlow((current) => selectAnswer(current, questionId, optionId));
+
+      const center = optionCenter(questionId, optionId);
+      if (center) {
+        const questionIndex = QUIZ_QUESTIONS.findIndex((item) => item.id === questionId);
+        setBlooms((current) =>
+          withInkBloom(current, {
+            questionId,
+            x: center.x,
+            y: center.y,
+            tint: bloomTintFor(questionIndex),
+          }),
+        );
+      }
+
+      // A ripple is motion: a reduced-motion shopper gets none of it (the CSS
+      // hides the layer too, so this is defence in depth).
+      if (!prefersReducedMotion()) {
+        const origin = freshPointerPoint(pointer.current) ?? center;
+        if (origin) {
+          spawnPulse(origin.x, origin.y);
+        }
+      }
+    },
+    [spawnPulse],
+  );
 
   // The audience choice is recorded in the flow state and immediately advances
   // to Q1 — it never touches the answer selections, so scoring is untouched.
@@ -146,6 +278,13 @@ export default function Quiz({ storeId }: { storeId?: string }) {
     setNotice(null);
     setSubmitting(false);
     setFlow(restartQuiz());
+
+    // …and a new attempt starts on a clean page: no accumulated ink, and no
+    // ripple left mid-flight with a timer still pointed at it.
+    pulseTimers.current.forEach((handle) => window.clearTimeout(handle));
+    pulseTimers.current = [];
+    setBlooms([]);
+    setPulses([]);
   }, []);
 
   const handleSubmit = useCallback(async () => {
@@ -186,8 +325,34 @@ export default function Quiz({ storeId }: { storeId?: string }) {
     }
   }, [flow, storeId]);
 
+  // Answered questions — the 10-question bank only. The audience step and the
+  // post-result context are not questions and never move the fog.
+  const answeredCount = QUIZ_QUESTIONS.filter(
+    (item) => typeof flow.selections[item.id] === "string",
+  ).length;
+
+  /**
+   * Every screen renders under the same three decorative layers.
+   *
+   * They are `fixed` and out of flow, so wrapping the screen changes no layout
+   * whatsoever; it only keeps the ambience mounted for the whole run — which is
+   * the point, since the ink that accumulates by Q10 is the payoff on the
+   * result screen.
+   */
+  const withAtmosphere = (screen: ReactNode) => (
+    <>
+      <QuizAtmosphere
+        blooms={blooms}
+        pulses={pulses}
+        answeredCount={answeredCount}
+        totalQuestions={QUIZ_QUESTIONS.length}
+      />
+      {screen}
+    </>
+  );
+
   if (flow.phase === "context" && result) {
-    return (
+    return withAtmosphere(
       <section className="quiz-rise flex flex-col gap-6 rounded-3xl border border-border-soft bg-surface p-5 shadow-[var(--shadow-card)] sm:p-8">
         <ContextStep
           result={result}
@@ -207,12 +372,12 @@ export default function Quiz({ storeId }: { storeId?: string }) {
         >
           شروع دوباره
         </button>
-      </section>
+      </section>,
     );
   }
 
   if (flow.phase === "result" && result) {
-    return (
+    return withAtmosphere(
       <QuizResultCard
         result={result}
         notice={notice}
@@ -222,12 +387,12 @@ export default function Quiz({ storeId }: { storeId?: string }) {
         season={flow.season}
         occasion={flow.occasion}
         onContinue={() => setFlow((current) => openContext(current))}
-      />
+      />,
     );
   }
 
   if (flow.phase === "intro") {
-    return (
+    return withAtmosphere(
       <section className="quiz-rise flex flex-col gap-7 rounded-3xl border border-border-soft bg-surface p-6 shadow-[var(--shadow-card)] sm:p-9">
         <div className="flex flex-col gap-3">
           <span className="w-fit rounded-full border border-accent/30 bg-accent-soft px-4 py-1 font-heading text-sm text-accent">
@@ -291,12 +456,12 @@ export default function Quiz({ storeId }: { storeId?: string }) {
         >
           شروع آزمون
         </button>
-      </section>
+      </section>,
     );
   }
 
   if (flow.phase === "audience") {
-    return (
+    return withAtmosphere(
       <section className="quiz-rise flex flex-col gap-6 rounded-3xl border border-border-soft bg-surface p-5 shadow-[var(--shadow-card)] sm:p-8">
         <AudienceStep selected={flow.audience} onSelect={handleAudienceSelect} />
 
@@ -304,12 +469,11 @@ export default function Quiz({ storeId }: { storeId?: string }) {
           type="button"
           onClick={handleRestart}
           className="mx-auto text-xs text-muted underline underline-offset-4 transition-colors hover:text-foreground"
-        >
-          شروع دوباره
+        >          شروع دوباره
         </button>
-      </section>
-    );
-  }
+    </section>,
+  );
+}
 
   const question = QUIZ_QUESTIONS[flow.questionIndex];
   const progress = getProgress(flow);
@@ -317,7 +481,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
   const isLastQuestion = flow.questionIndex === QUIZ_QUESTIONS.length - 1;
   const canContinue = typeof selectedOptionId === "string";
 
-  return (
+  return withAtmosphere(
     <section className="flex flex-col gap-6 rounded-3xl border border-border-soft bg-surface p-5 shadow-[var(--shadow-card)] sm:p-8">
       <ProgressBar current={progress.current} total={progress.total} />
 
