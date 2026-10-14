@@ -2,9 +2,7 @@ import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import ArchetypeRevealStage, {
-  UNLOCK_LABEL,
-} from "@/components/quiz/ArchetypeRevealStage";
+import ArchetypeRevealStage from "@/components/quiz/ArchetypeRevealStage";
 import AudienceStep from "@/components/quiz/AudienceStep";
 import FragranceProfileCard, {
   SELECTION_BASIS,
@@ -106,15 +104,19 @@ describe("quiz UI rendering", () => {
  * The result phase opens with the full-screen reveal STAGE — a flow step, not a
  * modal: no dialog role, no backdrop, no focus trap and no scroll lock are
  * emitted, and the stage is what a render of the phase begins with.
+ *
+ * The stage is a fogged-mirror focus pull: the emblem sits behind fog and is
+ * wiped clear by a light sweep. There is no unlock badge and no claimed copy —
+ * the visual carries the meaning.
  */
 describe("archetype reveal stage", () => {
   it("is what the result phase opens with, ahead of the profile card", () => {
     const result = computedResult();
     const html = render(<QuizResultCard result={result} onRestart={noopRestart} />);
 
-    // The stage: the unlock badge, the emblem and the CTA.
+    // The stage: the emblem behind fog, and the CTA.
     expect(html).toContain(`/archetypes/${result.archetype.id}.jpg`);
-    expect(html).toContain(UNLOCK_LABEL);
+    expect(html).toContain("archetype-focus-fog");
     expect(html).toContain("دیدن نتایج");
     expect(withoutJoiners(html)).toContain(withoutJoiners(SELECTION_BASIS));
 
@@ -139,7 +141,7 @@ describe("archetype reveal stage", () => {
     expect(html).not.toContain("fixed inset-0");
   });
 
-  it("opens the beat with the unlock badge, its medallion and one sweeps-once shine", () => {
+  it("opens behind fog: nothing sharp first, and no unlock language left", () => {
     const html = render(
       <ArchetypeRevealStage
         archetypeId="charismatic"
@@ -149,23 +151,71 @@ describe("archetype reveal stage", () => {
       />,
     );
 
-    // The unlock beat: the badge copy, in the polite second person.
-    expect(html).toContain(UNLOCK_LABEL);
-    expect(html).toContain("شما");
+    // The whole previous language is gone: no badge, no claim, no leftovers.
+    expect(html).not.toContain("آرکتایپ شما باز شد");
+    expect(html).not.toContain("archetype-unlock");
+    expect(html).not.toContain("data-reveal-autofocus");
+
+    // Polite second person, never the singular «تو». The explainer line is the
+    // only other copy on the stage.
     expect(html).not.toMatch(/(^|[\s،؛:!؟«»"'().<>#=-])تو([\s،؛:!؟«»"'().<>#=-]|$)/u);
 
-    // Exactly one shine strip, decorative, inside the clipped badge.
-    expect(html).toContain("@keyframes archetype-unlock-shine");
-    expect((html.match(/archetype-unlock-shine pointer-events-none/g) ?? []).length).toBe(1);
-
-    // Two emblems: the small unlock medallion and the large one, same art -
-    // and React hoists exactly ONE deduped preload hint for that pair, so the
-    // unlock beat never asks the browser for the artwork twice.
+    // Two stacked copies of the SAME art — the crisp emblem with the fog drawn
+    // over it — and one deduped preload hint for the pair, so the focus pull
+    // never asks the browser for the artwork twice.
     expect((html.match(/src="\/archetypes\/charismatic\.jpg"/g) ?? []).length).toBe(2);
     expect((html.match(/href="\/archetypes\/charismatic\.jpg"/g) ?? []).length).toBe(1);
 
-    // The unlock beat is not a second heading: one h1, the archetype name.
+    // Entry is fogged, never sharp: the fog layer's base state is the WIPED
+    // one (so a static run shows a sharp emblem), while its first keyframe —
+    // held through the 300ms delay by `both` — is the fully fogged mirror.
+    expect(html).toContain("filter: blur(22px) saturate(0.68) brightness(1.08)");
+    expect(html).toContain(".archetype-focus-fog {\n");
+    expect(html).toContain("clip-path: inset(0 100% 0 0);");
+    expect(html).toContain("from { clip-path: inset(0 0% 0 0); }");
+    expect(html).toContain(
+      "archetype-focus-wipe 1300ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both",
+    );
+
+    // A soft mist over the blur, on an opaque milky bed so the blur's soft rim
+    // reads as fog on glass rather than a hole.
+    expect(html).toContain(".archetype-focus-fog::after {");
+    expect(html).toContain("background: color-mix(in srgb, var(--accent) 12%, white);");
+
+    // Exactly one decorative sweep strip, transparent at rest.
+    expect((html.match(/archetype-focus-sweep pointer-events-none/g) ?? []).length).toBe(1);
+    expect(html).toContain(".archetype-focus-sweep {\n  opacity: 0;");
+
+    // The fog is decoration: the only heading is still the archetype name.
     expect((html.match(/<h1/g) ?? []).length).toBe(1);
+  });
+
+  it("wipes the fog from the right inward, locked to the light sweep", () => {
+    const html = render(
+      <ArchetypeRevealStage
+        archetypeId="elegant-classic"
+        label="کلاسیک شیک"
+        selectionBasis={SELECTION_BASIS}
+        onContinue={noopContinue}
+      />,
+    );
+
+    // The remaining fog's right inset grows 0% → 100%: clarity arrives from the
+    // right edge inward, matching the RTL reading direction.
+    expect(html).toContain("@keyframes archetype-focus-wipe");
+    expect(html).toContain("to { clip-path: inset(0 100% 0 0); }");
+
+    // The sweep band travels the same way over the same window — one duration,
+    // one delay, one easing as the clip — so the wet edge stays locked to the
+    // light instead of drifting ahead of it.
+    expect(html).toContain(
+      "archetype-focus-sweep 1300ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both",
+    );
+    expect(html).toContain("translateX(117%) skewX(-8deg)");
+    expect(html).toContain("translateX(-50%) skewX(-8deg)");
+    // The band is wide and starts at the right edge, so its centre tracks the
+    // fog's trailing edge rather than cutting a thin line across the mirror.
+    expect(html).toContain("archetype-focus-sweep pointer-events-none absolute inset-y-0 left-0 w-3/5");
   });
 
   it("renders all 8 archetypes, each with its own emblem and Persian label", () => {
@@ -190,7 +240,9 @@ describe("archetype reveal stage", () => {
       expect(
         (html.match(new RegExp(`src="/archetypes/${archetype.id}\\.jpg"`, "g")) ?? []).length,
       ).toBe(2);
-      expect(html).toContain(UNLOCK_LABEL);
+      // The fog carries the wide sweep band and the mist overlay for every id.
+      expect(html).toContain("archetype-focus-fog");
+      expect(html).toContain("archetype-focus-sweep");
     }
   });
 
@@ -209,7 +261,7 @@ describe("archetype reveal stage", () => {
     expect(html).not.toMatch(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
   });
 
-  it("emits its unlock motion contract once, in beat order, reduced-motion bypass last", () => {
+  it("emits one fog choreography, ~2.5s, reduced-motion bypass last", () => {
     const html = render(
       <ArchetypeRevealStage
         archetypeId="bold-one"
@@ -219,56 +271,58 @@ describe("archetype reveal stage", () => {
       />,
     );
 
-    // One style block, one cascade, in beat order:
-    // header → shine → glow → emblem → line.
+    // One style block, one cascade, declared in order:
+    // fog (and its mist) → sweep → glow → lines.
     expect((html.match(/<style>/g) ?? []).length).toBe(1);
     const order = [
-      "archetype-unlock-header",
-      "archetype-unlock-shine",
-      "archetype-unlock-glow",
-      "archetype-unlock-emblem",
-      "archetype-unlock-line",
-    ].map((name) => html.indexOf(name));
+      ".archetype-focus-fog {\n  background:",
+      ".archetype-focus-fog::after {",
+      ".archetype-focus-sweep {\n  opacity: 0;",
+      ".archetype-focus-glow {\n  animation:",
+      ".archetype-focus-line { animation:",
+    ].map((anchor) => html.indexOf(anchor));
     for (const [index, position] of order.entries()) {
       expect(position).toBeGreaterThan(-1);
       if (index > 0) expect(position).toBeGreaterThan(order[index - 1]);
     }
 
-    // The unlock moments overshoot slightly; the three text lines land cleanly.
+    // Nothing bounces: the glow eases out, the three text lines ease out.
     expect(html).toContain(
-      "archetype-unlock-header 220ms cubic-bezier(0.34, 1.3, 0.64, 1) both",
+      "archetype-focus-glow 900ms cubic-bezier(0.22, 1, 0.36, 1) 700ms both",
     );
-    expect(html).toContain(
-      "archetype-unlock-emblem 340ms cubic-bezier(0.34, 1.3, 0.64, 1) 200ms both",
-    );
-    expect(html).toContain("archetype-unlock-line 220ms ease-out both");
+    expect(html).toContain(".archetype-focus-line { animation: archetype-focus-line 600ms ease-out both; }");
+    // The previous overshoot curve is gone: this reveal never bounces.
+    expect(html).not.toContain("cubic-bezier(0.34, 1.3, 0.64, 1)");
 
-    // The three lines stagger in tight, and the whole unlock finishes at 600ms
-    // (CTA: 380ms inline delay + 220ms animation).
-    expect(html).toContain("animation-delay:280ms");
-    expect(html).toContain("animation-delay:340ms");
-    expect(html).toContain("animation-delay:380ms");
-    expect(380 + 220).toBeLessThanOrEqual(600);
+    // The glow blooms as the mirror clears, then the calm stagger: the whole
+    // focus pull finishes at 2500ms (CTA: 1900ms inline delay + 600ms).
+    expect(html).toContain("animation-delay:1500ms");
+    expect(html).toContain("animation-delay:1700ms");
+    expect(html).toContain("animation-delay:1900ms");
+    expect(1900 + 600).toBeGreaterThanOrEqual(2400);
+    expect(1900 + 600).toBeLessThanOrEqual(2600);
 
-    // The sweep strip is invisible in its base rule, so `animation: none`
-    // leaves it hidden instead of stranded mid-badge.
-    expect(html).toContain(".archetype-unlock-shine {\n  opacity: 0;");
-
-    // Reduced-motion bypass present and written last (after every base rule).
+    // Reduced-motion bypass present and written last (after every base rule),
+    // covering every animated piece of the focus pull.
     const media = html.indexOf("@media (prefers-reduced-motion: reduce)");
-    const baseLine = html.indexOf(".archetype-unlock-line {");
+    const baseLine = html.indexOf(".archetype-focus-line {");
     const disabled = html.indexOf("animation: none;");
     expect(media).toBeGreaterThan(baseLine);
     expect(disabled).toBeGreaterThan(media);
     for (const name of [
-      "archetype-unlock-header",
-      "archetype-unlock-shine",
-      "archetype-unlock-glow",
-      "archetype-unlock-emblem",
-      "archetype-unlock-line",
+      "archetype-focus-fog",
+      "archetype-focus-sweep",
+      "archetype-focus-glow",
+      "archetype-focus-line",
     ]) {
       expect(html.slice(media, disabled + 200)).toContain(`.${name}`);
     }
+
+    // Static run: the fog and the sweep are the two pieces whose base state is
+    // not the finished look — both are invisible without animation, so the
+    // stage renders sharp immediately.
+    expect(html).toContain("clip-path: inset(0 100% 0 0);");
+    expect(html).toContain(".archetype-focus-sweep {\n  opacity: 0;");
   });
 });
 
