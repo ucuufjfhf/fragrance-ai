@@ -17,6 +17,16 @@ export const metadata: Metadata = {
   title: "عطر خودتو پیدا کن | Fragrance AI",
   description:
     "سیستم پیشنهاد عطر شخصی‌سازی‌شده بر پایهٔ پروفایل عطری؛ همراه فروشگاه‌های عطر فارسی‌زبان.",
+  /**
+   * The FIAGE mark is the tab icon and the iOS home-screen icon: one bundled
+   * PNG serves both, so there is no .ico copy to keep in sync with the brand.
+   * (`app/favicon.ico` — the untouched framework default — was removed for the
+   * same reason: it would have advertised a second, unrelated icon.)
+   */
+  icons: {
+    icon: [{ url: "/brand/fiage-mark.png", type: "image/png", sizes: "560x560" }],
+    apple: [{ url: "/brand/fiage-mark.png", type: "image/png", sizes: "560x560" }],
+  },
 };
 
 export const viewport: Viewport = {
