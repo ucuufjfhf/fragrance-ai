@@ -1,105 +1,116 @@
 import type { CSSProperties } from "react";
 
 /**
- * Quiz ambience — the quiet depth behind the quiz flow.
+ * Quiz ambience — the layers of depth behind the quiz flow.
  *
  * ONE implementation, rendered once by the quiz route (`app/quiz/page.tsx`), so
  * every step of the flow (intro → audience → questions → result → context) sits
- * on the same warm air:
+ * on the same warm air. Paint order, back to front:
  *
- *  1. bokeh orbs — a handful of large, very soft out-of-focus warm light
- *     circles drifting extremely slowly in the DEEP background, behind the
- *     washes. They give the air depth (a foreground/background read) without
- *     ever sitting near the cards;
- *  2. ambient breathing gradient — three very soft warm washes on the cream
+ *   washes → BIG GLOW ORBS → ink blooms → fog → plumes → motes
+ *     → FROSTED cards → grain → answer pulse
+ *
+ *  1. ambient breathing gradient — three very soft warm washes on the cream
  *     base, drifting on 13–19s loops;
+ *  2. big glow orbs — six large warm light circles (150–350px) with a soft
+ *     radial falloff and a clearly visible core, drifting slowly. They are the
+ *     stars of the background, and they read twice over: AROUND the cards on a
+ *     wide screen and THROUGH the frosted cards on any screen;
  *  3. film grain — one static noise tile over the whole route.
+ *
+ * The orbs are declared AFTER the washes inside `.quiz-ambience`, so DOM order
+ * (equal positioning, no z-index) paints them above the washes and still behind
+ * every card — the "washes → big orbs" order the brief asks for.
  *
  * Purely decorative and cheap: no canvas, no JavaScript loop, no dependencies,
  * no images to download (the grain is an inline SVG data URI). `aria-hidden` and
  * `pointer-events: none` on every layer, so none is announced to assistive tech
- * nor intercepts a click, a selection or a scroll. Only `transform` and
- * `opacity` animate, and every layer goes static under `prefers-reduced-motion`
- * (see `app/globals.css`). The orbs' out-of-focus softness is baked into their
- * radial-gradient falloff — never a blur filter on an animated layer.
+ * nor intercepts a click, a selection or a scroll. Orb motion is `transform`
+ * only, and every layer goes static under `prefers-reduced-motion` (see
+ * `app/globals.css`). The orbs' softness is the radial-gradient falloff itself —
+ * never a blur filter on an animated layer.
  *
- * Colours come from the existing design tokens only — `--accent` terracotta and
- * `--accent-soft` — so no layer can introduce a new palette.
+ * Colours come from the existing tokens only — `--accent` terracotta (plus
+ * white, for the amber and gold tones) — so no layer introduces a new palette.
  *
- * Readability first: the orbs, the washes and the grain sit behind the opaque
- * quiz cards (the washes/orbs only tint the page base around them), and the
- * grain is a 4% greyscale overlay that leaves the card's text at ~12.7:1 in the
- * worst case. No layer is allowed to trade contrast for atmosphere.
+ * Readability first: the glow shows through the cards because they are frosted
+ * (`.quiz-frost`, ~78% warm-white plus one backdrop-blur), and that plate is
+ * sized so the dark body text and the muted labels stay above WCAG AA over the
+ * strongest orb — measured in the browser on the built app, not assumed, and
+ * locked by `tests/quiz/quiz-ambience.test.tsx`.
  */
 
 /** The three washes; only the CSS modifier differs (see `app/globals.css`). */
 const WASHES = ["a", "b", "c"] as const;
 
 /**
- * Hard cap: eight bokeh orbs, no more. The brief asks for 6–8 large soft
- * circles; eight is the fullest this layer is allowed to get.
+ * Hard cap: six glow orbs. The brief asks for 5–7; six fills the air on both a
+ * phone and a wide screen without becoming clutter.
  */
-export const MAX_ORBS = 8;
+export const MAX_ORBS = 6;
 
-/** Orbs are large and soft: 60–140px, so they read as light, never as shapes. */
-export const ORB_MIN_SIZE_PX = 60;
-export const ORB_MAX_SIZE_PX = 140;
+/** Orbs are big and bold: 150–350px, so they read as glow, not as specks. */
+export const ORB_MIN_SIZE_PX = 150;
+export const ORB_MAX_SIZE_PX = 350;
+
+/** The three palette-only tones (see the matching CSS classes). */
+type Tone = "terracotta" | "amber" | "gold";
 
 interface Orb {
   /** Position of the orb's centre, % of the viewport. */
   left: number;
   top: number;
-  /** Diameter, px (60–140). */
+  /** Diameter, px (150–350). */
   size: number;
-  /** Drift loop, s — deliberately enormous, so the drift is barely perceptible. */
+  /** Drift loop, s — slow, so the drift is a mood rather than motion. */
   duration: number;
   /** Start offset, s (negative = begin mid-loop). */
   delay: number;
-  /** Base opacity; the keyframe swells it slightly. Very low by design. */
+  /** CORE opacity: the gradient's first stop is the full colour, so this is
+   * exactly the alpha the centre of the orb shows. Bold by design (0.25–0.4). */
   opacity: number;
+  /** Palette tone — terracotta, amber or gold. */
+  tone: Tone;
 }
 
 /**
- * Eight orbs, placed by the same free-air rule as the spray: a circle whose
- * whole body sits behind the opaque card would not render, so each orb's CORE
- * lives where the card leaves air open — the narrow side strips (x ≈ 2–5% /
- * x ≈ 95–98%, the 16px margins beside the card on a phone) or the band under
- * the header (top ≤ 10%). The soft body then bleeds under the card, which is
- * exactly the deep-background depth the brief asks for. Nothing starts in the
- * footer band, so no orb ever drifts up to the footer copy.
+ * Six orbs, spread across the whole viewport.
  *
- * Placement is measured, not guessed: the first pass centred the orbs on the
- * page, which put six of the eight entirely behind the card on a 390px phone
- * and contributed ≤1 pixel level there. Locked to the free air, the cores are
- * visible on every viewport.
+ * Placement is deliberately unconstrained about the card this time: because the
+ * cards are frosted, an orb behind one still reads — blurred and softened — so
+ * the orbs can sit where they make the best composition rather than only in the
+ * margins. Nothing starts in the footer band, so no glow ever drifts up to the
+ * footer copy.
  */
 const ORBS: readonly Orb[] = [
-  { left: 3, top: 26, size: 130, duration: 72, delay: -12, opacity: 0.13 },
-  { left: 97, top: 22, size: 120, duration: 88, delay: -40, opacity: 0.12 },
-  { left: 2, top: 58, size: 140, duration: 64, delay: -24, opacity: 0.14 },
-  { left: 98, top: 54, size: 130, duration: 96, delay: -56, opacity: 0.12 },
-  { left: 35, top: 9, size: 100, duration: 80, delay: -8, opacity: 0.1 },
-  { left: 64, top: 10, size: 90, duration: 104, delay: -64, opacity: 0.09 },
-  { left: 98, top: 72, size: 110, duration: 68, delay: -32, opacity: 0.11 },
-  { left: 2, top: 70, size: 100, duration: 92, delay: -48, opacity: 0.11 },
+  { left: 16, top: 24, size: 300, duration: 78, delay: -12, opacity: 0.32, tone: "terracotta" },
+  { left: 84, top: 18, size: 260, duration: 96, delay: -44, opacity: 0.3, tone: "amber" },
+  { left: 50, top: 66, size: 350, duration: 108, delay: -66, opacity: 0.34, tone: "gold" },
+  { left: 24, top: 74, size: 240, duration: 72, delay: -28, opacity: 0.28, tone: "amber" },
+  { left: 88, top: 62, size: 280, duration: 88, delay: -54, opacity: 0.3, tone: "terracotta" },
+  { left: 46, top: 32, size: 200, duration: 120, delay: -8, opacity: 0.26, tone: "gold" },
 ];
 
 export default function QuizAmbience() {
   return (
     <>
-      {/* Layer 0 — the deep background: bokeh orbs, painted FIRST inside the
-          ambience container so they sit beneath its opaque cream base's
-          washes. Fixed and behind everything, so they never scroll the
-          atmosphere away and never affect layout. */}
+      {/* Fixed and behind everything, so the depth never scrolls away and never
+          affects layout. */}
       <div
         aria-hidden="true"
         className="quiz-ambience pointer-events-none fixed inset-0 -z-10 overflow-hidden"
       >
-        <div aria-hidden="true" className="quiz-bokeh-layer pointer-events-none">
+        {/* Layer 1 — the warm air. */}
+        {WASHES.map((wash) => (
+          <span key={wash} className={`quiz-wash quiz-wash-${wash}`} />
+        ))}
+
+        {/* Layer 2 — the big glow orbs, on top of the washes (DOM order). */}
+        <div aria-hidden="true" className="quiz-orb-layer pointer-events-none">
           {ORBS.map((orb, index) => (
             <span
               key={index}
-              className="quiz-bokeh"
+              className={`quiz-orb quiz-orb-${orb.tone}`}
               style={
                 {
                   left: `${orb.left}%`,
@@ -114,14 +125,9 @@ export default function QuizAmbience() {
             />
           ))}
         </div>
-
-        {/* Layer 1 — the warm air, on top of the orbs. */}
-        {WASHES.map((wash) => (
-          <span key={wash} className={`quiz-wash quiz-wash-${wash}`} />
-        ))}
       </div>
 
-      {/* Layer 2 — the grain. Static (no animation at all, so reduced-motion
+      {/* Layer 3 — the grain. Static (no animation at all, so reduced-motion
           needs nothing), and the topmost thing on the route: it textures the
           quiz surfaces themselves as well as the air around them. */}
       <div aria-hidden="true" className="quiz-grain" />

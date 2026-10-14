@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import Quiz from "@/components/quiz/Quiz";
 import QuizAmbience, {
   MAX_ORBS,
   ORB_MAX_SIZE_PX,
@@ -13,7 +14,7 @@ import QuizPage from "@/app/quiz/page";
  * Quiz ambience contract.
  *
  * The layers are CSS-only, so this suite checks the two halves separately:
- *  - the rendered markup (three washes, one bokeh-orb layer, one grain layer,
+ *  - the rendered markup (three washes, one glow-orb layer, one grain layer,
  *    all inert and decorative),
  *  - the rules in `app/globals.css` that make the effect what it is — the
  *    timestamped band, easing, compositor-only properties, palette sourcing,
@@ -43,6 +44,14 @@ function block(selector: string): string {
 
 const render = () => renderToStaticMarkup(<QuizAmbience />).replace(/<!--[\s\S]*?-->/g, "");
 
+/**
+ * A malformed comment opener (`/ *` with a space) silently swallows the rule that
+ * follows it — the string-matching assertions below would still pass while the
+ * browser dropped the declaration. This guard is cheap, and it is exactly the
+ * failure that shipped for one build.
+ */
+const malformedComments = (CSS.match(/\/ \*/g) ?? []).length;
+
 type Rgb = [number, number, number];
 
 const srgbToLinear = (channel: number): number => {
@@ -71,11 +80,11 @@ const hex = (value: string): Rgb => [
 ];
 
 describe("quiz ambience markup", () => {
-  it("renders three washes, one bokeh-orb layer and one grain layer, all decorative and inert", () => {
+  it("renders three washes, one glow-orb layer and one grain layer, all decorative and inert", () => {
     const html = render();
 
     expect((html.match(/class="quiz-wash quiz-wash-[abc]"/g) ?? []).length).toBe(3);
-    expect(html).toContain("quiz-bokeh-layer");
+    expect(html).toContain("quiz-orb-layer");
     expect(html).toContain("quiz-grain");
     // The solid base, the orb layer and the grain are all aria-hidden; the two
     // pointer targets are the base container and the orb layer inside it.
@@ -173,7 +182,7 @@ describe("ambient breathing gradient", () => {
 
   it("freezes under prefers-reduced-motion", () => {
     const media = CSS.slice(
-      CSS.indexOf("@media (prefers-reduced-motion: reduce) {\n  .quiz-bokeh {"),
+      CSS.indexOf("@media (prefers-reduced-motion: reduce) {\n  .quiz-orb {"),
     );
     expect(media).toContain(".quiz-wash {");
     expect(media).toContain("animation: none;");
@@ -207,21 +216,21 @@ describe("ambient breathing gradient", () => {
   });
 });
 
-describe("bokeh orbs", () => {
+describe("big glow orbs", () => {
   const html = render();
   const layer = html.slice(
-    html.lastIndexOf("<div", html.indexOf("quiz-bokeh-layer")),
-    html.indexOf("quiz-wash"),
+    html.lastIndexOf("<div", html.indexOf("quiz-orb-layer")),
+    html.indexOf("quiz-grain"),
   );
   const orbs = [...layer.matchAll(/left:\s*(\d+)%;\s*top:\s*(\d+)%/g)].map(([, left, top]) => ({
     left: Number(left),
     top: Number(top),
   }));
 
-  it("holds 6–8 orbs, each 60–140px, capped by construction", () => {
-    expect(MAX_ORBS).toBeGreaterThanOrEqual(6);
-    expect(MAX_ORBS).toBeLessThanOrEqual(8);
-    expect((layer.match(/class="quiz-bokeh"/g) ?? []).length).toBe(MAX_ORBS);
+  it("holds 5–7 big orbs, each 150–350px, capped by construction", () => {
+    expect(MAX_ORBS).toBeGreaterThanOrEqual(5);
+    expect(MAX_ORBS).toBeLessThanOrEqual(7);
+    expect((layer.match(/class="quiz-orb quiz-orb-\w+"/g) ?? []).length).toBe(MAX_ORBS);
 
     const sizes = [...layer.matchAll(/width:\s*(\d+)px/g)].map(([, size]) => Number(size));
     expect(sizes).toHaveLength(MAX_ORBS);
@@ -236,15 +245,16 @@ describe("bokeh orbs", () => {
     expect(layer).toContain("pointer-events-none");
   });
 
-  it("paints in the DEEP background: before the washes, behind the content", async () => {
-    // Within `.quiz-ambience` the orb layer is declared first, so DOM order puts
-    // it beneath the washes; and the whole ambience container precedes the card.
-    expect(html.indexOf("quiz-bokeh-layer")).toBeGreaterThan(-1);
-    expect(html.indexOf("quiz-wash-a")).toBeGreaterThan(html.indexOf("quiz-bokeh-layer"));
+  it("paints above the washes but still behind the content", async () => {
+    // Within `.quiz-ambience` the orb layer is declared AFTER the washes, so DOM
+    // order puts it above them (the brief's "washes → big orbs"); and the whole
+    // ambience container still precedes the first card.
+    expect(html.indexOf("quiz-orb-layer")).toBeGreaterThan(-1);
+    expect(html.indexOf("quiz-orb-layer")).toBeGreaterThan(html.indexOf("quiz-wash-a"));
 
     const page = renderToStaticMarkup(await QuizPage({ searchParams: Promise.resolve({}) }));
-    expect(page.indexOf("quiz-bokeh-layer")).toBeGreaterThan(-1);
-    expect(page.indexOf("quiz-rise")).toBeGreaterThan(page.indexOf("quiz-bokeh-layer"));
+    expect(page.indexOf("quiz-orb-layer")).toBeGreaterThan(-1);
+    expect(page.indexOf("quiz-rise")).toBeGreaterThan(page.indexOf("quiz-orb-layer"));
   });
 
   it("keeps every orb out of the footer band", () => {
@@ -254,14 +264,14 @@ describe("bokeh orbs", () => {
     }
   });
 
-  it("drifts extremely slowly at very low opacity", () => {
+  it("drifts slowly with a bold, unmissable core", () => {
     const durations = [...layer.matchAll(/animation-duration:\s*(\d+)s/g)].map(([, value]) =>
       Number(value),
     );
     expect(durations).toHaveLength(MAX_ORBS);
     for (const duration of durations) {
       expect(duration).toBeGreaterThanOrEqual(60);
-      expect(duration).toBeLessThanOrEqual(120);
+      expect(duration).toBeLessThanOrEqual(130);
     }
 
     const opacities = [...layer.matchAll(/--orb-opacity:\s*([\d.]+)/g)].map(([, value]) =>
@@ -269,23 +279,30 @@ describe("bokeh orbs", () => {
     );
     expect(opacities).toHaveLength(MAX_ORBS);
     for (const opacity of opacities) {
-      expect(opacity).toBeGreaterThan(0);
-      expect(opacity).toBeLessThanOrEqual(0.14);
+      expect(opacity, "the core must be bold enough to be unmissable").toBeGreaterThanOrEqual(0.25);
+      expect(opacity, "the core stays a glow, never an opaque disc").toBeLessThanOrEqual(0.4);
     }
+    // The gradient's first stop is the FULL colour, so `--orb-opacity` really is
+    // the alpha the centre of the orb shows.
+    expect(block(".quiz-orb")).toContain("var(--orb-color) 0%");
   });
 
-  it("animates transform and opacity only — the softness is the gradient, not a blur", () => {
-    const keyframes = block("@keyframes quiz-bokeh-drift");
+  it("animates transform only — the softness is the gradient, not a blur", () => {
+    const keyframes = block("@keyframes quiz-orb-drift");
     const properties = [...keyframes.matchAll(/([a-zA-Z-]+):\s*[^;]+;/g)].map(([, name]) => name);
 
     expect(properties.length).toBeGreaterThan(0);
     for (const property of properties) {
-      expect(["transform", "opacity"], `unexpected animated property: ${property}`).toContain(
-        property,
-      );
+      expect(["transform"], `unexpected animated property: ${property}`).toContain(property);
     }
 
-    for (const selector of [".quiz-bokeh-layer", ".quiz-bokeh"]) {
+    for (const selector of [
+      ".quiz-orb-layer",
+      ".quiz-orb",
+      ".quiz-orb-terracotta",
+      ".quiz-orb-amber",
+      ".quiz-orb-gold",
+    ]) {
       const rule = block(selector);
       expect(rule).not.toContain("filter:");
       expect(rule).not.toContain("blur(");
@@ -295,25 +312,93 @@ describe("bokeh orbs", () => {
 
     // The origin is the orb's CENTRE: without the -50% the box sits
     // down-and-right of `left`/`top` and hides behind the card on a phone.
-    expect(block(".quiz-bokeh")).toContain("transform: translate(-50%, -50%);");
+    expect(block(".quiz-orb")).toContain("transform: translate(-50%, -50%);");
     expect(keyframes).toContain("transform: translate(-50%, -50%) scale(1);");
 
-    // Heavy out-of-focus softness, built from a graduated radial falloff…
-    expect(block(".quiz-bokeh")).toContain("radial-gradient(");
-    expect(block(".quiz-bokeh")).toMatch(
-      /color-mix\(in srgb, var\(--orb-color\) \d+%, transparent\)/,
-    );
+    // Bold softness, built from a graduated radial falloff…
+    expect(block(".quiz-orb")).toContain("radial-gradient(");
+    expect(block(".quiz-orb")).toMatch(/color-mix\(in srgb, var\(--orb-color\) \d+%, transparent\)/);
     // …tinted from the existing palette, never a new hex.
-    expect(block(".quiz-bokeh")).toMatch(/--orb-color: var\(--accent\);/);
-    expect(block(".quiz-bokeh")).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    expect(block(".quiz-orb")).toMatch(/--orb-color: var\(--accent\);/);
+    for (const tone of ["terracotta", "amber", "gold"]) {
+      const rule = block(`.quiz-orb-${tone}`);
+      expect(rule).toMatch(/--orb-color: (var\(--accent\)|color-mix\(in srgb, var\(--accent\))/);
+      expect(rule).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    }
   });
 
   it("freezes under prefers-reduced-motion", () => {
     const media = CSS.slice(
-      CSS.indexOf("@media (prefers-reduced-motion: reduce) {\n  .quiz-bokeh {"),
+      CSS.indexOf("@media (prefers-reduced-motion: reduce) {\n  .quiz-orb {"),
     );
-    expect(media).toContain(".quiz-bokeh {");
+    expect(media).toContain(".quiz-orb {");
     expect(media).toContain("animation: none;");
+  });
+});
+
+describe("frosted-glass quiz cards", () => {
+  const ambience = render();
+  const frost = block(".quiz-frost");
+
+  it("ships CSS that parses: no malformed comment opener drops a rule", () => {
+    expect(malformedComments).toBe(0);
+  });
+
+  it("is a warm-white plate at ~78% with exactly one backdrop blur", () => {
+    expect(frost).toMatch(/color-mix\(in srgb, var\(--surface\) 7[0-9]%, transparent\)/);
+    expect(frost).toContain("backdrop-filter: blur(");
+    // ONE backdrop-filter declaration; the -webkit- alias is not a second layer.
+    expect((frost.match(/(^|[^-])backdrop-filter:/g) ?? []).length).toBe(1);
+    expect(frost).toContain("-webkit-backdrop-filter: blur(");
+    // Palette-only, and no plain `filter` (that would be a second effect).
+    expect(frost).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    expect(frost).not.toMatch(/[^-]filter: blur/);
+  });
+
+  it("is applied to the quiz cards, replacing their opaque fill", () => {
+    const html = renderToStaticMarkup(<Quiz />);
+    expect(html).toContain("quiz-frost");
+    expect(html).not.toMatch(/section className="quiz-rise[^"]*bg-surface/);
+  });
+
+  it("darkens the intro badge label to clear AA on its own opaque pill", () => {
+    const rule = block(".quiz-badge-label");
+    expect(rule).toMatch(/color: color-mix\(in srgb, var\(--accent\) \d+%, black\)/);
+    expect(rule).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+
+    // `color-mix(accent N%, black)` is just the accent scaled by N.
+    const pct = Number(rule.match(/var\(--accent\) (\d+)%, black/)![1]) / 100;
+    const mixed = hex("#b5652d").map((channel) => channel * pct) as Rgb;
+    expect(contrast(hex("#f3e5d8"), mixed)).toBeGreaterThanOrEqual(4.5);
+
+    // …and the badge in the markup actually uses it.
+    expect(renderToStaticMarkup(<Quiz />)).toContain("quiz-badge-label");
+  });
+
+  it("keeps body and muted text at AA over the strongest orb core + washes", () => {
+    const surface = hex("#ffffff");
+    const accent = hex("#b5652d");
+    const background = hex("#faf7f2");
+    const foreground = hex("#2a2420");
+    const muted = hex("#756b5e");
+
+    const maxOrb = Math.max(
+      ...[...ambience.matchAll(/--orb-opacity:\s*([\d.]+)/g)].map(([, value]) => Number(value)),
+    );
+    const maxWash = Math.max(
+      ...["a", "b", "c"].map((wash) =>
+        Number(block(`.quiz-wash-${wash}`).match(/--wash-opacity: ([\d.]+);/)![1]),
+      ),
+    );
+
+    // Worst case: the strongest wash, under the strongest orb core, under the plate.
+    const washBase = over(background, accent, maxWash);
+    const coreBase = over(washBase, accent, maxOrb);
+    const plate = over(coreBase, surface, 0.78);
+
+    expect(maxOrb).toBeGreaterThanOrEqual(0.25);
+    expect(contrast(plate, foreground)).toBeGreaterThanOrEqual(7); // body text
+    expect(contrast(plate, muted)).toBeGreaterThanOrEqual(4.5); // muted labels, AA
   });
 });
 

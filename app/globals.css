@@ -194,96 +194,42 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* Quiz ambience — the layers of quiet depth behind the quiz flow (see
+/* Quiz ambience — the layers of depth behind the quiz flow (see
  * components/quiz/QuizAmbience.tsx). Decorative, CSS-only, and every layer goes
  * static under `prefers-reduced-motion`.
  *
- * Layer 0 — bokeh orbs. A handful of large, very soft out-of-focus warm light
- * circles drifting on 60–110s loops in the DEEP background (behind the washes).
- * They read as depth — a near/far separation in the air — and their
- * out-of-focus softness is the radial-gradient falloff itself, never a blur
- * filter.
+ * Paint order on the route, back to front:
  *
- * Layer 1 — ambient breathing gradient. The cream base is kept as-is; three
- * very soft warm washes sit on it and drift on 13–19s loops. Their colours are
- * mixed from the existing tokens only (`--accent` terracotta + `--accent-soft`),
- * so no new palette enters the project. Only `transform` and `opacity` animate,
- * which keeps the whole effect on the compositor: no layout, no per-frame
- * paint, no blur to re-evaluate.
+ *   washes → BIG GLOW ORBS → ink blooms → fog → plumes → motes
+ *     → FROSTED cards → grain → answer pulse
  *
- * Layer 2 — film grain. One static feTurbulence tile (desaturated, and stitched
+ * Layer 1 — ambient breathing gradient. The cream base is kept as-is; three very
+ * soft warm washes sit on it and drift on 13–19s loops.
+ *
+ * Layer 2 — big glow orbs. Six large (150–350px) warm light circles — terracotta,
+ * amber and gold, all mixed from `--accent` — with a soft radial falloff and a
+ * core that is clearly visible (0.25–0.4). They drift on ~70–120s loops and are
+ * the stars of the background. Two parts of the brief are load-bearing: only
+ * `transform` animates (compositor-only), and the softness is the GRADIENT —
+ * never a `blur()` filter on the animated layer.
+ *
+ * Layer 3 — film grain. One static feTurbulence tile (desaturated, and stitched
  * so it repeats seamlessly) at 4% over the whole route. That is the
- * editorial-magazine texture: the quiz surfaces read as paper rather than as a
- * flat white card.
+ * editorial-magazine texture.
  *
- * Readability first: the orbs and washes only tint the page base — they never
- * sit under the card's text — and 4% greyscale noise moves the card's body text
- * (`--foreground` on `--surface`) from ~15.3:1 to ~12.3:1 in the worst case
- * (noise driven to both extremes at once; measured, and locked by
- * tests/quiz/quiz-ambience.test.tsx). The wash peaks were nudged up ~30% for a
- * fuller air, and the header's muted links still hold ≥4.5:1 over the strongest
- * wash behind their 85% cream plate (locked by the same suite). Everything is
- * far above AAA, so the contrast of the question text, options and buttons is
- * untouched in practice.
+ * The quiz cards are translucent (`.quiz-frost`): a warm-white plate at ~78%
+ * plus ONE `backdrop-filter` per card, so the orbs read both AROUND and THROUGH
+ * the card — which is what makes the background visible on a phone, where the
+ * card fills the viewport.
+ *
+ * Readability first, and MEASURED rather than assumed: the frosted plate keeps
+ * `--foreground` far above AAA and `--muted` ≥4.5:1 over the strongest orb core,
+ * the washes and the 4% grain combined (locked by
+ * tests/quiz/quiz-ambience.test.tsx, and re-measured in the browser on the built
+ * app). `--orb-opacity` is the knob if that budget ever needs tightening.
  */
 .quiz-ambience {
   background-color: var(--background);
-}
-
-/* The deep background. As the FIRST child of `.quiz-ambience`, this layer paints
- * above the container's opaque cream base but beneath the washes (equal
- * positioning, DOM order), which is exactly the depth order the brief asks for.
- * No z-index is needed — and none is used, so the orbs can never rise out of the
- * deep background. */
-.quiz-bokeh-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-/* One out-of-focus warm highlight. The softness IS the gradient: a wide,
- * graduated falloff with no flat plateau, so the core melts outward across the
- * whole circle — a blur filter on an animated layer is deliberately avoided.
- * Only `transform` and `opacity` animate (60–110s loops, ≤3% drift), so the
- * whole layer stays on the compositor. Opacity is per node and very low. */
-.quiz-bokeh {
-  --orb-color: var(--accent);
-  --orb-opacity: 0.08;
-  position: absolute;
-  border-radius: 9999px;
-  background: radial-gradient(
-    closest-side,
-    color-mix(in srgb, var(--orb-color) 54%, transparent) 0%,
-    color-mix(in srgb, var(--orb-color) 34%, transparent) 34%,
-    color-mix(in srgb, var(--orb-color) 16%, transparent) 62%,
-    transparent 100%
-  );
-  opacity: var(--orb-opacity, 0.08);
-  /* Centred on its declared origin (like the plumes): the component's `left` /
-   * `top` are the orb's CENTRE, so the transform carries the -50% that a big
-   * soft circle needs. Without it the box sits down-and-right of its origin and
-   * hides behind the card on narrow viewports. */
-  transform: translate(-50%, -50%);
-  animation-name: quiz-bokeh-drift;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-  animation-direction: alternate;
-  will-change: transform, opacity;
-}
-
-@keyframes quiz-bokeh-drift {
-  0% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: calc(var(--orb-opacity, 0.08) * 0.72);
-  }
-  50% {
-    transform: translate(-47.5%, -53%) scale(1.07);
-    opacity: var(--orb-opacity, 0.08);
-  }
-  100% {
-    transform: translate(-52.5%, -47.5%) scale(0.95);
-    opacity: calc(var(--orb-opacity, 0.08) * 0.78);
-  }
 }
 
 .quiz-wash {
@@ -301,6 +247,65 @@ h1, h2, h3, h4, h5, h6 {
   animation-iteration-count: infinite;
   animation-direction: alternate;
   will-change: transform, opacity;
+}
+
+/* The glow-orb layer. Declared AFTER the washes inside `.quiz-ambience`, so DOM
+ * order (equal positioning, no z-index) paints the orbs above the washes — the
+ * order the brief asks for — and still behind every card. No z-index is used, so
+ * an orb can never rise out of the background. */
+.quiz-orb-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* One big warm glow. `--orb-opacity` IS the core opacity — the gradient's first
+ * stop is the full colour — so the component's per-node value is exactly the
+ * alpha the centre shows. Centred on its declared origin with the -50%
+ * translate, and only `transform` animates (a very slow drift), so the whole
+ * layer stays on the compositor. */
+.quiz-orb {
+  --orb-color: var(--accent);
+  --orb-opacity: 0.3;
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(
+    closest-side,
+    var(--orb-color) 0%,
+    color-mix(in srgb, var(--orb-color) 62%, transparent) 38%,
+    color-mix(in srgb, var(--orb-color) 24%, transparent) 66%,
+    transparent 100%
+  );
+  opacity: var(--orb-opacity, 0.3);
+  transform: translate(-50%, -50%);
+  animation-name: quiz-orb-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform;
+}
+
+/* Palette-only tones: terracotta, amber and gold — no new hex anywhere. */
+.quiz-orb-terracotta {
+  --orb-color: var(--accent);
+}
+.quiz-orb-amber {
+  --orb-color: color-mix(in srgb, var(--accent) 72%, white);
+}
+.quiz-orb-gold {
+  --orb-color: color-mix(in srgb, var(--accent) 58%, white);
+}
+
+@keyframes quiz-orb-drift {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-46%, -54%) scale(1.08);
+  }
+  100% {
+    transform: translate(-54%, -46%) scale(0.94);
+  }
 }
 
 /* The breath: a slow drift plus a shallow opacity swell. `transform` and
@@ -383,10 +388,29 @@ h1, h2, h3, h4, h5, h6 {
   background-size: 200px 200px;
 }
 
-/* Everything static: the orbs and washes freeze mid-tint (never disappearing)
- * and the grain needs nothing — it has no animation to stop. */
+/* Frosted-glass quiz card. ONE `backdrop-filter` layer per card (the brief
+ * allows exactly that) over a warm-white plate at ~78%, so the big glow orbs
+ * read THROUGH the card while the text stays dark and readable. The plate is the
+ * other half of the contrast budget noted at the top of this section. */
+.quiz-frost {
+  background-color: color-mix(in srgb, var(--surface) 78%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.05);
+  backdrop-filter: blur(14px) saturate(1.05);
+}
+
+/* The intro badge's label sits on its own opaque `--accent-soft` pill. Plain
+ * `--accent` on that pill measures ~3.5:1 — below WCAG AA for 14px text — so the
+ * label takes a palette-derived mix (accent + black, the same recipe the primary
+ * button already uses) that clears AA without touching the pill. */
+.quiz-badge-label {
+  color: color-mix(in srgb, var(--accent) 72%, black);
+}
+
+/* Everything static: the orbs and washes freeze mid-glow (never disappearing)
+ * and the grain needs nothing — it has no animation to stop. The frosted cards
+ * stay frosted: static translucency is not motion. */
 @media (prefers-reduced-motion: reduce) {
-  .quiz-bokeh {
+  .quiz-orb {
     animation: none;
   }
   .quiz-wash {

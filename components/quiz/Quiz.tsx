@@ -358,7 +358,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
 
   if (flow.phase === "context" && result) {
     return withAtmosphere(
-      <section className="quiz-rise flex flex-col gap-6 rounded-3xl border border-border-soft bg-surface p-5 shadow-[var(--shadow-card)] sm:p-8">
+      <section className="quiz-rise flex flex-col gap-6 rounded-3xl border border-border-soft quiz-frost p-5 shadow-[var(--shadow-card)] sm:p-8">
         <ContextStep
           result={result}
           storeId={storeId}
@@ -398,9 +398,9 @@ export default function Quiz({ storeId }: { storeId?: string }) {
 
   if (flow.phase === "intro") {
     return withAtmosphere(
-      <section className="quiz-rise flex flex-col gap-7 rounded-3xl border border-border-soft bg-surface p-6 shadow-[var(--shadow-card)] sm:p-9">
+      <section className="quiz-rise flex flex-col gap-7 rounded-3xl border border-border-soft quiz-frost p-6 shadow-[var(--shadow-card)] sm:p-9">
         <div className="flex flex-col gap-3">
-          <span className="w-fit rounded-full border border-accent/30 bg-accent-soft px-4 py-1 font-heading text-sm text-accent">
+          <span className="quiz-badge-label w-fit rounded-full border border-accent/30 bg-accent-soft px-4 py-1 font-heading text-sm">
             <BrandMark className="ml-1 inline h-4 w-4" /> آزمون سلیقه عطری
           </span>
           <h1 className="font-heading text-2xl font-bold leading-10 text-foreground sm:text-3xl">
@@ -467,7 +467,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
 
   if (flow.phase === "audience") {
     return withAtmosphere(
-      <section className="quiz-rise flex flex-col gap-6 rounded-3xl border border-border-soft bg-surface p-5 shadow-[var(--shadow-card)] sm:p-8">
+      <section className="quiz-rise flex flex-col gap-6 rounded-3xl border border-border-soft quiz-frost p-5 shadow-[var(--shadow-card)] sm:p-8">
         <AudienceStep selected={flow.audience} onSelect={handleAudienceSelect} />
 
         <button
@@ -487,7 +487,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
   const canContinue = typeof selectedOptionId === "string";
 
   return withAtmosphere(
-    <section className="flex flex-col gap-6 rounded-3xl border border-border-soft bg-surface p-5 shadow-[var(--shadow-card)] sm:p-8">
+    <section className="flex flex-col gap-6 rounded-3xl border border-border-soft quiz-frost p-5 shadow-[var(--shadow-card)] sm:p-8">
       <ProgressBar current={progress.current} total={progress.total} />
 
       <div

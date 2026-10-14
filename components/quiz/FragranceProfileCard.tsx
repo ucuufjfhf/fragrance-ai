@@ -199,7 +199,7 @@ export default function FragranceProfileCard({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-3xl border border-border-soft bg-surface p-6 shadow-[var(--shadow-card)]">
+      <div className="flex flex-col gap-3 rounded-3xl border border-border-soft quiz-frost p-6 shadow-[var(--shadow-card)]">
         <h2 className="font-heading font-semibold text-foreground">
           رایحه‌ای که بهت میاد
         </h2>
