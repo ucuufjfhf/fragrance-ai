@@ -95,7 +95,7 @@
 
   iframe.id = IFRAME_ID;
   iframe.src = baseUrl + "/widget?store=" + encodeURIComponent(storeId);
-  iframe.title = "عطر خودتو پیدا کن";
+  iframe.title = "عطر خودتون رو پیدا کنید";
   iframe.setAttribute("allow", "clipboard-write");
   iframe.style.border = "0";
   iframe.style.width = "100%";

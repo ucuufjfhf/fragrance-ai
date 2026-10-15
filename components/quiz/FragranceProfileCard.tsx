@@ -134,7 +134,7 @@ export default function FragranceProfileCard({
             className="quiz-rise text-sm font-medium text-accent"
             style={{ animationDelay: "40ms", animationFillMode: "backwards" }}
           >
-            پروفایل عطری تو
+            پروفایل عطری شما
           </span>
 
           <span
@@ -201,7 +201,7 @@ export default function FragranceProfileCard({
 
       <div className="flex flex-col gap-3 rounded-3xl border border-border-soft quiz-frost p-6 shadow-[var(--shadow-card)]">
         <h2 className="font-heading font-semibold text-foreground">
-          رایحه‌ای که بهت میاد
+          رایحه‌ای که بهتون میاد
         </h2>
         <span aria-hidden="true" className="h-px w-10 bg-border-soft" />
         <p className="text-sm leading-8 text-muted">{archetype.fragranceHint}</p>

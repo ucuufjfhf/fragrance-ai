@@ -132,7 +132,7 @@ export default function TraitBars({ vector }: { vector: PersonalityVector }) {
   return (
     <section ref={sectionRef} className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 shadow-[var(--shadow-card)]">
       <div className="flex flex-col gap-3">
-        <h2 className="font-heading font-semibold text-foreground">پروفایل شخصیتی تو</h2>
+        <h2 className="font-heading font-semibold text-foreground">پروفایل شخصیتی شما</h2>
         <span aria-hidden="true" className="h-px w-10 bg-border-soft" />
       </div>
       <ul className="flex flex-col gap-3">

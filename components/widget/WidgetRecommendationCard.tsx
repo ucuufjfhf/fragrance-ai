@@ -78,7 +78,7 @@ export default function WidgetRecommendationCard({
 
       {explanation ? (
         <div className="flex flex-col gap-1 rounded-2xl border border-accent/25 bg-accent-soft p-3">
-          <span className="text-xs font-semibold text-accent">چرا بهت میاد؟</span>
+          <span className="text-xs font-semibold text-accent">چرا بهتون میاد؟</span>
           <p className="text-sm leading-7 text-foreground/90">{explanation}</p>
         </div>
       ) : null}

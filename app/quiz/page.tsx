@@ -8,7 +8,7 @@ import SiteHeader from "@/components/site/SiteHeader";
 export const metadata: Metadata = {
   title: "عطر خودتو پیدا کن | آزمون سلیقه عطری",
   description:
-    "با ۱۰ سؤال کوتاه پروفایل عطری خودت رو پیدا کن و ببین چه رایحه‌ای با سلیقه‌ات هماهنگ‌تره.",
+    "با ۱۰ سؤال کوتاه پروفایل عطری خودتون رو پیدا کنید و ببینید چه رایحه‌ای با سلیقه‌تون هماهنگ‌تره.",
 };
 
 interface QuizPageProps {

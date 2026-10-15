@@ -204,7 +204,7 @@ describe("rendered layers", () => {
     expect(html).toContain("quiz-fog");
     expect(html).toContain("quiz-pulse-layer");
     // …and the intro copy is untouched.
-    expect(html).toContain("عطر مناسب خودت رو پیدا کن");
+    expect(html).toContain("عطر مناسب خودتون رو پیدا کنید");
     expect(html).toContain("شروع آزمون");
   });
 });

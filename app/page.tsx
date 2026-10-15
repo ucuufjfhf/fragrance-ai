@@ -17,18 +17,18 @@ import SiteHeader from "@/components/site/SiteHeader";
 const steps = [
   {
     n: "۱",
-    title: "به ۱۰ سوال جواب بده",
-    detail: "سوال‌های کوتاه و ساده؛ فقط سلیقه‌ات رو بگو.",
+    title: "به ۱۰ سوال جواب بدید",
+    detail: "سوال‌های کوتاه و ساده؛ فقط سلیقه‌تون رو بگید.",
   },
   {
     n: "۲",
-    title: "پروفایل عطری‌ات ساخته میشه",
-    detail: "از جواب‌هات یک پروفایل رایحه با ۹ محور درست میشه.",
+    title: "پروفایل عطری‌تون ساخته میشه",
+    detail: "از جواب‌هاتون یک پروفایل رایحه با ۹ محور درست میشه.",
   },
   {
     n: "۳",
     title: "۳ عطر منتخب رو ببین",
-    detail: "با توضیح اینکه هر کدوم چرا با پروفایل تو جور است.",
+    detail: "با توضیح اینکه هر کدوم چرا با پروفایل شما جور است.",
   },
 ];
 
@@ -43,11 +43,11 @@ export default function Home() {
           <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-5 pb-14 pt-12 sm:px-8 lg:grid-cols-[1fr_0.92fr] lg:gap-16 lg:pb-24 lg:pt-20">
             <div className="flex flex-col items-start gap-6">
               <h1 className="font-heading text-4xl font-bold leading-[1.3] text-foreground sm:text-5xl lg:text-6xl">
-                عطر خودتو پیدا کن
+                عطر خودتون رو پیدا کنید
               </h1>
               <p className="max-w-xl text-lg leading-loose text-muted">
-                فقط ۱۰ سوال کوتاه؛ بعدش می‌فهمی کدوم رایحه واقعاً به سلیقه و شخصیتت می‌خوره —
-                نه بر اساس تبلیغ، بر اساس خودت.
+                فقط ۱۰ سوال کوتاه؛ بعدش می‌فهمید کدوم رایحه واقعاً به سلیقه و شخصیتتون می‌خوره —
+                نه بر اساس تبلیغ، بر اساس خودتون.
               </p>
               <Link
                 href="/quiz"
@@ -78,7 +78,7 @@ export default function Home() {
         <section id="how" className="border-y border-border-soft bg-surface-2">
           <div className="mx-auto w-full max-w-6xl px-5 py-14 sm:px-8 lg:py-20">
             <h2 className="font-heading text-2xl font-semibold text-foreground sm:text-3xl">
-              سه قدم تا عطرت
+              سه قدم تا عطرتون
             </h2>
             <ol className="mt-10 grid gap-10 sm:grid-cols-3 sm:gap-8">
               {steps.map((step) => (
@@ -100,7 +100,7 @@ export default function Home() {
         {/* Trust line — said once, with confidence. */}
         <section className="mx-auto w-full max-w-3xl px-5 py-16 text-center sm:px-8 lg:py-24">
           <p className="font-heading text-xl font-semibold leading-loose text-foreground sm:text-2xl">
-            بدون حدس و گمان؛ انتخاب بر اساس پروفایل دقیق تو
+            بدون حدس و گمان؛ انتخاب بر اساس پروفایل دقیق شما
           </p>
         </section>
       </main>

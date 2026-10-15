@@ -98,7 +98,7 @@ describe("Quiz component — store context flows through (Phase 9)", () => {
     expect(withStore).not.toContain("<option");
 
     // The intro copy is unchanged by the store context.
-    expect(withStore).toContain("عطر مناسب خودت رو پیدا کن");
+    expect(withStore).toContain("عطر مناسب خودتون رو پیدا کنید");
   });
 
   it("SSRs the intro for a store-pinned page without errors", () => {

@@ -78,7 +78,7 @@ export default function ContextStep({
           {CONTEXT_HEADING}
         </h2>
         <p className="text-sm leading-7 text-muted">
-          این مرحله اختیاریه؛ هر دو رو «فرقی نمی‌کنه» بذاری هم مشکلی نیست.
+          این مرحله اختیاریه؛ هر دو رو «فرقی نمی‌کنه» بذارید هم مشکلی نیست.
         </p>
       </div>
 

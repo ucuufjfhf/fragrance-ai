@@ -133,7 +133,7 @@ export default function ResultsView({
       </section>
 
       <section className="flex flex-col gap-3 rounded-3xl border border-border-soft bg-surface p-6">
-        <h2 className="font-heading font-semibold text-foreground">رایحه‌ای که بهت میاد</h2>
+        <h2 className="font-heading font-semibold text-foreground">رایحه‌ای که بهتون میاد</h2>
         <span aria-hidden="true" className="h-px w-10 bg-border-soft" />
         <p className="text-sm leading-8 text-muted">{archetype.fragranceHint}</p>
       </section>
@@ -143,7 +143,7 @@ export default function ResultsView({
 
       {/* --- recommendations --- */}
       <section className="flex flex-col gap-4" aria-live="polite">
-        <h2 className="font-heading text-xl font-bold sm:text-2xl">عطرهایی که بهت میاد</h2>
+        <h2 className="font-heading text-xl font-bold sm:text-2xl">عطرهایی که بهتون میاد</h2>
 
         {isEmpty ? (
           <div className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 text-center">
@@ -155,7 +155,7 @@ export default function ResultsView({
               // untouched).
               <>
                 <p className="text-sm leading-8 text-muted">
-                  عطری پیدا نکردیم که همهٔ ترجیحات انتخابیِ تو (فصل و موقعیت)
+                  عطری پیدا نکردیم که همهٔ ترجیحات انتخابیِ شما (فصل و موقعیت)
                   رو داشته باشه.
                 </p>
                 <Link
@@ -174,7 +174,7 @@ export default function ResultsView({
             ) : (
               <>
                 <p className="text-sm leading-8 text-muted">
-                  فعلاً عطری مطابق با پروفایل تو پیدا نکردیم.
+                  فعلاً عطری مطابق با پروفایل شما پیدا نکردیم.
                 </p>
                 <Link
                   href="/quiz"

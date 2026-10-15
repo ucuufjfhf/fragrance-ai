@@ -65,10 +65,10 @@ describe("purchase-context domain", () => {
       withoutJoiners("حالا کمی دقیق‌ترش کنیم"),
     );
     expect(withoutJoiners(SEASON_QUESTION)).toBe(
-      withoutJoiners("بیشتر برای چه فصلی می‌خوای؟"),
+      withoutJoiners("بیشتر برای چه فصلی می‌خواید؟"),
     );
     expect(withoutJoiners(OCCASION_QUESTION)).toBe(
-      withoutJoiners("بیشتر برای چه موقعیتی می‌خوای؟"),
+      withoutJoiners("بیشتر برای چه موقعیتی می‌خواید؟"),
     );
     expect(withoutJoiners(NO_PREFERENCE_LABEL)).toBe(
       withoutJoiners("فرقی نمی‌کنه"),

@@ -13,7 +13,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   {
     id: "choice-style",
     order: 1,
-    prompt: "وقتی می‌خوای یه عطر جدید بخری، کدوم حالت بیشتر شبیه توئه؟",
+    prompt: "وقتی می‌خواید یه عطر جدید بخرید، کدوم حالت بیشتر شبیه شماست؟",
     options: [
       {
         id: "trusted",
@@ -35,7 +35,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   {
     id: "social-energy",
     order: 2,
-    prompt: "توی جمع‌های شلوغ بیشتر چه حالی داری؟",
+    prompt: "توی جمع‌های شلوغ بیشتر چه حالی دارید؟",
     options: [
       {
         id: "center",
@@ -57,7 +57,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   {
     id: "scent-role",
     order: 3,
-    prompt: "از نظر تو عطر بیشتر چه کاری برات انجام می‌ده؟",
+    prompt: "از نظر شما عطر بیشتر چه کاری براتون انجام می‌ده؟",
     options: [
       {
         id: "signature",
@@ -79,7 +79,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   {
     id: "day-trip",
     order: 4,
-    prompt: "یه روز تعطیل داری؛ کدوم انتخاب بیشتر شبیه توئه؟",
+    prompt: "یه روز تعطیل دارید؛ کدوم انتخاب بیشتر شبیه شماست؟",
     options: [
       {
         id: "unknown-road",
@@ -101,7 +101,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   {
     id: "change",
     order: 5,
-    prompt: "رابطه‌ات با تغییر و تنوع چطوره؟",
+    prompt: "رابطه‌تون با تغییر و تنوع چطوره؟",
     options: [
       {
         id: "embrace",
@@ -123,7 +123,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   {
     id: "colors",
     order: 6,
-    prompt: "کدوم دسته رنگ بیشتر به سلیقه‌ات می‌خوره؟",
+    prompt: "کدوم دسته رنگ بیشتر به سلیقه‌تون می‌خوره؟",
     options: [
       {
         id: "deep",
@@ -145,7 +145,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   {
     id: "party",
     order: 7,
-    prompt: "توی مهمونی کدوم جمله بیشتر بهت می‌خوره؟",
+    prompt: "توی مهمونی کدوم جمله بیشتر بهتون می‌خوره؟",
     options: [
       {
         id: "mingle",
@@ -167,7 +167,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   {
     id: "impression",
     order: 8,
-    prompt: "دوست داری بعد از دیدنت بیشتر چه حسی بمونه؟",
+    prompt: "دوست دارید بعد از دیدنتون بیشتر چه حسی بمونه؟",
     options: [
       {
         id: "classy",
@@ -189,7 +189,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   {
     id: "risk",
     order: 9,
-    prompt: "توی تصمیم‌هات چقدر ریسک می‌کنی؟",
+    prompt: "توی تصمیم‌هاتون چقدر ریسک می‌کنید؟",
     options: [
       {
         id: "high",
@@ -211,7 +211,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   {
     id: "usage",
     order: 10,
-    prompt: "دوست داری عطرت بیشتر کِی به کارت بیاد؟",
+    prompt: "دوست دارید عطرتون بیشتر کِی به کارتون بیاد؟",
     options: [
       {
         id: "everyday",

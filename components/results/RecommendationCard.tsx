@@ -116,7 +116,7 @@ export default function RecommendationCard({
 
         {explanation ? (
           <div className="flex flex-col gap-1 rounded-2xl border border-accent/25 bg-accent-soft/60 p-4">
-            <span className="text-xs font-semibold text-accent">چرا بهت میاد؟</span>
+            <span className="text-xs font-semibold text-accent">چرا بهتون میاد؟</span>
             <p className="text-sm leading-8 text-foreground/90">{explanation}</p>
           </div>
         ) : null}

@@ -404,11 +404,11 @@ export default function Quiz({ storeId }: { storeId?: string }) {
             <BrandMark className="ml-1 inline h-4 w-4" /> آزمون سلیقه عطری
           </span>
           <h1 className="font-heading text-2xl font-bold leading-10 text-foreground sm:text-3xl">
-            عطر مناسب خودت رو پیدا کن
+            عطر مناسب خودتون رو پیدا کنید
           </h1>
           <p className="leading-8 text-muted">
-            فقط به ۱۰ سؤال کوتاه جواب بده تا ببینیم چه رایحه‌ای بیشتر با سلیقه و
-            شخصیت عطری تو هماهنگه.
+            فقط به ۱۰ سؤال کوتاه جواب بدید تا ببینیم چه رایحه‌ای بیشتر با سلیقه و
+            شخصیت عطری شما هماهنگه.
           </p>
         </div>
 
@@ -432,7 +432,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
               </svg>
             </IntroGlyph>
             <span>
-              جواب درست و غلط نداره؛ هر گزینه‌ای که بهت نزدیک‌تره رو انتخاب کن.
+              جواب درست و غلط نداره؛ هر گزینه‌ای که بهتون نزدیک‌تره رو انتخاب کنید.
             </span>
           </li>
           <li className="flex items-start gap-3">

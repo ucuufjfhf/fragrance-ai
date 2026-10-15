@@ -51,10 +51,10 @@ export const OCCASIONS: readonly Occasion[] = [
 export const CONTEXT_HEADING = "حالا کمی دقیق‌ترش کنیم";
 
 /** The approved season question. */
-export const SEASON_QUESTION = "بیشتر برای چه فصلی می‌خوای؟";
+export const SEASON_QUESTION = "بیشتر برای چه فصلی می‌خواید؟";
 
 /** The approved occasion question. */
-export const OCCASION_QUESTION = "بیشتر برای چه موقعیتی می‌خوای؟";
+export const OCCASION_QUESTION = "بیشتر برای چه موقعیتی می‌خواید؟";
 
 /** «فرقی نمی‌کنه» — the explicit "no filter" choice in both groups. */
 export const NO_PREFERENCE_LABEL = "فرقی نمی‌کنه";

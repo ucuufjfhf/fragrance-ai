@@ -53,7 +53,7 @@ describe("quiz UI rendering", () => {
   it("renders the intro screen with Persian copy and a start button", () => {
     const html = render(<Quiz />);
 
-    expect(html).toContain("عطر مناسب خودت رو پیدا کن");
+    expect(html).toContain("عطر مناسب خودتون رو پیدا کنید");
     expect(html).toContain("شروع آزمون");
     expect(withoutJoiners(html)).toContain(
       withoutJoiners("نه یک تست روانشناسی"),
@@ -92,10 +92,10 @@ describe("quiz UI rendering", () => {
       <FragranceProfileCard result={result} onRestart={noopRestart} />,
     );
 
-    expect(html).toContain("پروفایل عطری تو");
+    expect(html).toContain("پروفایل عطری شما");
     expect(html).toContain(result.archetype.label);
     expect(html).toContain(result.archetype.fragranceHint);
-    expect(html).toContain("پروفایل شخصیتی تو");
+    expect(html).toContain("پروفایل شخصیتی شما");
     expect(html).toContain("شروع دوباره");
   });
 });

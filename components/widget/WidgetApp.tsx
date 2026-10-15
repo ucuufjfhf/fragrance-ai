@@ -50,9 +50,9 @@ interface WidgetState {
 }
 
 const STORE_UNAVAILABLE = "این فروشگاه در حال حاضر در دسترس نیست.";
-const RECOMMENDATION_ERROR = "فعلاً نتونستیم پیشنهادها رو آماده کنیم. لطفاً دوباره تلاش کن.";
+const RECOMMENDATION_ERROR = "فعلاً نتونستیم پیشنهادها رو آماده کنیم. لطفاً دوباره تلاش کنید.";
 const EMPTY_INVENTORY = "فعلاً عطری برای پیشنهاد در این فروشگاه ثبت نشده.";
-const LOADING = "در حال پیدا کردن عطر مناسب تو...";
+const LOADING = "در حال پیدا کردن عطر مناسب شما...";
 
 export default function WidgetApp({ storeId }: { storeId: string }) {
   const [state, setState] = useState<WidgetState>({
@@ -218,9 +218,9 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
           <span className="w-fit rounded-full border border-border-soft bg-accent-soft px-4 py-1 text-sm text-accent">
             <BrandMark className="mr-1 inline h-4 w-4" /> آزمون سلیقه عطری
           </span>
-          <h1 className="text-2xl font-bold leading-10 text-foreground">عطر مناسب خودت رو پیدا کن</h1>
+          <h1 className="text-2xl font-bold leading-10 text-foreground">عطر مناسب خودتون رو پیدا کنید</h1>
           <p className="text-sm leading-8 text-muted">
-            فقط به ۱۰ سؤال کوتاه جواب بده تا ببینیم چه رایحه‌ای بیشتر با سلیقه و شخصیت عطری تو هماهنگه.
+            فقط به ۱۰ سؤال کوتاه جواب بدید تا ببینیم چه رایحه‌ای بیشتر با سلیقه و شخصیت عطری شما هماهنگه.
           </p>
         </div>
 
@@ -229,7 +229,7 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
           onClick={handleStart}
           className="flex min-h-12 flex-1 items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-white transition-colors hover:bg-accent/90"
         >
-          عطر خودتو پیدا کن
+          عطر خودتون رو پیدا کنید
         </button>
       </section>
     );

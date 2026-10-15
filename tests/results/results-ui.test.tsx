@@ -68,7 +68,7 @@ describe("results view rendering", () => {
       />,
     );
 
-    expect(html).toContain("چرا بهت میاد؟");
+    expect(html).toContain("چرا بهتون میاد؟");
     expect(html).toContain(explanation);
   });
 
@@ -89,7 +89,7 @@ describe("results view rendering", () => {
     // There is no "explanations unavailable" dead-end notice, and no
     // fabricated per-perfume explanation either.
     expect(html).not.toContain("توضیحات هوشمند فعلاً در دسترس نیست.");
-    expect(html).not.toContain("چرا بهت میاد؟");
+    expect(html).not.toContain("چرا بهتون میاد؟");
   });
 
   it("renders the empty state without fabricating recommendations", () => {
@@ -106,7 +106,7 @@ describe("results view rendering", () => {
       />,
     );
 
-    expect(html).toContain("فعلاً عطری مطابق با پروفایل تو پیدا نکردیم.");
+    expect(html).toContain("فعلاً عطری مطابق با پروفایل شما پیدا نکردیم.");
     expect(html).not.toContain("نویر آزمون");
     expect(html).toContain("/quiz");
   });
@@ -118,7 +118,7 @@ describe("results view rendering", () => {
 
     expect(html).toContain("پروفایل عطری شما");
     expect(html).toContain(archetype.label);
-    expect(html).toContain("عطرهایی که بهت میاد");
+    expect(html).toContain("عطرهایی که بهتون میاد");
     expect(html).toContain("شروع دوباره");
     expect(html).toContain("نه یک تست روانشناسی".replace(/\\u200c/g, ""));
   });
@@ -169,7 +169,7 @@ describe("context-filtered empty state", () => {
       />,
     );
 
-    expect(html).toContain("فعلاً عطری مطابق با پروفایل تو پیدا نکردیم");
+    expect(html).toContain("فعلاً عطری مطابق با پروفایل شما پیدا نکردیم");
     expect(html).not.toContain("حذف فیلتر فصل و موقعیت");
   });
 
@@ -184,6 +184,6 @@ describe("context-filtered empty state", () => {
     );
 
     expect(html).not.toContain("حذف فیلتر فصل و موقعیت");
-    expect(html).toContain("عطرهایی که بهت میاد");
+    expect(html).toContain("عطرهایی که بهتون میاد");
   });
 });

@@ -61,7 +61,7 @@ describe("shared trait bars — rendered by BOTH results screens", () => {
     const html = render(<FragranceProfileCard result={result} onRestart={() => undefined} />);
 
     // The shared component's structural signature must be present.
-    expect(html).toContain("پروفایل شخصیتی تو");
+    expect(html).toContain("پروفایل شخصیتی شما");
     expect(html).toContain("duration:2000ms");
     expect(html).toContain("cubic-bezier(0.22, 1, 0.36, 1)");
     // Staggered transition delays must appear (index * 120ms).
@@ -74,7 +74,7 @@ describe("shared trait bars — rendered by BOTH results screens", () => {
   it("screen 2 (ResultsView) renders the same shared implementation", () => {
     const html = render(<ResultsView vector={vector} archetype={archetype} data={viewData()} />);
 
-    expect(html).toContain("پروفایل شخصیتی تو");
+    expect(html).toContain("پروفایل شخصیتی شما");
     expect(html).toContain("duration:2000ms");
     expect(html).toContain("cubic-bezier(0.22, 1, 0.36, 1)");
     expect(html).toContain("delay:120ms");
