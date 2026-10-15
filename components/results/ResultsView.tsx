@@ -8,7 +8,6 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 
 import RecommendationCard from "@/components/results/RecommendationCard";
-import { getCuratedDemoPerfumes } from "@/lib/matching/curated-catalog";
 import type { Archetype, PersonalityVector } from "@/types/personality";
 import type { ResultsViewData } from "@/lib/results/service";
 
@@ -45,18 +44,6 @@ export default function ResultsView({
   contextRelaxHref = null,
 }: ResultsViewProps) {
   const { recommendations, explanations, isEmpty } = data;
-
-  // Demo-catalog accords for the bottle illustrations, resolved server-side
-  // (this is a server component, so the reference dataset never reaches the
-  // browser). Keys use the documented `ref-<id>` synthetic-id convention from
-  // the reference-catalog candidate source; merchant ids simply miss and get
-  // the house-default bottle. Display only — never scored or ranked on.
-  const accordsByPerfumeId = new Map(
-    getCuratedDemoPerfumes().map((perfume) => [
-      `ref-${perfume.id}`,
-      perfume.accords,
-    ]),
-  );
 
   return (
     <div
@@ -205,7 +192,6 @@ export default function ResultsView({
                 <RecommendationCard
                   recommendation={recommendation}
                   explanation={explanations.get(recommendation.perfumeId)}
-                  accords={accordsByPerfumeId.get(recommendation.perfumeId)}
                 />
               </li>
             ))}

@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
 
+import BottleSilhouettes from "@/components/BottleSilhouettes";
+
 /**
  * Quiz ambience — the layers of depth behind the quiz flow.
  *
@@ -7,7 +9,8 @@ import type { CSSProperties } from "react";
  * every step of the flow (intro → audience → questions → result → context) sits
  * on the same warm air. Paint order, back to front:
  *
- *   washes → BIG GLOW ORBS → ink blooms → fog → plumes → motes
+ *   bottle silhouettes (faintest) → washes → BIG GLOW ORBS → ink blooms → fog
+ *     → plumes → motes
  *     → FROSTED cards → grain → answer pulse
  *
  *  1. ambient breathing gradient — three very soft warm washes on the cream
@@ -23,6 +26,13 @@ import type { CSSProperties } from "react";
  * The orbs are declared AFTER the washes inside `.quiz-ambience`, so DOM order
  * (equal positioning, no z-index) paints them above the washes and still behind
  * every card — the "washes → big orbs" order the brief asks for.
+ *
+ * Layer 0 — the bottle silhouettes. Three large, very faint ghosts of glass
+ * hugging the viewport edges, declared FIRST inside the container so DOM order
+ * keeps them behind the washes, the orbs and everything the flow layers on top.
+ * They are static (no animation at all) and are the one place the bottle
+ * illustrations appear — decoration only, never product art. The look lives in
+ * `app/globals.css`; the placement in `components/BottleSilhouettes.tsx`.
  *
  * Purely decorative and cheap: no canvas, no JavaScript loop, no dependencies,
  * no images to download (the grain is an inline SVG data URI). `aria-hidden` and
@@ -120,6 +130,10 @@ export default function QuizAmbience() {
         aria-hidden="true"
         className="quiz-ambience pointer-events-none fixed inset-0 -z-10 overflow-hidden"
       >
+        {/* Layer 0 — the bottle silhouettes: the backmost depth on the route.
+            Inert, static, and behind every other layer by DOM order. */}
+        <BottleSilhouettes variant="quiz" />
+
         {/* Layer 1 — the warm air. */}
         {WASHES.map((wash) => (
           <span key={wash} className={`quiz-wash quiz-wash-${wash}`} />

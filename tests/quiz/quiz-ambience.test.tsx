@@ -72,6 +72,17 @@ const contrast = (first: Rgb, second: Rgb): number => {
 const over = (base: Rgb, source: Rgb, alpha: number): Rgb =>
   base.map((channel, index) => (1 - alpha) * channel + alpha * source[index]) as Rgb;
 
+/**
+ * The bottle silhouettes' own composite: the page colour MULTIPLIED by the
+ * silhouette at `alpha` (`background-blend-mode: multiply` plus the element's
+ * opacity), which is how `app/globals.css` renders them. Opaque black is the
+ * darkest glass the blend can ever produce, so it is the worst case here.
+ */
+const multiplied = (base: Rgb, source: Rgb, alpha: number): Rgb =>
+  base.map(
+    (channel, index) => (1 - alpha) * channel + alpha * channel * (source[index] / 255),
+  ) as Rgb;
+
 /** `#rrggbb` → opaque [r, g, b]. */
 const hex = (value: string): Rgb => [
   Number.parseInt(value.slice(1, 3), 16),
@@ -80,16 +91,17 @@ const hex = (value: string): Rgb => [
 ];
 
 describe("quiz ambience markup", () => {
-  it("renders three washes, one glow-orb layer and one grain layer, all decorative and inert", () => {
+  it("renders the bottle silhouettes, three washes, one glow-orb layer and one grain layer, all decorative and inert", () => {
     const html = render();
 
     expect((html.match(/class="quiz-wash quiz-wash-[abc]"/g) ?? []).length).toBe(3);
     expect(html).toContain("quiz-orb-layer");
     expect(html).toContain("quiz-grain");
-    // The solid base, the orb layer and the grain are all aria-hidden; the two
-    // pointer targets are the base container and the orb layer inside it.
-    expect((html.match(/aria-hidden="true"/g) ?? []).length).toBe(3);
-    expect((html.match(/pointer-events-none/g) ?? []).length).toBe(2);
+    // The solid base, the silhouette layer, the orb layer and the grain are all
+    // aria-hidden; the three pointer targets are the base container, the
+    // silhouette layer and the orb layer inside it.
+    expect((html.match(/aria-hidden="true"/g) ?? []).length).toBe(4);
+    expect((html.match(/pointer-events-none/g) ?? []).length).toBe(3);
 
     // Decorative means inert: no pointer target on any layer.
     expect(html).toContain("quiz-ambience pointer-events-none fixed inset-0 -z-10 overflow-hidden");
@@ -500,12 +512,22 @@ describe("frosted-glass quiz cards", () => {
     ].map(([, tone, opacity]) => ({ tone, opacity: Number(opacity) }));
     expect(rendered).toHaveLength(MAX_ORBS);
 
+    // The bottle silhouettes are the BACKMOST layer of the quiz background, so the
+    // worst case picks up one more composite beneath the wash: the darkest glass
+    // the blend can produce, at the strongest shape the markup declares.
+    const silhouetteAlpha = Math.max(
+      ...[...ambience.matchAll(/--silhouette-opacity:([\d.]+)/g)].map(([, value]) =>
+        Number(value),
+      ),
+    );
+    expect(silhouetteAlpha, "the silhouettes must declare an opacity").toBeGreaterThan(0);
+
     // Worst case, per orb: the strongest wash, under THAT orb's core, under the
     // frosted plate. Every tone is swept, so the darker wine core is checked on
     // its own terms instead of being assumed equal to the warm ones.
     let worst = { tone: "", ratio: Number.POSITIVE_INFINITY };
     for (const orb of rendered) {
-      const washBase = over(background, accent, maxWash);
+      const washBase = multiplied(over(background, accent, maxWash), [0, 0, 0], silhouetteAlpha);
       const coreBase = over(washBase, TONE_COLORS[orb.tone], orb.opacity);
       const plate = over(coreBase, surface, plateAlpha);
 

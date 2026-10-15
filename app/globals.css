@@ -209,13 +209,65 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* Bottle silhouettes — the six bottle illustrations as DEPTH, never as product
+ * art (see components/BottleSilhouettes.tsx). Two placements, one look: the
+ * quiz's backmost layer (three large shapes hugging the viewport edges) and the
+ * results screen's single accent, behind the content.
+ *
+ * A silhouette is the ghost of the bottle and NOTHING else, with no image editing
+ * and no second asset: the photos are shot on a cream ground very close to
+ * `--background`, so compositing the photo over the page cream with
+ * `background-blend-mode: multiply` cancels that ground out and leaves only the
+ * glass as a faint darker shape — the 16:10 frame never reads as a pasted
+ * rectangle. `grayscale` keeps it a neutral shadow rather than a photo, the
+ * shallow contrast lift deepens the glass, and the small blur takes the hard
+ * edges off. Measured on the built app: the darkest glass sits ~20/255 below the
+ * page cream, which reads as depth and never as an object.
+ *
+ * `--silhouette-opacity` carries the single per-shape knob and stays inside the
+ * barely-there 0.05–0.08 band. Everything here is STATIC — no animation, no
+ * transition, no JavaScript — so `prefers-reduced-motion` has nothing to freeze.
+ * Inert by construction: an `aria-hidden`, `pointer-events: none` layer of
+ * background images that can never intercept input, cover copy or shift layout.
+ */
+/* The quiz placement. Declared FIRST inside `.quiz-ambience`, so DOM order (equal
+ * positioning, no z-index) paints these behind the washes AND the glow orbs; the
+ * ink blooms, fog, spray and grain all sit above the ambience container. */
+.bottle-silhouette-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* The results placement: its own fixed backdrop, exactly like the ambient
+ * particles' `-z-10` layer, so it stays behind every card. */
+.bottle-silhouette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bottle-silhouette {
+  --silhouette-opacity: 0.06;
+  position: absolute;
+  aspect-ratio: 16 / 10;
+  background-color: var(--background);
+  background-blend-mode: multiply;
+  background-position: center;
+  background-size: cover;
+  filter: grayscale(1) contrast(1.3) blur(3px);
+  opacity: var(--silhouette-opacity, 0.06);
+}
+
 /* Quiz ambience — the layers of depth behind the quiz flow (see
  * components/quiz/QuizAmbience.tsx). Decorative, CSS-only, and every layer goes
  * static under `prefers-reduced-motion`.
  *
  * Paint order on the route, back to front:
  *
- *   washes → BIG GLOW ORBS → ink blooms → fog → plumes → motes
+ *   bottle silhouettes → washes → BIG GLOW ORBS → ink blooms → fog → plumes → motes
  *     → FROSTED cards → grain → answer pulse
  *
  * Layer 1 — ambient breathing gradient. The cream base is kept as-is; three very
