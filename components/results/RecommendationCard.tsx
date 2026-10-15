@@ -1,6 +1,6 @@
 "use client";
 
-import { artworkForPerfume } from "@/lib/perfumes/artwork";
+import { artworkForAccords } from "@/lib/perfumes/artwork";
 import { trackEvent } from "@/lib/analytics/client";
 import { formatPersianScore } from "@/lib/persian";
 import type { MatchedPerfume } from "@/types/recommendation";
@@ -9,6 +9,12 @@ interface RecommendationCardProps {
   recommendation: MatchedPerfume;
   /** Persian «چرا این عطر؟» copy, present only when the AI answered. */
   explanation?: string;
+  /**
+   * The perfume's reference accords (demo catalog only) — existing data
+   * resolved server-side, used solely to pick the decorative bottle
+   * illustration. Absent (merchant inventory, tests) → the house default.
+   */
+  accords?: readonly string[] | null;
 }
 
 /**
@@ -21,22 +27,24 @@ interface RecommendationCardProps {
  *
  * Phase D: each card leads with a 16:10 artwork panel. The merchant's own
  * `imageUrl` keeps absolute precedence; when the engine returns none (every
- * demo/reference-catalog card), the bundled curated artwork for that perfume id
- * fills the panel instead of the bare bottle glyph. The mapping is pure and
- * id-derived (`lib/perfumes/artwork.ts`) — decoration only, never an input to
+ * demo/reference-catalog card), the bundled bottle illustration for the
+ * perfume's scent character fills the panel instead of the bare bottle glyph.
+ * The mapping is a pure function of the reference accords
+ * (`lib/perfumes/artwork.ts`) — decoration only, never an input to
  * eligibility, scoring or ranking. Rank, score, product link and analytics are
  * unchanged.
  */
 export default function RecommendationCard({
   recommendation,
   explanation,
+  accords,
 }: RecommendationCardProps) {
   const { rank, name, brand, presentationScore, productUrl, imageUrl, perfumeId, storeId } =
     recommendation;
 
-  // Merchant inventory wins; the curated artwork only covers the gap the demo
-  // catalog leaves (it stores no image URLs at all).
-  const artwork = imageUrl ? null : artworkForPerfume(perfumeId);
+  // Merchant inventory wins; the bottle illustration only covers the gap the
+  // demo catalog leaves (it stores no image URLs at all).
+  const artwork = imageUrl ? null : artworkForAccords(accords);
 
   return (
     <article className="quiz-rise relative flex flex-col overflow-hidden rounded-3xl border border-border-soft bg-surface shadow-[var(--shadow-card)]">
