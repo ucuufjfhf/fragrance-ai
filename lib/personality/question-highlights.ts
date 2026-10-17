@@ -10,6 +10,21 @@
  * step, the context heading (its alone — the two context legends stay plain
  * so the screen keeps exactly one highlight) and the quiz intro headline.
  */
+/**
+ * The rarity allowlist: the wipe is a signature, so it fires on exactly four
+ * screens — the intro headline plus the 1st, 5th and 10th questions in
+ * `lib/personality/questions.ts` order. Every other screen (the remaining
+ * questions, the audience step, the context step) renders its title plain.
+ *
+ * The map below keeps ALL phrases byte-exact regardless: dropping a screen
+ * from this set removes its gold, never its copy.
+ */
+export const HIGHLIGHTED_QUESTION_IDS: ReadonlySet<string> = new Set([
+  "choice-style",
+  "change",
+  "usage",
+]);
+
 export const QUESTION_HIGHLIGHTS: Record<string, string> = {
   "choice-style": "شبیه شماست",
   "social-energy": "چه حالی دارید",

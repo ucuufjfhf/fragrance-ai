@@ -1,12 +1,7 @@
 import Link from "next/link";
 
-import MarkerWipe from "@/components/quiz/MarkerWipe";
 import QuizOption from "@/components/quiz/QuizOption";
 import { resetAnalyticsFlow } from "@/lib/analytics/flow-tracker";
-import {
-  QUESTION_HIGHLIGHTS,
-  splitHighlighted,
-} from "@/lib/personality/question-highlights";
 import type { AudienceGender } from "@/lib/audience";
 import {
   CONTEXT_HEADING,
@@ -65,13 +60,6 @@ export default function ContextStep({
 }: ContextStepProps) {
   const { archetype, vector } = result;
 
-  // The screen's single highlight lives on the heading; both legends stay
-  // plain so the screen never carries more than one marker phrase.
-  const headingHighlight = splitHighlighted(
-    CONTEXT_HEADING,
-    QUESTION_HIGHLIGHTS.context,
-  );
-
   const resultsHref = `/result?${serializeResultsParams(
     vector,
     archetype.id,
@@ -87,17 +75,7 @@ export default function ContextStep({
       <div className="flex flex-col gap-3">
         <span aria-hidden="true" className="h-px w-12 bg-accent/50" />
         <h2 className="font-display text-[1.7rem] font-semibold leading-[1.0] tracking-[-0.01em] text-foreground sm:text-4xl">
-          {headingHighlight ? (
-            <>
-              {headingHighlight[0]}
-              <MarkerWipe replayKey="context">
-                {headingHighlight[1]}
-              </MarkerWipe>
-              {headingHighlight[2]}
-            </>
-          ) : (
-            CONTEXT_HEADING
-          )}
+          {CONTEXT_HEADING}
         </h2>
         <p className="font-editorial text-sm leading-7 text-muted">
           این مرحله اختیاریه؛ هر دو رو «فرقی نمی‌کنه» بذارید هم مشکلی نیست.

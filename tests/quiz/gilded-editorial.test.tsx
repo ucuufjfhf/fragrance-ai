@@ -12,6 +12,7 @@ import { AUDIENCE_QUESTION } from "@/lib/audience";
 import { CONTEXT_HEADING } from "@/lib/context";
 import { QUIZ_QUESTIONS } from "@/lib/personality/questions";
 import {
+  HIGHLIGHTED_QUESTION_IDS,
   QUESTION_HIGHLIGHTS,
   splitHighlighted,
 } from "@/lib/personality/question-highlights";
@@ -89,23 +90,31 @@ describe("highlight phrases stay byte-exact substrings of the approved copy", ()
 });
 
 describe("marker-wipe renders with its highlight, copy untouched", () => {
-  it("each question screen carries exactly one highlight span", () => {
+  it("fires only on the allowlisted questions (Q1/Q5/Q10), plain elsewhere", () => {
     for (const question of QUIZ_QUESTIONS) {
       const html = render(<Question question={question} onSelect={noop} />);
-      // The full approved prompt survives byte-identical around the span.
+      // The full approved prompt survives byte-identical, wipe or not.
       expect(textOf(html)).toContain(question.prompt);
-      expect(countOccurrences(html, "marker-wipe")).toBeGreaterThanOrEqual(1);
-      expect(
-        countOccurrences(html, "marker-wipe is-inview"),
-        "SSR must not pre-play the wipe",
-      ).toBe(0);
+      if (HIGHLIGHTED_QUESTION_IDS.has(question.id)) {
+        expect(countOccurrences(html, 'class="marker-wipe"')).toBe(1);
+        expect(
+          countOccurrences(html, "marker-wipe is-inview"),
+          "SSR must not pre-play the wipe",
+        ).toBe(0);
+      } else {
+        expect(html).not.toContain("marker-wipe");
+      }
     }
+    // The allowlist is exactly the 1st, 5th and 10th questions in bank order.
+    expect([...HIGHLIGHTED_QUESTION_IDS].sort()).toEqual(
+      [QUIZ_QUESTIONS[0].id, QUIZ_QUESTIONS[4].id, QUIZ_QUESTIONS[9].id].sort(),
+    );
   });
 
-  it("audience, context and intro screens carry exactly one highlight each", () => {
+  it("fires on the intro headline but not on audience or context screens", () => {
     const audience = render(<AudienceStep onSelect={noop} />);
     expect(textOf(audience)).toContain(AUDIENCE_QUESTION);
-    expect(countOccurrences(audience, 'class="marker-wipe"')).toBe(1);
+    expect(audience).not.toContain("marker-wipe");
 
     const context = render(
       <ContextStep
@@ -118,7 +127,7 @@ describe("marker-wipe renders with its highlight, copy untouched", () => {
       />,
     );
     expect(textOf(context)).toContain(CONTEXT_HEADING);
-    expect(countOccurrences(context, 'class="marker-wipe"')).toBe(1);
+    expect(context).not.toContain("marker-wipe");
 
     const intro = render(<Quiz />);
     expect(textOf(intro)).toContain("عطر مناسب خودتون رو پیدا کنید");
@@ -253,6 +262,24 @@ describe("protected copy and tokens", () => {
     );
     expect(html).not.toMatch(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
     expect(html).toContain("bg-accent/50");
+  });
+});
+
+describe("question title breathes above the options", () => {
+  it("gives the title-to-options gap real room on every question screen", () => {
+    for (const question of QUIZ_QUESTIONS) {
+      const html = render(<Question question={question} onSelect={noop} />);
+      // 48px of breathing room on mobile and desktop alike; widths and
+      // alignment are untouched. The room lives on the legend's margin — a
+      // rendered <legend> is laid out specially and fieldset gap never
+      // reaches it (measured 0px in the browser), so assert the margin, not
+      // a gap the browser ignores.
+      expect(html).toContain("mb-12 flex flex-col gap-3 p-0");
+      expect(html).not.toContain("min-w-0 flex-col gap-12");
+    }
+    const audience = render(<AudienceStep onSelect={noop} />);
+    expect(audience).toContain("mb-12 flex flex-col gap-3 p-0");
+    expect(audience).not.toContain("min-w-0 flex-col gap-12");
   });
 });
 
