@@ -1,4 +1,6 @@
 import { getArchetypeById } from "@/lib/personality/archetypes";
+import { QUIZ_QUESTIONS, getOptionById } from "@/lib/personality/questions";
+import { orderAnswers } from "@/lib/personality/scoring";
 import {
   audienceToUrlToken,
   parseAudienceToken,
@@ -15,7 +17,11 @@ import {
 } from "@/lib/context";
 import type { Occasion } from "@/types/fragrance";
 import { PROFILE_AXES } from "@/lib/fragrance/profile";
-import type { Archetype, PersonalityVector } from "@/types/personality";
+import type {
+  Archetype,
+  PersonalityVector,
+  QuizAnswer,
+} from "@/types/personality";
 
 /**
  * Pure URL contract between the quiz (client) and the results page (server).
@@ -94,6 +100,15 @@ export interface ResultsParams {
    * omission). Never affects scoring.
    */
   occasion: Occasion | null;
+  /**
+   * The shopper's recorded answers, in bank order (`?answers=qid:oid,…`).
+   *
+   * Present only when the quiz linked here with its answer sheet (Phase 3
+   * powers the “how did I get here” decode from it). Absent/empty on legacy
+   * links — the decode section simply hides and everything else renders
+   * exactly as before. Unknown pairs degrade to omission, never to failure.
+   */
+  answers: QuizAnswer[];
 }
 
 /** Query-string keys, kept in one place so both sides can never drift. */
@@ -103,6 +118,7 @@ const STORE_KEY = "store";
 const TARGET_KEY = "target";
 const SEASON_KEY = "season";
 const OCCASION_KEY = "occasion";
+const ANSWERS_KEY = "answers";
 
 function firstValue(
   source: Record<string, string | string[] | undefined>,
@@ -131,6 +147,7 @@ export function serializeResultsParams(
   audience?: AudienceGender | null,
   season?: SeasonFilter | null,
   occasion?: Occasion | null,
+  answers?: readonly QuizAnswer[] | null,
 ): string {
   const search = new URLSearchParams();
 
@@ -166,6 +183,30 @@ export function serializeResultsParams(
 
   if (isOccasion(occasion)) {
     search.set(OCCASION_KEY, occasionToUrlToken(occasion));
+  }
+
+  // The recorded answer sheet is an optional add-on, exactly like the
+  // audience: without one the query string stays byte-identical to the
+  // pre-decode contract. Only known question/option pairs are emitted —
+  // never a stale id — and bank order is canonical, so a round-trip is
+  // lossless.
+  if (answers) {
+    const pairs: string[] = [];
+    for (const question of QUIZ_QUESTIONS) {
+      // First VALID pair wins per question — the same leniency as the
+      // scorer's `orderAnswers`, so a stale id never blocks a good one.
+      const match = answers.find(
+        (answer) =>
+          answer?.questionId === question.id &&
+          getOptionById(question, answer.optionId) !== undefined,
+      );
+      if (match) {
+        pairs.push(`${question.id}:${match.optionId}`);
+      }
+    }
+    if (pairs.length > 0) {
+      search.set(ANSWERS_KEY, pairs.join(","));
+    }
   }
 
   return search.toString();
@@ -238,6 +279,11 @@ export function parseResultsParams(
   const season = parseSeasonToken(firstValue(input, SEASON_KEY));
   const occasion = parseOccasionToken(firstValue(input, OCCASION_KEY));
 
+  // Deliberately lenient, same as `target`: unknown pairs are dropped by the
+  // canonical normaliser instead of failing the page, so a hand-edited link
+  // degrades to a shorter decode (or none) while recommendations render.
+  const answers = orderAnswers(parseAnswerPairs(firstValue(input, ANSWERS_KEY)));
+
   return {
     ok: true,
     value: {
@@ -248,6 +294,38 @@ export function parseResultsParams(
       audience,
       season,
       occasion,
+      answers,
     },
   };
+}
+
+/**
+ * Splits an `answers` token (`qid:oid,…`) into candidate pairs.
+ *
+ * Shape-checked only: each entry must be exactly one `questionId:optionId`
+ * pair with no empty side. Unknown ids are NOT rejected here — `orderAnswers`
+ * drops them, so a stale or hand-edited token degrades instead of failing.
+ */
+function parseAnswerPairs(raw: string | undefined): QuizAnswer[] {
+  if (typeof raw !== "string" || raw.trim() === "") {
+    return [];
+  }
+
+  const pairs: QuizAnswer[] = [];
+
+  for (const entry of raw.split(",")) {
+    const parts = entry.split(":");
+    if (parts.length !== 2) {
+      continue;
+    }
+
+    const [questionId, optionId] = parts.map((part) => part.trim());
+    if (questionId === "" || optionId === "") {
+      continue;
+    }
+
+    pairs.push({ questionId, optionId });
+  }
+
+  return pairs;
 }

@@ -76,6 +76,7 @@ export default async function ResultPage({ searchParams }: ResultPageProps) {
           archetype={params.value.archetype}
           data={data}
           contextRelaxHref={contextRelaxHref}
+          answers={params.value.answers}
         />
       </main>
 

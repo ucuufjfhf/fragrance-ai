@@ -68,6 +68,7 @@ export default function ContextStep({
     audience,
     season,
     occasion,
+    result.answers,
   )}`;
 
   return (

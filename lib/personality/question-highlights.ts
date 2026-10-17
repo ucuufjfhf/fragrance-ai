@@ -8,7 +8,10 @@
  *
  * Keys are question ids (`lib/personality/questions.ts`), plus the audience
  * step, the context heading (its alone — the two context legends stay plain
- * so the screen keeps exactly one highlight) and the quiz intro headline.
+ * so the screen keeps exactly one highlight), the quiz intro headline, and —
+ * the one deliberate Phase 3 extension — the results page's travel-note
+ * headline (`travel-note`). The wipe stays a signature: exactly one highlight
+ * per screen, and the results page carries exactly this one.
  */
 /**
  * The rarity allowlist: the wipe is a signature, so it fires on exactly four
@@ -39,6 +42,7 @@ export const QUESTION_HIGHLIGHTS: Record<string, string> = {
   audience: "برای چه کسی",
   context: "دقیق‌ترش",
   intro: "خودتون",
+  "travel-note": "سفر عطری",
 };
 
 /**

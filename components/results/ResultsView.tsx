@@ -7,14 +7,38 @@ import TraitBars from "@/components/results/TraitBars";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 
+import AnswerDecode from "@/components/results/AnswerDecode";
+import MarkerWipe from "@/components/quiz/MarkerWipe";
 import RecommendationCard from "@/components/results/RecommendationCard";
-import type { Archetype, PersonalityVector } from "@/types/personality";
+import StagedReveal from "@/components/results/StagedReveal";
+import { decodeAnswers } from "@/lib/personality/answer-decode";
+import {
+  QUESTION_HIGHLIGHTS,
+  splitHighlighted,
+} from "@/lib/personality/question-highlights";
+import { toPersianDigits } from "@/lib/persian";
+import type {
+  Archetype,
+  PersonalityVector,
+  QuizAnswer,
+} from "@/types/personality";
 import type { ResultsViewData } from "@/lib/results/service";
+
+/** The travel-note headline (Memo lineage) — the wipe's emotional core. */
+const TRAVEL_NOTE_HEADLINE = "یادداشت سفر عطری شما";
+
+/** Stop captions for the journey: the 3 cards as stations, in rank order. */
+const JOURNEY_STOPS = ["اول", "دوم", "سوم"] as const;
 
 interface ResultsViewProps {
   vector: PersonalityVector;
   archetype: Archetype;
   data: ResultsViewData;
+  /**
+   * The shopper's recorded answers for the “how did I get here” decode.
+   * Absent on legacy links — the decode section then hides itself.
+   */
+  answers?: readonly QuizAnswer[];
   /**
    * When the empty result was produced by an active season/occasion context,
    * this is the same results URL without those filters — rendered as the
@@ -42,8 +66,14 @@ export default function ResultsView({
   archetype,
   data,
   contextRelaxHref = null,
+  answers = [],
 }: ResultsViewProps) {
   const { recommendations, explanations, isEmpty } = data;
+  const decoded = decodeAnswers(answers, vector);
+  const travelHighlight = splitHighlighted(
+    TRAVEL_NOTE_HEADLINE,
+    QUESTION_HIGHLIGHTS["travel-note"],
+  );
 
   return (
     <div
@@ -141,9 +171,26 @@ export default function ResultsView({
       {/* --- top traits: the pronounced dimensions, engine values only --- */}
       <TraitBars vector={vector} />
 
-      {/* --- recommendations --- */}
+      {/* --- recommendations: a travel note in three stops (Memo lineage) --- */}
       <section className="flex flex-col gap-4" aria-live="polite">
-        <h2 className="font-heading text-xl font-bold sm:text-2xl">عطرهایی که بهتون میاد</h2>
+        <div className="flex flex-col gap-2">
+          <span aria-hidden="true" className="h-px w-12 bg-accent/50" />
+          <p className="text-sm font-medium text-muted">عطرهایی که بهتون میاد</p>
+          <h2 className="font-display text-3xl font-semibold leading-[1.1] tracking-[-0.01em] text-foreground sm:text-4xl">
+            {travelHighlight ? (
+              <>
+                {travelHighlight[0]}
+                <MarkerWipe replayKey="travel-note">{travelHighlight[1]}</MarkerWipe>
+                {travelHighlight[2]}
+              </>
+            ) : (
+              TRAVEL_NOTE_HEADLINE
+            )}
+          </h2>
+          <p className="font-editorial text-sm leading-7 text-muted">
+            سه ایستگاه در سفر عطری شما؛ هر عطر، یک مقصد.
+          </p>
+        </div>
 
         {isEmpty ? (
           <div className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 text-center">
@@ -186,18 +233,24 @@ export default function ResultsView({
             )}
           </div>
         ) : (
-          <ol className="flex list-none flex-col gap-4">
-            {recommendations.map((recommendation) => (
-              <li key={recommendation.perfumeId}>
+          <StagedReveal>
+            {recommendations.map((recommendation, index) => (
+              <li key={recommendation.perfumeId} className="quiz-rise">
+                <p className="mb-2 text-xs font-medium tracking-wide text-muted">
+                  ایستگاه {JOURNEY_STOPS[index] ?? toPersianDigits(index + 1)}
+                </p>
                 <RecommendationCard
                   recommendation={recommendation}
                   explanation={explanations.get(recommendation.perfumeId)}
                 />
               </li>
             ))}
-          </ol>
+          </StagedReveal>
         )}
       </section>
+
+      {/* --- how did I get here: the shopper's own answers, decoded --- */}
+      <AnswerDecode items={decoded} />
 
       <p className="text-xs leading-7 text-muted">
         این نتیجه یک تحلیل سلیقه‌ای برای انتخاب عطر است، نه یک تست روانشناسی.

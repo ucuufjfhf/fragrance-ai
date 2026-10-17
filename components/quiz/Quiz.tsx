@@ -457,6 +457,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
       flow.audience,
       null,
       null,
+      toAnswers(flow),
     )}`;
     if (router) {
       router.push(href);
@@ -466,7 +467,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign(href);
     }
-  }, [result, storeId, flow.audience, router]);
+  }, [result, storeId, flow, router]);
 
   // Answered questions — the 10-question bank only. The audience step and the
   // post-result context are not questions and never move the fog.
