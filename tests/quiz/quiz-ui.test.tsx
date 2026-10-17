@@ -360,6 +360,48 @@ describe("audience step rendering", () => {
     expect(html).not.toContain("سؤال");
   });
 
+  it("renders vertical photo cards with the label above the photo", () => {
+    const html = render(<AudienceStep onSelect={noopSelect} />);
+
+    // One row, two cards side by side — desktop and mobile alike.
+    expect(html).toContain("grid-cols-2");
+
+    // Each card is a whole-card button holding exactly one label and one
+    // photo, with the label preceding the photo in DOM order.
+    const cards = html.split("<button").slice(1);
+    expect(cards).toHaveLength(AUDIENCE_OPTIONS.length);
+    for (const option of AUDIENCE_OPTIONS) {
+      const card = cards.find((entry) =>
+        entry.includes(`data-option-id="${option.id}"`),
+      );
+      expect(card).toBeDefined();
+      const labelIndex = card!.indexOf(option.label);
+      const imgIndex = card!.indexOf("<img");
+      expect(labelIndex).toBeGreaterThan(-1);
+      expect(imgIndex).toBeGreaterThan(labelIndex);
+    }
+
+    // Photos are decorative: empty alt and hidden from assistive tech, while
+    // the accessible name comes from the label.
+    expect(html).toContain('alt=""');
+    expect(html).toContain('aria-hidden="true"');
+  });
+
+  it("maps each portrait to its option id, never by label text", () => {
+    const html = render(<AudienceStep onSelect={noopSelect} />);
+    const cards = html.split("<button").slice(1);
+
+    const cardFor = (id: string) =>
+      cards.find((card) => card.includes(`data-option-id="${id}"`));
+
+    // next/image URL-encodes the src (%2F…), so match the encoded form.
+    expect(cardFor("WOMEN")).toContain("%2Faudience%2Faudience-woman.webp");
+    expect(cardFor("MEN")).toContain("%2Faudience%2Faudience-man.webp");
+    // No card mixes the portraits up.
+    expect(cardFor("WOMEN")).not.toContain("audience-man.webp");
+    expect(cardFor("MEN")).not.toContain("audience-woman.webp");
+  });
+
   it("keeps the audience selection visible when the shopper returns from Q1", () => {
     const selected = render(<AudienceStep selected="WOMEN" onSelect={noopSelect} />);
     const unselected = render(<AudienceStep selected={null} onSelect={noopSelect} />);
