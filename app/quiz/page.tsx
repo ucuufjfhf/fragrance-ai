@@ -38,7 +38,12 @@ export default async function QuizPage({ searchParams }: QuizPageProps) {
 
       <SiteHeader />
 
-      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6 sm:py-14">
+      {/* Below lg the column stays max-w-xl (mobile/tablet unchanged); on
+          desktop it opens to max-w-5xl (1024px) so the editorial question
+          composition — display title, marker headline, full-width rows —
+          breathes without going unreadably wide. Asymmetry is preserved:
+          the wider column is still start-aligned content, never centred. */}
+      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6 sm:py-14 lg:max-w-5xl">
         <Quiz storeId={storeId} />
       </main>
 

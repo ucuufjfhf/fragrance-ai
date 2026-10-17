@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import QuizPage from "@/app/quiz/page";
 import Quiz from "@/components/quiz/Quiz";
 import AudienceStep from "@/components/quiz/AudienceStep";
 import ContextStep from "@/components/quiz/ContextStep";
@@ -252,5 +253,30 @@ describe("protected copy and tokens", () => {
     );
     expect(html).not.toMatch(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
     expect(html).toContain("bg-accent/50");
+  });
+});
+
+describe("desktop question column width", () => {
+  it("keeps max-w-xl below lg and opens to max-w-5xl on desktop", async () => {
+    const html = render(
+      await QuizPage({ searchParams: Promise.resolve({}) }),
+    );
+    const main = html.match(/<main[^>]*>/)?.[0] ?? "";
+    expect(main.length).toBeGreaterThan(0);
+    // Below lg the column stays max-w-xl (mobile/tablet unchanged); on
+    // desktop it opens to max-w-5xl (1024px) for the editorial composition.
+    expect(main).toContain("max-w-xl");
+    expect(main).toContain("lg:max-w-5xl");
+    // The wider column stays a start-aligned flow — never centred content.
+    expect(main).toContain("mx-auto");
+    expect(main).not.toContain("text-center");
+  });
+
+  it("leaves the /result column at its historical width", () => {
+    const resultPage = readFileSync(
+      new URL("../../app/result/page.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(resultPage).not.toContain("lg:max-w-");
   });
 });
