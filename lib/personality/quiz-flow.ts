@@ -15,7 +15,13 @@ import type { Occasion } from "@/types/fragrance";
  * one-question-per-screen flow, the previous/next buttons and the restart
  * behaviour deterministic and unit-testable without a DOM or a browser.
  *
- * Flow: intro → audience → Q1…Q10 → result → context.
+ * Flow: intro → audience → Q1…Q10 → filtering → analysis → result → context.
+ *
+ * `filtering` (the Trade-Coffee-lineage countdown) and `analysis` (the
+ * Scentbird-lineage performed interstitial) are Phase 2 pacing beats between
+ * the submit and the result. Both are skippable decoration: the result phase
+ * stays reachable exactly as before, and a failed matches preview degrades to
+ * the pre-Phase-2 path (`showResult` straight from the questions).
  *
  * The audience step is a single screen of its own between the intro and the
  * first question. It is NOT one of the 10 personality questions: it never enters
@@ -32,6 +38,8 @@ export type QuizPhase =
   | "intro"
   | "audience"
   | "question"
+  | "filtering"
+  | "analysis"
   | "result"
   | "context";
 
@@ -252,6 +260,35 @@ export function isQuizComplete(
   return questions.every(
     (question) => typeof state.selections[question.id] === "string",
   );
+}
+
+/**
+ * Enters the filtering countdown after a submit, but only for a complete
+ * answer sheet. A failed matches preview skips both beats via `showResult`.
+ */
+export function showFiltering(
+  state: QuizFlowState,
+  questions: readonly QuizQuestion[] = QUIZ_QUESTIONS,
+): QuizFlowState {
+  if (!isQuizComplete(state, questions)) {
+    return state;
+  }
+
+  return { ...state, phase: "filtering" };
+}
+
+/**
+ * Enters the performed-analysis interstitial, only from the countdown.
+ *
+ * A no-op from any other phase, so the interstitial can only follow the
+ * countdown — never a refresh, a restart or a back-navigation.
+ */
+export function showAnalysis(state: QuizFlowState): QuizFlowState {
+  if (state.phase !== "filtering") {
+    return state;
+  }
+
+  return { ...state, phase: "analysis" };
 }
 
 /** Switches to the result screen, but only for a complete answer sheet. */

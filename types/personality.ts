@@ -106,3 +106,26 @@ export interface QuizSubmitErrorResponse {
   error: "INVALID_JSON" | "INVALID_ANSWERS" | "RATE_LIMITED";
   reason: string;
 }
+
+/**
+ * One perfume previewed by the Phase 2 interstitial — identity only.
+ *
+ * Names, never scores: the interstitial performs the wait around the real
+ * top-3, it never re-ranks or explains them.
+ */
+export interface QuizMatchPreview {
+  perfumeId: string;
+  name: string;
+  brand: string;
+}
+
+/** `POST /api/quiz/matches` success payload. */
+export interface QuizMatchesResponse {
+  /**
+   * Live candidate-pool size feeding the filtering countdown — read from the
+   * catalog in the route, never a hardcoded literal in the UI.
+   */
+  count: number;
+  /** The real top matches in rank order (at most three). */
+  matches: QuizMatchPreview[];
+}

@@ -13,6 +13,8 @@ import {
   selectAudience,
   selectOccasion,
   selectSeason,
+  showAnalysis,
+  showFiltering,
   showResult,
   startQuiz,
   startQuizQuestions,
@@ -366,5 +368,50 @@ describe("optional context step (season + occasion)", () => {
     expect(getProgress(state)).toEqual(getProgress(resultState()));
     expect(getProgress(state).total).toBe(TOTAL);
     expect(getProgress(state).percent).toBeLessThanOrEqual(100);
+  });
+});
+
+describe("phase 2 pacing beats", () => {
+  it("enters the filtering countdown from a complete answer sheet", () => {
+    const state = showFiltering(completeFlow());
+
+    expect(state.phase).toBe("filtering");
+    expect(state.selections).toEqual(completeFlow().selections);
+  });
+
+  it("refuses the countdown for an incomplete answer sheet", () => {
+    const state = showFiltering(startAfterAudience());
+
+    expect(state.phase).not.toBe("filtering");
+    expect(state.phase).toBe("question");
+  });
+
+  it("enters the interstitial only from the countdown", () => {
+    expect(showAnalysis(showFiltering(completeFlow())).phase).toBe("analysis");
+
+    // Any other phase is a no-op: the interstitial can only follow the
+    // countdown, never a refresh, a restart or a back-navigation.
+    for (const state of [
+      createInitialQuizFlowState(),
+      startQuiz(),
+      completeFlow(),
+      showResult(completeFlow()),
+      openContext(showResult(completeFlow())),
+    ]) {
+      expect(showAnalysis(state).phase).toBe(state.phase);
+    }
+  });
+
+  it("still reaches the result screen from the interstitial", () => {
+    const state = showResult(showAnalysis(showFiltering(completeFlow())));
+
+    expect(state.phase).toBe("result");
+  });
+
+  it("keeps the beats out of the progress accounting", () => {
+    const filtering = showFiltering(completeFlow());
+
+    expect(getProgress(filtering).total).toBe(TOTAL);
+    expect(getProgress(filtering).percent).toBeLessThanOrEqual(100);
   });
 });

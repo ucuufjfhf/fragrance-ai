@@ -1074,3 +1074,83 @@ h1, h2, h3, h4, h5, h6 {
     transparent 95%
   );
 }
+
+/* ── Phase 2 interstitial — Memo sillage ───────────────────────────────────
+ * The performed-analysis screen breathes Memo Paris's sillage motif behind
+ * its content: 2–3 drifting wavy ink lines in brand tones (marker gold, wine,
+ * ink) plus soft pulsing dots. Decorative and inert (`aria-hidden`,
+ * `pointer-events: none`): it never carries meaning and never intercepts
+ * input. Transform/stroke-only motion, frozen under `prefers-reduced-motion`
+ * and via `.sillage-static` (the component's reduced-motion frame) — no box,
+ * no border, no card anywhere near it.
+ */
+.sillage {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.sillage-waves {
+  width: 100%;
+  height: 100%;
+}
+.sillage-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.5;
+  stroke-dasharray: 6 10;
+  animation: sillage-drift 7s linear infinite;
+}
+.sillage-line-gold {
+  stroke: #d99a2b;
+}
+.sillage-line-wine {
+  stroke: var(--wine);
+}
+.sillage-line-ink {
+  stroke: var(--foreground);
+  opacity: 0.28;
+}
+.sillage-dot {
+  opacity: 0.55;
+  animation: sillage-pulse 2.6s ease-in-out infinite;
+}
+.sillage-dot:nth-of-type(2) {
+  animation-delay: -0.9s;
+}
+.sillage-dot:nth-of-type(3) {
+  animation-delay: -1.7s;
+}
+.sillage-dot-gold {
+  fill: #d99a2b;
+}
+.sillage-dot-wine {
+  fill: var(--wine);
+}
+.sillage-dot-ink {
+  fill: var(--foreground);
+}
+@keyframes sillage-drift {
+  to {
+    stroke-dashoffset: -160;
+  }
+}
+@keyframes sillage-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sillage-line,
+  .sillage-dot {
+    animation: none;
+  }
+}
+.sillage-static .sillage-line,
+.sillage-static .sillage-dot {
+  animation: none;
+}

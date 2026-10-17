@@ -1,6 +1,7 @@
 "use client";
 
 import { BrandMark } from "@/components/ui-icons";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import {
@@ -9,8 +10,10 @@ import {
   trackQuizStarted,
 } from "@/lib/analytics/flow-tracker";
 
+import AnalysisInterstitial from "@/components/quiz/AnalysisInterstitial";
 import AudienceStep from "@/components/quiz/AudienceStep";
 import ContextStep from "@/components/quiz/ContextStep";
+import FilteringCountdown from "@/components/quiz/FilteringCountdown";
 import MarkerWipe from "@/components/quiz/MarkerWipe";
 import {
   QUESTION_HIGHLIGHTS,
@@ -45,13 +48,20 @@ import {
   selectAudience,
   selectOccasion,
   selectSeason,
+  showAnalysis,
+  showFiltering,
   showResult,
   startQuiz,
   toAnswers,
   type QuizFlowState,
 } from "@/lib/personality/quiz-flow";
 import { scoreQuiz } from "@/lib/personality/scoring";
-import type { QuizResult, QuizSubmitResponse } from "@/types/personality";
+import { serializeResultsParams } from "@/lib/results/params";
+import type {
+  QuizMatchesResponse,
+  QuizResult,
+  QuizSubmitResponse,
+} from "@/types/personality";
 
 const primaryButton =
   "btn-primary flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-accent px-6 font-medium text-background disabled:cursor-not-allowed disabled:opacity-50";
@@ -64,6 +74,58 @@ const OFFLINE_NOTICE =
 
 /** How long a recorded pointer position stays usable as a ripple origin. */
 const POINTER_FRESH_MS = 1500;
+
+/**
+ * How long the submit waits for the matches preview before giving up on the
+ * Phase 2 beats. The preview is fetched in parallel with the submit and
+ * resolves near-instantly (local engine, no AI); if it ever hangs, the flow
+ * degrades to the pre-Phase-2 path instead of stalling the shopper.
+ */
+const MATCHES_TIMEOUT_MS = 2500;
+
+/**
+ * Fetches the Phase 2 beats' data (live catalog count + real top-3) for an
+ * answer sheet. Never throws: any failure (network, timeout, malformed
+ * payload, empty matches) resolves to null, and the caller skips the beats.
+ */
+async function fetchMatchesPreview(
+  answers: { questionId: string; optionId: string }[],
+  audience: AudienceGender | null,
+): Promise<QuizMatchesResponse | null> {
+  try {
+    const response = await Promise.race([
+      fetch("/api/quiz/matches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers, audience }),
+      }),
+      new Promise<never>((_, reject) =>
+        window.setTimeout(
+          () => reject(new Error("matches preview timed out")),
+          MATCHES_TIMEOUT_MS,
+        ),
+      ),
+    ]);
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = (await response.json()) as QuizMatchesResponse;
+
+    if (
+      typeof data?.count !== "number" ||
+      !Array.isArray(data?.matches) ||
+      data.matches.length === 0
+    ) {
+      return null;
+    }
+
+    return data;
+  } catch {
+    return null;
+  }
+}
 
 interface PointerRecord {
   x: number;
@@ -101,6 +163,22 @@ function optionCenter(questionId: string, optionId: string): { x: number; y: num
   }
 
   return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+}
+
+/**
+ * The app router when one is mounted, null in static-render tests.
+ *
+ * `useRouter()` throws without the app-router context, which server-side
+ * render smoke tests never provide — so the hook call is guarded and the skip
+ * handler falls back to a plain navigation. In the browser the router always
+ * exists and the skip stays a client-side transition.
+ */
+function useOptionalRouter(): { push(href: string): void } | null {
+  try {
+    return useRouter();
+  } catch {
+    return null;
+  }
 }
 
 /** The last pointer position — only while it is recent enough to be "this tap". */
@@ -143,8 +221,13 @@ const glyphProps = {
 };
 
 /**
- * The quiz surface: intro → audience → one question per screen → result →
- * optional context.
+ * The quiz surface: intro → audience → one question per screen → filtering →
+ * analysis → result → optional context.
+ *
+ * `filtering` (countdown) and `analysis` (performed interstitial) are the
+ * Phase 2 pacing beats between the submit and the result. Both are decoration
+ * over data the matches preview already fetched: a failed preview skips them
+ * via `showResult`, and the interstitial's skip jumps straight to /result.
  *
  * The audience screen is a separate step, not a personality question: it is not
  * part of the 10-question bank, is never counted in the progress label, and its
@@ -171,6 +254,11 @@ export default function Quiz({ storeId }: { storeId?: string }) {
   const [result, setResult] = useState<QuizResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  // The Phase 2 beats' data (live count + real top-3), fetched in parallel
+  // with the submit. Null until a submit succeeds AND the preview arrives —
+  // the beats only ever render with both in hand.
+  const [preview, setPreview] = useState<QuizMatchesResponse | null>(null);
+  const router = useOptionalRouter();
 
   // Each question screen is a fresh step: when the flow moves to another
   // question, the content replays one subtle slide-and-fade instead of snapping
@@ -282,6 +370,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
     setResult(null);
     setNotice(null);
     setSubmitting(false);
+    setPreview(null);
     setFlow(restartQuiz());
 
     // …and a new attempt starts on a clean page: no accumulated ink, and no
@@ -300,6 +389,11 @@ export default function Quiz({ storeId }: { storeId?: string }) {
     const answers = toAnswers(flow);
     setSubmitting(true);
     setNotice(null);
+    setPreview(null);
+
+    // The beats' data rides alongside the submit (local engine, no AI), so it
+    // is usually already in hand when the submit resolves.
+    const matchesRequest = fetchMatchesPreview(answers, flow.audience);
 
     try {
       const response = await fetch("/api/quiz/submit", {
@@ -326,9 +420,53 @@ export default function Quiz({ storeId }: { storeId?: string }) {
       trackQuizCompleted(storeId);
     } finally {
       setSubmitting(false);
-      setFlow((current) => showResult(current));
+      // The beats only perform with real data: a failed preview degrades to
+      // the pre-Phase-2 path instead of performing around nothing.
+      const found = await matchesRequest;
+      if (found) {
+        setPreview(found);
+        setFlow((current) => showFiltering(current));
+      } else {
+        setFlow((current) => showResult(current));
+      }
     }
   }, [flow, storeId]);
+
+  // The beats' timer callbacks are stable, so the countdown and interstitial
+  // effects run exactly once per mount instead of resetting every render.
+  const handleFilteringDone = useCallback(() => {
+    setFlow((current) => showAnalysis(current));
+  }, []);
+  const handleAnalysisDone = useCallback(() => {
+    setFlow((current) => showResult(current));
+  }, []);
+
+  // The interstitial's «رد شدن» skip: the beats are performed, never a forced
+  // gate, so skipping jumps straight to /result with the selections made so
+  // far (no purchase context exists yet — season/occasion serialise to
+  // omission, exactly like «فرقی نمی‌کنه» in the context step).
+  const handleSkipBeats = useCallback(() => {
+    if (!result) {
+      return;
+    }
+    const href = `/result?${serializeResultsParams(
+      result.vector,
+      result.archetype.id,
+      storeId,
+      undefined,
+      flow.audience,
+      null,
+      null,
+    )}`;
+    if (router) {
+      router.push(href);
+    } else if (typeof window !== "undefined") {
+      // Static-render fallback only (the router always exists in the
+      // browser): plain navigation keeps the skip working with no context.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign(href);
+    }
+  }, [result, storeId, flow.audience, router]);
 
   // Answered questions — the 10-question bank only. The audience step and the
   // post-result context are not questions and never move the fog.
@@ -387,6 +525,29 @@ export default function Quiz({ storeId }: { storeId?: string }) {
           شروع دوباره
         </button>
       </section>,
+    );
+  }
+
+  // Phase 2 beats: the countdown performs the live catalog collapsing to 3,
+  // the interstitial performs the analysis around the real top-3. Both render
+  // only with the result AND the preview in hand; anything else falls through
+  // to the pre-Phase-2 path below.
+  if (flow.phase === "filtering" && result && preview) {
+    return withAtmosphere(
+      <FilteringCountdown
+        catalogCount={preview.count}
+        onDone={handleFilteringDone}
+      />,
+    );
+  }
+
+  if (flow.phase === "analysis" && result && preview) {
+    return withAtmosphere(
+      <AnalysisInterstitial
+        matches={preview.matches}
+        onDone={handleAnalysisDone}
+        onSkip={handleSkipBeats}
+      />,
     );
   }
 
