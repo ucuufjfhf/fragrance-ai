@@ -20,8 +20,15 @@ import QuizPage from "@/app/quiz/page";
 
 const CSS = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
 
-/** Act 3's whole CSS section: from its first rule to the end of the file. */
-const ACT3 = CSS.slice(CSS.indexOf(".quiz-plume-layer {"));
+/**
+ * Act 3's whole CSS section: from its first rule to the next top-level
+ * section marker (sections are delimited by `/* ──` banners; a later phase's
+ * CSS appended at the end of the file is not act 3 and must not leak into
+ * the no-filter/no-hex contract or steal the last reduced-motion block).
+ */
+const ACT3_START = CSS.indexOf(".quiz-plume-layer {");
+const ACT3_END = CSS.indexOf("/* ──", ACT3_START + 1);
+const ACT3 = CSS.slice(ACT3_START, ACT3_END === -1 ? undefined : ACT3_END);
 
 function block(source: string, selector: string): string {
   const start = source.indexOf(`${selector} {`);

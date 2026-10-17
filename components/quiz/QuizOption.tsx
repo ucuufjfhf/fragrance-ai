@@ -1,64 +1,62 @@
+import { toPersianDigits } from "@/lib/persian";
+
 interface QuizOptionProps {
-  /** Radio group name — the question id. */
+  /** Analytics/decoration hook — the question (or group) id. */
   name: string;
   optionId: string;
   label: string;
+  /** 0-based position in its group, shown as a Persian digit. */
+  index: number;
   selected: boolean;
   onSelect: (optionId: string) => void;
 }
 
 /**
- * A full-width answer card backed by a real radio input, so keyboard support
- * (arrow keys, space) and screen-reader semantics come for free while the visual
- * design stays card-like.
+ * A full-width answer row backed by a real <button>, in a number / label /
+ * arrow grid (RTL: the number sits at inline-start, the arrow at inline-end).
  *
- * The selected marker is a hairline ring with a stroked tick (a path, not a
- * glyph), keeping the card free of emoji or icon fonts.
+ * A button — not a radio card — is the Phase 1 editorial contract: every
+ * option is directly actionable, natively keyboard-focusable, and announces
+ * its state through `aria-pressed`. Selection values, scoring and matching
+ * are untouched; only the control changes.
+ *
+ * The arrow points left: the forward direction in this RTL flow. Hover motion
+ * (row shift, label underline, ink-darkening, arrow slide) lives in
+ * `.quiz-option-row` in app/globals.css, gated to fine pointers.
  */
 export default function QuizOption({
   name,
   optionId,
   label,
+  index,
   selected,
   onSelect,
 }: QuizOptionProps) {
   return (
-    <label
-      className={`group flex cursor-pointer items-center gap-3.5 rounded-2xl border p-4 transition-[border-color,background-color,box-shadow,transform] duration-200 ease-out focus-within:ring-2 focus-within:ring-accent/40 ${
-        selected
-          ? "border-accent bg-accent-soft shadow-[var(--shadow-card)]"
-          : "border-border-soft bg-surface hover:-translate-y-0.5 hover:border-accent/40"
-      }`}
+    <button
+      type="button"
+      data-question-id={name}
+      data-option-id={optionId}
+      aria-pressed={selected}
+      onClick={() => onSelect(optionId)}
+      className="quiz-option-row"
     >
-      <input
-        type="radio"
-        name={name}
-        value={optionId}
-        checked={selected}
-        onChange={() => onSelect(optionId)}
-        className="sr-only"
-      />
-      <span
-        aria-hidden="true"
-        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors duration-200 ${
-          selected
-            ? "border-accent bg-accent text-background"
-            : "border-border-soft bg-background text-transparent group-hover:border-accent/40"
-        }`}
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-3.5 w-3.5"
-        >
-          <path d="m5 12.5 4.5 4.5L19 7" />
-        </svg>
+      <span aria-hidden="true" className="quiz-option-num">
+        {toPersianDigits(index + 1)}
       </span>
-      <span className="text-[0.98rem] leading-8 text-foreground">{label}</span>
-    </label>
+      <span className="quiz-option-label">{label}</span>
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="quiz-option-arrow h-4 w-4"
+      >
+        <path d="M19 12H5m6-7-7 7 7 7" />
+      </svg>
+    </button>
   );
 }

@@ -11,6 +11,11 @@ import {
 
 import AudienceStep from "@/components/quiz/AudienceStep";
 import ContextStep from "@/components/quiz/ContextStep";
+import MarkerWipe from "@/components/quiz/MarkerWipe";
+import {
+  QUESTION_HIGHLIGHTS,
+  splitHighlighted,
+} from "@/lib/personality/question-highlights";
 import ProgressBar from "@/components/quiz/ProgressBar";
 import Question from "@/components/quiz/Question";
 import QuizAtmosphere, {
@@ -67,11 +72,11 @@ interface PointerRecord {
 }
 
 /**
- * The answered option card's centre, in viewport coordinates — the bloom's
+ * The answered option row's centre, in viewport coordinates — the bloom's
  * anchor, and the ripple's fallback origin for keyboard answers.
  *
  * Read from the DOM rather than threaded through `Question`/`QuizOption`: the
- * radio input already carries `name={questionId}` / `value={optionId}`, so
+ * row button already carries `data-question-id` / `data-option-id`, so
  * measuring here keeps this strictly presentational wiring (no component API
  * changes) and it works for a keyboard answer exactly like a tap. Returns null
  * where there is no layout (SSR), and the decoration is then simply skipped.
@@ -83,10 +88,9 @@ function optionCenter(questionId: string, optionId: string): { x: number; y: num
 
   const escape = (value: string) =>
     typeof CSS !== "undefined" && CSS.escape ? CSS.escape(value) : value;
-  const input = document.querySelector<HTMLInputElement>(
-    `input[name="${escape(questionId)}"][value="${escape(optionId)}"]`,
+  const card = document.querySelector<HTMLElement>(
+    `button[data-question-id="${escape(questionId)}"][data-option-id="${escape(optionId)}"]`,
   );
-  const card = input?.closest("label") ?? null;
   if (!card) {
     return null;
   }
@@ -403,10 +407,25 @@ export default function Quiz({ storeId }: { storeId?: string }) {
           <span className="quiz-badge-label w-fit rounded-full border border-accent/30 bg-accent-soft px-4 py-1 font-heading text-sm">
             <BrandMark className="ml-1 inline h-4 w-4" /> آزمون سلیقه عطری
           </span>
-          <h1 className="font-heading text-2xl font-bold leading-10 text-foreground sm:text-3xl">
-            عطر مناسب خودتون رو پیدا کنید
+          <h1 className="font-display text-3xl font-semibold leading-[1.0] tracking-[-0.01em] text-foreground sm:text-4xl">
+            {(() => {
+              const highlight = splitHighlighted(
+                "عطر مناسب خودتون رو پیدا کنید",
+                QUESTION_HIGHLIGHTS.intro,
+              );
+              if (!highlight) {
+                return "عطر مناسب خودتون رو پیدا کنید";
+              }
+              return (
+                <>
+                  {highlight[0]}
+                  <MarkerWipe replayKey="intro">{highlight[1]}</MarkerWipe>
+                  {highlight[2]}
+                </>
+              );
+            })()}
           </h1>
-          <p className="leading-8 text-muted">
+          <p className="font-editorial leading-8 text-muted">
             فقط به ۱۰ سؤال کوتاه جواب بدید تا ببینیم چه رایحه‌ای بیشتر با سلیقه و
             شخصیت عطری شما هماهنگه.
           </p>

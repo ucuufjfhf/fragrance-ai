@@ -1,7 +1,12 @@
 import Link from "next/link";
 
+import MarkerWipe from "@/components/quiz/MarkerWipe";
 import QuizOption from "@/components/quiz/QuizOption";
 import { resetAnalyticsFlow } from "@/lib/analytics/flow-tracker";
+import {
+  QUESTION_HIGHLIGHTS,
+  splitHighlighted,
+} from "@/lib/personality/question-highlights";
 import type { AudienceGender } from "@/lib/audience";
 import {
   CONTEXT_HEADING,
@@ -60,6 +65,13 @@ export default function ContextStep({
 }: ContextStepProps) {
   const { archetype, vector } = result;
 
+  // The screen's single highlight lives on the heading; both legends stay
+  // plain so the screen never carries more than one marker phrase.
+  const headingHighlight = splitHighlighted(
+    CONTEXT_HEADING,
+    QUESTION_HIGHLIGHTS.context,
+  );
+
   const resultsHref = `/result?${serializeResultsParams(
     vector,
     archetype.id,
@@ -74,25 +86,36 @@ export default function ContextStep({
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
         <span aria-hidden="true" className="h-px w-12 bg-accent/50" />
-        <h2 className="font-heading text-xl font-bold leading-8 text-foreground sm:text-2xl">
-          {CONTEXT_HEADING}
+        <h2 className="font-display text-[1.7rem] font-semibold leading-[1.0] tracking-[-0.01em] text-foreground sm:text-4xl">
+          {headingHighlight ? (
+            <>
+              {headingHighlight[0]}
+              <MarkerWipe replayKey="context">
+                {headingHighlight[1]}
+              </MarkerWipe>
+              {headingHighlight[2]}
+            </>
+          ) : (
+            CONTEXT_HEADING
+          )}
         </h2>
-        <p className="text-sm leading-7 text-muted">
+        <p className="font-editorial text-sm leading-7 text-muted">
           این مرحله اختیاریه؛ هر دو رو «فرقی نمی‌کنه» بذارید هم مشکلی نیست.
         </p>
       </div>
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-3 font-heading text-lg font-semibold leading-9 text-foreground sm:text-xl">
+        <legend className="mb-3 font-display text-lg font-semibold leading-9 text-foreground sm:text-xl">
           {SEASON_QUESTION}
         </legend>
         <div className="flex flex-col gap-3">
-          {SEASON_OPTIONS.map((option) => (
+          {SEASON_OPTIONS.map((option, optionIndex) => (
             <QuizOption
               key={option.id}
               name="context-season"
               optionId={option.id}
               label={option.label}
+              index={optionIndex}
               selected={season === option.id}
               onSelect={() => onSeasonChange(option.id)}
             />
@@ -101,6 +124,7 @@ export default function ContextStep({
             name="context-season"
             optionId={NO_PREFERENCE_ID}
             label={NO_PREFERENCE_LABEL}
+            index={SEASON_OPTIONS.length}
             selected={season === null}
             onSelect={() => onSeasonChange(null)}
           />
@@ -108,16 +132,17 @@ export default function ContextStep({
       </fieldset>
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-3 font-heading text-lg font-semibold leading-9 text-foreground sm:text-xl">
+        <legend className="mb-3 font-display text-lg font-semibold leading-9 text-foreground sm:text-xl">
           {OCCASION_QUESTION}
         </legend>
         <div className="flex flex-col gap-3">
-          {OCCASION_OPTIONS.map((option) => (
+          {OCCASION_OPTIONS.map((option, optionIndex) => (
             <QuizOption
               key={option.id}
               name="context-occasion"
               optionId={option.id}
               label={option.label}
+              index={optionIndex}
               selected={occasion === option.id}
               onSelect={() => onOccasionChange(option.id)}
             />
@@ -126,6 +151,7 @@ export default function ContextStep({
             name="context-occasion"
             optionId={NO_PREFERENCE_ID}
             label={NO_PREFERENCE_LABEL}
+            index={OCCASION_OPTIONS.length}
             selected={occasion === null}
             onSelect={() => onOccasionChange(null)}
           />

@@ -203,8 +203,12 @@ describe("rendered layers", () => {
     expect(html).toContain("quiz-ink");
     expect(html).toContain("quiz-fog");
     expect(html).toContain("quiz-pulse-layer");
-    // …and the intro copy is untouched.
-    expect(html).toContain("عطر مناسب خودتون رو پیدا کنید");
+    // …and the intro copy is untouched (markup-stripped: the marker-wipe
+    // highlight wraps one word in a span, so the sentence is contiguous in
+    // what the shopper reads but not in the raw HTML).
+    expect(html.replace(/<[^>]*>/g, "")).toContain(
+      "عطر مناسب خودتون رو پیدا کنید",
+    );
     expect(html).toContain("شروع آزمون");
   });
 });

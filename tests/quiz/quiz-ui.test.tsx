@@ -36,6 +36,15 @@ function withoutJoiners(value: string): string {
 }
 
 const noopSelect = (): void => undefined;
+
+/**
+ * Visible text with the markup stripped: the marker-wipe highlight wraps part
+ * of a prompt in a span, so the approved copy is contiguous in what the
+ * shopper reads but not in the raw HTML.
+ */
+function textOf(html: string): string {
+  return html.replace(/<[^>]*>/g, "");
+}
 const noopRestart = (): void => undefined;
 const noopContinue = (): void => undefined;
 
@@ -53,26 +62,34 @@ describe("quiz UI rendering", () => {
   it("renders the intro screen with Persian copy and a start button", () => {
     const html = render(<Quiz />);
 
-    expect(html).toContain("عطر مناسب خودتون رو پیدا کنید");
+    expect(textOf(html)).toContain("عطر مناسب خودتون رو پیدا کنید");
     expect(html).toContain("شروع آزمون");
     expect(withoutJoiners(html)).toContain(
       withoutJoiners("نه یک تست روانشناسی"),
     );
   });
 
-  it("renders a question screen with every option as a radio card", () => {
+  it("renders a question screen with every option as a real button row", () => {
     const question = QUIZ_QUESTIONS[2];
     const html = render(<Question question={question} onSelect={noopSelect} />);
 
-    expect(html).toContain(question.prompt);
+    expect(textOf(html)).toContain(question.prompt);
 
     for (const option of question.options) {
       expect(html).toContain(option.label);
-      expect(html).toContain(`value="${option.id}"`);
+      expect(html).toContain(`data-option-id="${option.id}"`);
     }
 
-    expect(html).toContain('type="radio"');
-    expect(html).toContain(`name="${question.id}"`);
+    // Real <button> rows (Phase 1 editorial), never radio inputs — one per
+    // option, all pressed-false until the shopper chooses.
+    expect(html).not.toContain('type="radio"');
+    expect(html).toContain(`data-question-id="${question.id}"`);
+    expect(
+      (html.match(/<button[^>]*data-option-id=/g) ?? []).length,
+    ).toBe(question.options.length);
+    expect(
+      (html.match(/aria-pressed="false"/g) ?? []).length,
+    ).toBe(question.options.length);
   });
 
   it("renders the progress label with Persian digits and a progressbar role", () => {
@@ -327,18 +344,18 @@ describe("archetype reveal stage", () => {
 });
 
 describe("audience step rendering", () => {
-  it("renders the approved question and both options as radio cards", () => {
+  it("renders the approved question and both options as real button rows", () => {
     const html = render(<AudienceStep onSelect={noopSelect} />);
 
-    expect(html).toContain(AUDIENCE_QUESTION);
+    expect(textOf(html)).toContain(AUDIENCE_QUESTION);
 
     for (const option of AUDIENCE_OPTIONS) {
       expect(html).toContain(option.label);
-      expect(html).toContain(`value="${option.id}"`);
+      expect(html).toContain(`data-option-id="${option.id}"`);
     }
 
-    expect(html).toContain('type="radio"');
-    expect(html).toContain('name="audience"');
+    expect(html).not.toContain('type="radio"');
+    expect(html).toContain('data-question-id="audience"');
     // The audience screen is not a question: no «سؤال …» progress label.
     expect(html).not.toContain("سؤال");
   });
@@ -347,8 +364,8 @@ describe("audience step rendering", () => {
     const selected = render(<AudienceStep selected="WOMEN" onSelect={noopSelect} />);
     const unselected = render(<AudienceStep selected={null} onSelect={noopSelect} />);
 
-    expect(selected).toContain('value="WOMEN"');
-    expect(selected).toContain('checked=""');
+    expect(selected).toContain('data-option-id="WOMEN"');
+    expect(selected).toContain('aria-pressed="true"');
     expect(selected).not.toBe(unselected);
   });
 

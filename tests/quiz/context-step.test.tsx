@@ -39,6 +39,13 @@ const result: QuizResult = scoreQuiz(
 const countOccurrences = (haystack: string, needle: string): number =>
   haystack.split(needle).length - 1;
 
+/**
+ * Visible text with the markup stripped: the marker-wipe highlight wraps part
+ * of a heading in a span, so the approved copy is contiguous in what the
+ * shopper reads but not in the raw HTML.
+ */
+const textOf = (html: string): string => html.replace(/<[^>]*>/g, "");
+
 describe("context step rendering", () => {
   it("renders the approved heading and both optional questions", () => {
     const html = render(
@@ -52,7 +59,7 @@ describe("context step rendering", () => {
       />,
     );
 
-    expect(withoutJoiners(html)).toContain(withoutJoiners(CONTEXT_HEADING));
+    expect(withoutJoiners(textOf(html))).toContain(withoutJoiners(CONTEXT_HEADING));
     expect(withoutJoiners(html)).toContain(withoutJoiners(SEASON_QUESTION));
     expect(withoutJoiners(html)).toContain(withoutJoiners(OCCASION_QUESTION));
     // The step announces itself as optional.
@@ -78,9 +85,9 @@ describe("context step rendering", () => {
       expect(html).toContain(option.label);
     }
 
-    // Exactly one explicit no-filter radio per group (the internal id is
-    // shared) — never a third/fake option in either group.
-    expect(countOccurrences(html, 'value="NONE"')).toBe(2);
+    // Exactly one explicit no-filter button row per group (the internal id
+    // is shared) — never a third/fake option in either group.
+    expect(countOccurrences(html, 'data-option-id="NONE"')).toBe(2);
     expect(
       countOccurrences(withoutJoiners(html), withoutJoiners(NO_PREFERENCE_LABEL)),
     ).toBeGreaterThanOrEqual(2);

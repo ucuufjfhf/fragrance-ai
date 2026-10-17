@@ -66,6 +66,16 @@
   --font-heading: "SG Kara", "Vazirmatn", sans-serif;
   --font-body: "Estedad", "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
   --font-sans: var(--font-body);
+  /* Phase 1 — Gilded Editorial type roles (quiz flow only). Display and
+   * editorial reuse the two faces already licensed in this repo (SG Kara
+   * SemiBold, Estedad Regular) plus the Vazirmatn project base: no new
+   * dependency, no new binary. See the marker/cursor section at the end of
+   * this file for the documented choice. */
+  --font-display: var(--font-heading);
+  --font-editorial: var(--font-body);
+  /* Stabilo-style marker gold: the wipe highlight, and the interactive
+   * sparkle cursor, both trace to this one token. */
+  --marker-gold: #d99a2b;
 }
 
 .btn-primary {
@@ -825,5 +835,202 @@ h1, h2, h3, h4, h5, h6 {
   }
   .quiz-mote-layer {
     display: none;
+  }
+}
+
+/* ── Phase 1 — Gilded Editorial (quiz flow) ────────────────────────────────
+ *
+ * FONT CHOICE (documented): the repo licenses exactly two local Persian faces
+ * (public/fonts: SGKara-SemiBold.woff2, Estedad-Regular.woff2) plus Vazirmatn
+ * via next/font/google as the project base. Neither candidate named in the
+ * brief (Yekan Bakh Heavy, Kalameh Black) is installed, and the phase forbids
+ * unjustified new dependencies — so:
+ *  - --font-display = "SG Kara" 600: the heaviest licensed face, poster-like,
+ *    used for question titles at tight leading (1.0) with -0.01em tracking;
+ *  - --font-editorial = "Estedad" 400: the contrasting human voice for intros
+ *    and explainers, set loose (leading 2) so it reads written, not system;
+ *  - --font-sans = Vazirmatn (the existing project base): labels, buttons,
+ *    microcopy, body. Unchanged.
+ *
+ * Paint order with the existing ambience is untouched: silhouettes → washes →
+ * orbs → blooms → fog → plumes → motes → cards → grain → pulse. Everything
+ * below sits on the cards' own surfaces, so the measured contrast budget
+ * (foreground/muted-on-plate over the 78% frosted plate) still holds.
+ */
+
+/* Editorial question screen: asymmetric (RTL: start-aligned, never centred),
+ * generous whitespace. The title is display type; the kicker is editorial. */
+.quiz-editorial-kicker {
+  font-family: var(--font-editorial);
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+/* Answer option rows: real <button>s in a number / label / arrow grid (RTL:
+ * number at inline-start, arrow at inline-end). Opaque surface so every label
+ * is foreground-on-white, far above the AA floor whatever the orbs do. */
+.quiz-option-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.875rem;
+  width: 100%;
+  border: 1px solid var(--border-soft);
+  border-radius: 1rem;
+  background-color: var(--surface);
+  padding: 0.9rem 1.1rem;
+  text-align: start;
+  font-family: var(--font-sans);
+  transition:
+    transform 280ms ease,
+    border-color 280ms ease,
+    background-color 280ms ease,
+    box-shadow 280ms ease;
+}
+.quiz-option-row:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--forest) 45%, white);
+  outline-offset: 2px;
+}
+.quiz-option-row[aria-pressed="true"] {
+  border-color: var(--accent);
+  background-color: var(--accent-soft);
+  box-shadow: var(--shadow-card);
+}
+.quiz-option-num {
+  display: flex;
+  height: 1.75rem;
+  width: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid var(--border-soft);
+  font-size: 0.8125rem;
+  color: var(--muted);
+  transition:
+    color 280ms ease,
+    border-color 280ms ease,
+    background-color 280ms ease;
+}
+.quiz-option-row[aria-pressed="true"] .quiz-option-num {
+  border-color: var(--accent);
+  background-color: var(--accent);
+  color: var(--background);
+}
+.quiz-option-label {
+  font-size: 0.98rem;
+  line-height: 2;
+  color: var(--foreground);
+}
+.quiz-option-arrow {
+  color: var(--muted);
+  transition:
+    color 280ms ease,
+    transform 280ms ease;
+}
+/* Hover motion is gated to fine pointers (touch fires false hovers on tap):
+ * the row shifts 8px toward inline-end (left in this RTL flow), the label
+ * underlines at 3px offset, number + arrow darken to ink, and the arrow
+ * slides a further 4px toward inline-end. */
+@media (hover: hover) and (pointer: fine) {
+  .quiz-option-row:hover {
+    transform: translateX(-8px);
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border-soft));
+  }
+  .quiz-option-row:hover .quiz-option-label {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .quiz-option-row:hover .quiz-option-num,
+  .quiz-option-row:hover .quiz-option-arrow {
+    color: var(--foreground);
+  }
+  .quiz-option-row:hover .quiz-option-arrow {
+    transform: translateX(-4px);
+  }
+}
+
+/* Marker-wipe highlight: a sharp-edged gold block drawn BEHIND the words
+ * (::before at z-index -1 over an isolated span, so the glyphs stay crisp on
+ * top), slightly wider than the text. Base state is the FINISHED look, so SSR,
+ * no-JS and reduced-motion all render a static highlight; the wipe replays via
+ * .is-inview (added by MarkerWipe's IntersectionObserver, re-armed per
+ * question). RTL: the wipe travels right → left (origin right, scaleX 0 → 1).
+ * Purpose (state indication, occasional): one emotional core per screen. Tool:
+ * CSS animation, transform-only, 550ms strong ease-out. */
+.marker-wipe {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+  padding-inline: 0.1em;
+}
+.marker-wipe::before {
+  content: "";
+  position: absolute;
+  inset: 0.1em -0.08em 0.04em;
+  z-index: -1;
+  border-radius: 2px;
+  background-color: var(--marker-gold);
+  transform: scaleX(1);
+  transform-origin: right center;
+}
+.marker-wipe.is-inview::before {
+  animation: marker-wipe-draw 550ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@keyframes marker-wipe-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Sparkle cursor: original 4-pointed-star SVG artwork as CSS data-URI cursors
+ * with native fallbacks (never a hidden cursor driven by JS). Ink by default, marker gold
+ * over interactive elements — desktop (pointer:fine) only; coarse pointers and
+ * reduced-motion keep the native cursor. */
+@media (pointer: fine) {
+  body {
+    cursor:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M10 0C10.8 6 12 8 20 10 12 12 10.8 14 10 20 9.2 14 8 12 0 10 8 8 9.2 6 10 0Z' fill='%232a2420'/%3E%3C/svg%3E")
+        10 10,
+      auto;
+  }
+  a,
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  summary {
+    cursor:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M10 0C10.8 6 12 8 20 10 12 12 10.8 14 10 20 9.2 14 8 12 0 10 8 8 9.2 6 10 0Z' fill='%23d99a2b'/%3E%3C/svg%3E")
+        10 10,
+      pointer;
+  }
+}
+
+/* Reduced motion: everything Phase 1 adds goes static, no exceptions — the
+ * wipe never plays (the finished highlight is the base state), the rows stop
+ * shifting, and the cursor falls back to native. */
+@media (prefers-reduced-motion: reduce) {
+  .marker-wipe.is-inview::before {
+    animation: none;
+  }
+  .quiz-option-row {
+    transition: none;
+  }
+  body {
+    cursor: auto;
+  }
+  a,
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  summary {
+    cursor: pointer;
   }
 }
