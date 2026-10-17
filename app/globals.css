@@ -1034,3 +1034,43 @@ h1, h2, h3, h4, h5, h6 {
     cursor: pointer;
   }
 }
+
+/* ── Unboxed quiz — the reading wash ───────────────────────────────────────
+ * The quiz content floats directly on the ambience (no card, no border, no
+ * frosted panel), so muted text would fall below AA over the strongest orb
+ * cores — the big gold core sits mid-column, the wine pair can drift in on a
+ * phone. This soft white veil lifts those cores back into budget.
+ *
+ * Invisible by design: a single feathered radial gradient, transparent by
+ * ~three quarters of its radius — no edges, no border, no panel, no shadow,
+ * no backdrop-filter. STATIC (no animation at all), so `prefers-reduced-motion`
+ * needs nothing, and inert (`aria-hidden`, `pointer-events: none` on the
+ * node itself). It is painted right after the orb layer inside
+ * `.quiz-ambience`, so DOM order keeps it above the orbs and still behind
+ * every word; the blooms, fog, plumes and content all sit above it.
+ *
+ * Strength is measured, not guessed: the worst modelled stack is the wine
+ * core at 0.26 (the phone case, where a wine orb can sit mid-column) over
+ * the strongest warm wash and the silhouette darkening. At a 0.96 peak the
+ * plain `--muted` token clears AA there — verified in the browser on the
+ * built app and locked by tests/quiz/quiz-ambience.test.tsx, which reads
+ * this peak out of the stylesheet rather than duplicating it.
+ *
+ * Shape matters as much as strength: muted text also lives at the top
+ * (progress label) and the very bottom (restart link) of the column, so the
+ * veil stays strong past the midpoint (0.75 at 55%) and only releases near
+ * the viewport corners (gone by 95%) — the whole column reads, while the
+ * air around it stays visible. Still one feathered gradient: no edges, no
+ * border, no panel.
+ */
+.quiz-reading-wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    130% 130% at 50% 45%,
+    rgb(255 255 255 / 0.96) 0%,
+    rgb(255 255 255 / 0.84) 55%,
+    transparent 95%
+  );
+}

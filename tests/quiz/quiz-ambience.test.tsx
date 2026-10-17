@@ -91,17 +91,22 @@ const hex = (value: string): Rgb => [
 ];
 
 describe("quiz ambience markup", () => {
-  it("renders the bottle silhouettes, three washes, one glow-orb layer and one grain layer, all decorative and inert", () => {
+  it("renders the bottle silhouettes, three washes, one glow-orb layer, one reading wash and one grain layer, all decorative and inert", () => {
     const html = render();
 
     expect((html.match(/class="quiz-wash quiz-wash-[abc]"/g) ?? []).length).toBe(3);
     expect(html).toContain("quiz-orb-layer");
+    expect((html.match(/quiz-reading-wash/g) ?? []).length).toBe(1);
     expect(html).toContain("quiz-grain");
-    // The solid base, the silhouette layer, the orb layer and the grain are all
-    // aria-hidden; the three pointer targets are the base container, the
-    // silhouette layer and the orb layer inside it.
-    expect((html.match(/aria-hidden="true"/g) ?? []).length).toBe(4);
-    expect((html.match(/pointer-events-none/g) ?? []).length).toBe(3);
+    // The reading wash paints right after the orb layer (above the orbs,
+    // still behind every word) inside the ambience container.
+    expect(html.indexOf("quiz-reading-wash")).toBeGreaterThan(html.indexOf("quiz-orb-layer"));
+    expect(html.indexOf("quiz-reading-wash")).toBeLessThan(html.indexOf("quiz-grain"));
+    // The solid base, the silhouette layer, the orb layer, the reading wash
+    // and the grain are all aria-hidden; pointer-events-none covers the base
+    // container, the silhouette layer, the orb layer and the wash.
+    expect((html.match(/aria-hidden="true"/g) ?? []).length).toBe(5);
+    expect((html.match(/pointer-events-none/g) ?? []).length).toBe(4);
 
     // Decorative means inert: no pointer target on any layer.
     expect(html).toContain("quiz-ambience pointer-events-none fixed inset-0 -z-10 overflow-hidden");
@@ -454,10 +459,28 @@ describe("frosted-glass quiz cards", () => {
     expect(frost).not.toMatch(/--muted: color-mix\(in srgb, var\(--muted\)/);
   });
 
-  it("is applied to the quiz cards, replacing their opaque fill", () => {
+  it("leaves the quiz content unboxed: no card classes on the sections", () => {
+    // The card is gone by design — the sections float on the ambience, and
+    // the reading wash (not a surface) carries the contrast. FragranceProfileCard
+    // keeps its frosted glass; only the four Quiz flow sections are bare.
     const html = renderToStaticMarkup(<Quiz />);
-    expect(html).toContain("quiz-frost");
-    expect(html).not.toMatch(/section className="quiz-rise[^"]*bg-surface/);
+    const sections = html.match(/<section[^>]*>/g) ?? [];
+    expect(sections.length).toBeGreaterThan(0);
+    for (const section of sections) {
+      expect(section).not.toContain("rounded-3xl");
+      expect(section).not.toContain("border-border-soft");
+      expect(section).not.toContain("quiz-frost");
+      expect(section).not.toContain("bg-surface");
+      expect(section).not.toContain("shadow-");
+    }
+    // …but the entrance survives.
+    expect(html).toContain("quiz-rise");
+  });
+
+  it("mounts the reading wash behind the unboxed content", () => {
+    // The wash belongs to the ambience (mounted by the route), not to the
+    // flow: Quiz renders the bare sections, QuizAmbience the veil behind them.
+    expect(render()).toContain("quiz-reading-wash");
   });
 
   it("darkens the intro badge label to clear AA on its own opaque pill", () => {
@@ -479,15 +502,17 @@ describe("frosted-glass quiz cards", () => {
     const accent = hex("#b5652d");
     const background = hex("#faf7f2");
     const foreground = hex("#2a2420");
-    // Labels on the plate use the plate's own token, resolved the way the stylesheet
-    // resolves it: `--muted` mixed toward black.
-    const mutedOnPlateWeight =
-      Number(
-        CSS.match(/--muted-on-plate: color-mix\(in srgb, var\(--muted\) (\d+)%, black\)/)![1],
-      ) / 100;
-    const muted = hex("#756b5e").map((channel) => channel * mutedOnPlateWeight) as Rgb;
-    const plateAlpha =
-      Number(frost.match(/color-mix\(in srgb, var\(--surface\) (\d+)%, transparent\)/)![1]) / 100;
+    // The quiz sections are unboxed, so their labels use the PLAIN `--muted`
+    // token (the `--muted-on-plate` re-point lives under `.quiz-frost`, which
+    // the sections no longer carry). What lifts them is the reading wash.
+    const muted = hex("#756b5e");
+    // The wash peak, read from the stylesheet — the number the veil actually
+    // ships — never a duplicated constant.
+    const washRule = block(".quiz-reading-wash");
+    const washPeak = Number(
+      washRule.match(/rgb\(255 255 255 \/ ([\d.]+)\)/)![1],
+    );
+    expect(washPeak, "the reading wash must declare a peak alpha").toBeGreaterThan(0);
 
     // Each tone resolved the way `app/globals.css` resolves it: the warm ones are
     // `--accent` mixed toward white, and wine is the `--wine` token.
@@ -523,16 +548,17 @@ describe("frosted-glass quiz cards", () => {
     expect(silhouetteAlpha, "the silhouettes must declare an opacity").toBeGreaterThan(0);
 
     // Worst case, per orb: the strongest wash, under THAT orb's core, under the
-    // frosted plate. Every tone is swept, so the darker wine core is checked on
+    // reading wash at its peak (the content column sits near the gradient's
+    // centre). Every tone is swept, so the darker wine core is checked on
     // its own terms instead of being assumed equal to the warm ones.
     let worst = { tone: "", ratio: Number.POSITIVE_INFINITY };
     for (const orb of rendered) {
       const washBase = multiplied(over(background, accent, maxWash), [0, 0, 0], silhouetteAlpha);
       const coreBase = over(washBase, TONE_COLORS[orb.tone], orb.opacity);
-      const plate = over(coreBase, surface, plateAlpha);
+      const reading = over(coreBase, surface, washPeak);
 
-      expect(contrast(plate, foreground), `${orb.tone} body text`).toBeGreaterThanOrEqual(7);
-      const ratio = contrast(plate, muted);
+      expect(contrast(reading, foreground), `${orb.tone} body text`).toBeGreaterThanOrEqual(7);
+      const ratio = contrast(reading, muted);
       // Not merely ≥4.5: the browser measured 5.2:1 for the worst of these, so the
       // margin is asserted too. A hair over the line is how the 4.42:1 regression
       // got in last time.

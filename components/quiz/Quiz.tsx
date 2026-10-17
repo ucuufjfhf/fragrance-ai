@@ -360,9 +360,14 @@ export default function Quiz({ storeId }: { storeId?: string }) {
     </>
   );
 
+  // Unboxed: the content floats directly on the ambience — no card, no
+  // border, no frosted panel. Horizontal rhythm comes from the route's main
+  // column (px-4 sm:px-6); each section keeps airy vertical padding only.
+  // Readability over the orbs comes from the invisible reading wash (see
+  // QuizAmbience), never from a surface.
   if (flow.phase === "context" && result) {
     return withAtmosphere(
-      <section className="quiz-rise flex flex-col gap-6 rounded-3xl border border-border-soft quiz-frost p-5 shadow-[var(--shadow-card)] sm:p-8">
+      <section className="quiz-rise flex flex-col gap-6 py-4 sm:py-6">
         <ContextStep
           result={result}
           storeId={storeId}
@@ -402,7 +407,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
 
   if (flow.phase === "intro") {
     return withAtmosphere(
-      <section className="quiz-rise flex flex-col gap-7 rounded-3xl border border-border-soft quiz-frost p-6 shadow-[var(--shadow-card)] sm:p-9">
+      <section className="quiz-rise flex flex-col gap-7 py-4 sm:py-6">
         <div className="flex flex-col gap-3">
           <span className="quiz-badge-label w-fit rounded-full border border-accent/30 bg-accent-soft px-4 py-1 font-heading text-sm">
             <BrandMark className="ml-1 inline h-4 w-4" /> آزمون سلیقه عطری
@@ -486,7 +491,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
 
   if (flow.phase === "audience") {
     return withAtmosphere(
-      <section className="quiz-rise flex flex-col gap-6 rounded-3xl border border-border-soft quiz-frost p-5 shadow-[var(--shadow-card)] sm:p-8">
+      <section className="quiz-rise flex flex-col gap-6 py-4 sm:py-6">
         <AudienceStep selected={flow.audience} onSelect={handleAudienceSelect} />
 
         <button
@@ -506,7 +511,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
   const canContinue = typeof selectedOptionId === "string";
 
   return withAtmosphere(
-    <section className="flex flex-col gap-6 rounded-3xl border border-border-soft quiz-frost p-5 shadow-[var(--shadow-card)] sm:p-8">
+    <section className="quiz-rise flex flex-col gap-6 py-4 sm:py-6">
       <ProgressBar current={progress.current} total={progress.total} />
 
       <div

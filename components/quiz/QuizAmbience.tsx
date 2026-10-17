@@ -9,9 +9,9 @@ import BottleSilhouettes from "@/components/BottleSilhouettes";
  * every step of the flow (intro → audience → questions → result → context) sits
  * on the same warm air. Paint order, back to front:
  *
- *   bottle silhouettes (faintest) → washes → BIG GLOW ORBS → ink blooms → fog
- *     → plumes → motes
- *     → FROSTED cards → grain → answer pulse
+ *   bottle silhouettes (faintest) → washes → BIG GLOW ORBS → reading wash
+ *     → ink blooms → fog → plumes → motes
+ *     → unboxed content → grain → answer pulse
  *
  *  1. ambient breathing gradient — three very soft warm washes on the cream
  *     base, drifting on 13–19s loops;
@@ -49,11 +49,13 @@ import BottleSilhouettes from "@/components/BottleSilhouettes";
  * the same visual weight costs less of the contrast budget the frosted plate
  * spends.
  *
- * Readability first: the glow shows through the cards because they are frosted
- * (`.quiz-frost`: a warm-white plate at 78% plus one backdrop-blur), and that plate
- * plus its own `--muted-on-plate` token keep the dark body text and the muted
- * labels above WCAG AA over the strongest orb — measured in the browser on the
- * built app, not assumed, and locked by `tests/quiz/quiz-ambience.test.tsx`.
+ * Readability first: the quiz content is unboxed (no card, no frosted panel),
+ * so the dark body text and the muted labels sit on the air itself. The
+ * reading wash below lifts the orb cores behind the content column back into
+ * the AA budget — measured in the browser on the built app, not assumed, and
+ * locked by `tests/quiz/quiz-ambience.test.tsx`. (`.quiz-frost` and its
+ * `--muted-on-plate` token survive for the result-phase profile card, which
+ * keeps its frosted glass.)
  */
 
 /** The three washes; only the CSS modifier differs (see `app/globals.css`). */
@@ -160,6 +162,15 @@ export default function QuizAmbience() {
             />
           ))}
         </div>
+
+        {/* Layer 2b — the reading wash. The quiz content is unboxed, so muted
+            text would fall below AA over the strongest orb cores (the big
+            gold core sits mid-column). This soft white veil lifts those cores
+            back into budget: feathered to transparent, no edges, no border,
+            no panel — invisible by design, and static (nothing to freeze, so
+            reduced-motion needs nothing). Existing layers above and below are
+            untouched. */}
+        <div aria-hidden="true" className="quiz-reading-wash pointer-events-none" />
       </div>
 
       {/* Layer 3 — the grain. Static (no animation at all, so reduced-motion
