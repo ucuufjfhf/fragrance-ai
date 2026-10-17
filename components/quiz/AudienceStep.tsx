@@ -27,13 +27,16 @@ const AUDIENCE_PORTRAITS: Record<AudienceGender, string> = {
 /**
  * The audience step: one screen of its own between the intro and Q1.
  *
- * Two vertical photo cards side by side (RTL: the first option sits on the
- * right), Scentbird-like but with the label bar on TOP — the inverse the
- * brief asks for — and the photo filling the card below at ~3:4, cropped by
- * object-cover. The whole card is the option button: tapping anywhere selects
- * and advances, exactly like the old rows. The photos are decorative (the
- * label carries the meaning), so each img is alt="" and aria-hidden while the
- * button's accessible name comes from the label.
+ * Two SMALL vertical photo cards side by side (RTL: the first option sits on
+ * the right) — a confident pair, not billboards: the grid is capped
+ * (240px on mobile, 640px on desktop) and centred, so the cards read at
+ * ~110px / ~310px with the ambience visible around them. Scentbird-like but
+ * with the label bar on TOP — the inverse the brief asks for — and the photo
+ * filling the card below at ~3:4, cropped by object-cover. The whole card is
+ * the option button: tapping anywhere selects and advances, exactly like the
+ * old rows. The photos are decorative (the label carries the meaning), so
+ * each img is alt="" and aria-hidden while the button's accessible name
+ * comes from the label.
  *
  * Selection keeps the quiz's affordance language (accent border + ring),
  * adapted to the card. The title stays plain: the marker-wipe fires on the
@@ -56,7 +59,7 @@ export default function AudienceStep({
             {AUDIENCE_QUESTION}
           </span>
         </legend>
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="mx-auto grid w-full max-w-[240px] grid-cols-2 gap-3 sm:max-w-[640px] sm:gap-4">
           {AUDIENCE_OPTIONS.map((option) => {
             const pressed = selected === option.id;
             return (
@@ -91,7 +94,7 @@ export default function AudienceStep({
                     alt=""
                     aria-hidden="true"
                     fill
-                    sizes="(max-width: 1023px) 45vw, 480px"
+                    sizes="(max-width: 640px) 32vw, (max-width: 1023px) 40vw, 330px"
                     className="object-cover"
                   />
                 </span>

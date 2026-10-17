@@ -366,6 +366,15 @@ describe("audience step rendering", () => {
     // One row, two cards side by side — desktop and mobile alike.
     expect(html).toContain("grid-cols-2");
 
+    // Small, confident pair — never billboards: the grid is capped and
+    // centred (240px mobile, 640px desktop), and the responsive sizes match.
+    expect(html).toContain("mx-auto");
+    expect(html).toContain("max-w-[240px]");
+    expect(html).toContain("sm:max-w-[640px]");
+    expect(html).toContain(
+      'sizes="(max-width: 640px) 32vw, (max-width: 1023px) 40vw, 330px"',
+    );
+
     // Each card is a whole-card button holding exactly one label and one
     // photo, with the label preceding the photo in DOM order.
     const cards = html.split("<button").slice(1);
