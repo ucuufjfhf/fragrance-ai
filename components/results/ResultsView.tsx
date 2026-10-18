@@ -9,6 +9,7 @@ import Link from "next/link";
 
 import AnswerDecode from "@/components/results/AnswerDecode";
 import MarkerWipe from "@/components/quiz/MarkerWipe";
+import SectionHeadline from "@/components/results/SectionHeadline";
 import RecommendationCard from "@/components/results/RecommendationCard";
 import StagedReveal from "@/components/results/StagedReveal";
 import { decodeAnswers } from "@/lib/personality/answer-decode";
@@ -162,8 +163,8 @@ export default function ResultsView({
         </div>
       </section>
 
-      <section className="flex flex-col gap-3 rounded-3xl border border-border-soft bg-surface p-6">
-        <h2 className="font-heading font-semibold text-foreground">رایحه‌ای که بهتون میاد</h2>
+      <section className="flex flex-col items-center gap-3 rounded-3xl border border-border-soft bg-surface p-6 text-center">
+        <SectionHeadline>رایحه‌ای که بهتون میاد</SectionHeadline>
         <span aria-hidden="true" className="h-px w-10 bg-border-soft" />
         <p className="text-sm leading-8 text-muted">{archetype.fragranceHint}</p>
       </section>

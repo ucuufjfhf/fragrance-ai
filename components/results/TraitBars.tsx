@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import SectionHeadline from "@/components/results/SectionHeadline";
 import { PERSONALITY_LABELS } from "@/lib/personality/labels";
 import { formatPersianPercent } from "@/lib/persian";
 import { PERSONALITY_DIMENSIONS } from "@/types/personality";
@@ -131,8 +132,8 @@ export default function TraitBars({ vector }: { vector: PersonalityVector }) {
 
   return (
     <section ref={sectionRef} className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 shadow-[var(--shadow-card)]">
-      <div className="flex flex-col gap-3">
-        <h2 className="font-heading font-semibold text-foreground">پروفایل شخصیتی شما</h2>
+      <div className="flex flex-col items-center gap-3 text-center">
+        <SectionHeadline>پروفایل شخصیتی شما</SectionHeadline>
         <span aria-hidden="true" className="h-px w-10 bg-border-soft" />
       </div>
       <ul className="flex flex-col gap-3">

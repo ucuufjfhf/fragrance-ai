@@ -986,6 +986,41 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* Results section headlines: centered display face with a soft shadow, so the
+ * celebration's sections read as ceremonial against their small muted
+ * sub-texts. Entrance reuses the archetype-reveal focus-pull language — a
+ * blur-to-sharp rise, played once when the headline scrolls into view (both
+ * headlines sit below the fold, so there is no clash with the staged reveal
+ * on mount). Base state is the FINISHED look, so SSR, no-JS and
+ * reduced-motion all render statically; `.is-inview` (added by
+ * SectionHeadline's IntersectionObserver) replays the rise. Transform/filter-
+ * only, 700ms ease-out. */
+.section-headline {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+  text-align: center;
+  text-wrap: balance;
+  color: var(--foreground);
+  text-shadow: 0 1px 14px rgb(42 36 32 / 0.22);
+}
+.section-headline.is-inview {
+  animation: section-headline-fog-rise 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes section-headline-fog-rise {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
 /* Sparkle cursor: compound-sparkle SVG artwork as CSS data-URI cursors
  * with native fallbacks (never a hidden cursor driven by JS). A 4-pointed star
  * with concave sides plus 4 small satellite triangles at the diagonals, each
@@ -1019,6 +1054,9 @@ h1, h2, h3, h4, h5, h6 {
  * shifting, and the cursor falls back to native. */
 @media (prefers-reduced-motion: reduce) {
   .marker-wipe.is-inview::before {
+    animation: none;
+  }
+  .section-headline.is-inview {
     animation: none;
   }
   .quiz-option-row {
