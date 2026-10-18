@@ -61,15 +61,16 @@ describe("landing FAQ", () => {
     expect(html).not.toMatch(/کاربر|مشتری|رضایت|٪.*دقت|دقت.*٪/);
   });
 
-  it("answers truthfully: taste model, no signup, 59 catalog, torob", () => {
+  it("answers truthfully: taste model, no signup, 200 catalog, torob", () => {
     expect(FAQS).toHaveLength(4);
     const answers = FAQS.map((faq) => faq.answer).join("\n");
 
     // The honest facts, each verifiable: taste model not lab test, no
-    // signup, the 59-perfume catalog, the Torob price button.
+    // signup, the 200-perfume catalog, the Torob price button.
     expect(answers).toContain("۹ محور");
     expect(answers).toContain("ثبت‌نام");
-    expect(answers).toContain("۵۹");
+    expect(answers).toContain("۲۰۰");
+    expect(answers).not.toContain("۵۹");
     expect(answers).toContain("ترب");
     // No overclaiming, no invented stats, no social proof.
     expect(answers).not.toMatch(/کاربر|مشتری|رضایت|\d+٪.*دق|تضمین/);

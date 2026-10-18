@@ -25,13 +25,13 @@ const RAW_ENTRIES = (referenceData as {
 }).entries;
 
 describe("curated demo catalog — resolution", () => {
-  it("resolves all 59 entries with zero NOT_FOUND", () => {
+  it("resolves all 200 entries with zero NOT_FOUND", () => {
     // Throws CuratedCatalogError on any unresolvable slug, so simply getting
     // the expected length proves every entry resolved.
     const perfumes = getCuratedDemoPerfumes();
 
     expect(perfumes).toHaveLength(CURATED_DEMO_COUNT);
-    expect(CURATED_DEMO_COUNT).toBe(59);
+    expect(CURATED_DEMO_COUNT).toBe(200);
   });
 
   it("every explicit slug pair matches EXACTLY one reference record", () => {
@@ -118,10 +118,11 @@ describe("curated demo catalog — merchandising segments", () => {
     const women = getCuratedDemoPerfumesByGender("women");
     const unisex = getCuratedDemoPerfumesByGender("unisex");
 
-    expect(men.length).toBe(25);
-    expect(women.length).toBe(25);
-    // 10 proposed for unisex/niche, minus the dropped Santal 33.
-    expect(unisex.length).toBe(9);
+    // Stratified 200-pool: the original 59 (26/25/8 after the Santal 33
+    // drop) plus the 141-entry expansion (44/45/52).
+    expect(men.length).toBe(70);
+    expect(women.length).toBe(70);
+    expect(unisex.length).toBe(60);
     expect(men.length + women.length + unisex.length).toBe(
       CURATED_DEMO_COUNT,
     );
@@ -163,7 +164,7 @@ describe("curated demo catalog — engine candidates", () => {
     }
   });
 
-  it("cannot silently collapse: the pool is exactly 59, never the raw dump", () => {
+  it("cannot silently collapse: the pool is exactly 200, never the raw dump", () => {
     expect(getReferenceCatalogCandidates()).toHaveLength(CURATED_DEMO_COUNT);
     expect(getReferenceCatalogCandidates().length).toBeLessThan(
       RAW_ENTRIES.length,

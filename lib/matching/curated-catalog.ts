@@ -8,7 +8,7 @@ import curatedData from "@/data/curated-demo-catalog.json";
 import referenceData from "@/data/fragrantica/reference.json";
 
 /**
- * CURATED DEMO CATALOG — the hand-audited 59-perfume demo pool.
+ * CURATED DEMO CATALOG — the hand-audited 200-perfume demo pool.
  *
  * The raw reference dataset holds 23,846 rows, which is the wrong shape for a
  * demo: most rows are obscure flankers, and a name-based lookup over them is
@@ -88,11 +88,13 @@ const DECLARED_ENTRIES: readonly CuratedDemoEntry[] = (
 ).entries;
 
 /**
- * The curated pool size is a documented product decision (60 proposed − 1
- * dropped because Le Labo "Santal 33" is genuinely absent from the dataset).
+ * The curated pool size is a documented product decision (the original 59 —
+ * 60 proposed − 1 dropped because Le Labo "Santal 33" is genuinely absent
+ * from the dataset — plus a stratified 141-entry expansion across genders,
+ * scent families and the personality space).
  * It is asserted, not assumed, so a bad edit to the JSON fails loudly.
  */
-export const CURATED_DEMO_COUNT = 59;
+export const CURATED_DEMO_COUNT = 200;
 
 /** Raised when the curated catalog cannot be resolved — never silently degraded. */
 export class CuratedCatalogError extends Error {
@@ -208,7 +210,7 @@ function resolveEntry(entry: CuratedDemoEntry): ResolvedCuratedPerfume {
 let resolved: readonly ResolvedCuratedPerfume[] | null = null;
 
 /**
- * All 59 curated perfumes, fully resolved with their derived 9-axis profiles.
+ * All 200 curated perfumes, fully resolved with their derived 9-axis profiles.
  *
  * Throws `CuratedCatalogError` if any entry cannot be resolved — the demo must
  * never fall back to the unfiltered 23,846-row catalog.

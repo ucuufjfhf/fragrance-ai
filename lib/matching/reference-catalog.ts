@@ -18,7 +18,7 @@ export type { PersonalityAxis };
 /**
  * REFERENCE_CATALOG candidate source — the demo/recommendation-experience mode.
  *
- * Candidates come from the CURATED 59-perfume demo pool
+ * Candidates come from the CURATED 200-perfume demo pool
  * (`data/curated-demo-catalog.json` + `lib/matching/curated-catalog.ts`), NOT
  * from any store's `Perfume` rows and NOT from the raw 23,846-row reference
  * dump. The matching engine is completely unaware of this: it receives plain

@@ -11,6 +11,7 @@ import { validateAiProfileResult } from "@/lib/ai/perfume-profile";
 import { MAX_DISTANCE, similarityScore } from "@/lib/matching/score";
 import { matchPerfumes } from "@/lib/matching/engine";
 import { getReferenceCatalogCandidates } from "@/lib/matching/reference-catalog";
+import { CURATED_DEMO_COUNT } from "@/lib/matching/curated-catalog";
 import { QUIZ_QUESTIONS } from "@/lib/personality/questions";
 import { scoreQuiz } from "@/lib/personality/scoring";
 import { ARCHETYPES } from "@/lib/personality/archetypes";
@@ -214,8 +215,8 @@ describe("personality dimensions vs matching dimensions", () => {
     );
   });
 
-  it("4. the 59 curated candidates rank exactly as the pre-change 9D engine did", () => {
-    expect(CANDIDATES).toHaveLength(59);
+  it("4. the 200 curated candidates rank exactly as the pre-change 9D engine did", () => {
+    expect(CANDIDATES).toHaveLength(CURATED_DEMO_COUNT);
 
     for (const vector of SAMPLED_VECTORS) {
       expect(rankCurrent(vector, CANDIDATES, TOP_N)).toEqual(
