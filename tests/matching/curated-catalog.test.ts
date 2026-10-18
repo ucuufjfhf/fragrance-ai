@@ -147,7 +147,11 @@ describe("curated demo catalog — engine candidates", () => {
       expect(candidate.inStock).toBe(true);
       expect(candidate.storeId).toBe("reference-catalog");
       expect(candidate.productUrl).toBeNull();
-      expect(candidate.imageUrl).toBeNull();
+      // Bundled bottle photo for the exact curated entry — a shipped repo
+      // asset, never a merchant claim.
+      expect(candidate.imageUrl).toBe(
+        `/perfumes/${candidate.perfumeId.replace(/^ref-/, "")}.webp`,
+      );
       expect(candidate.perfumeId.startsWith("ref-")).toBe(true);
     }
   });

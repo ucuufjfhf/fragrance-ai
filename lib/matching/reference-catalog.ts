@@ -87,7 +87,12 @@ export function getReferenceCatalogCandidates(): MatchCandidateInput[] {
       slug: null,
       // NO product URL exists in the dataset: never fabricated (see module doc).
       productUrl: null,
-      imageUrl: null,
+      // Bundled bottle photo for this exact curated entry
+      // (`public/perfumes/<entry-id>.webp`). Shipped with the repo, not
+      // merchant data: nothing here claims a store sells the perfume. The
+      // engine passes it through untouched and the card prefers it over the
+      // abstract fallback artwork (see `RecommendationCard`).
+      imageUrl: `/perfumes/${perfume.id}.webp`,
       active: true,
       inStock: true,
       gender: CURATED_GENDER[perfume.targetGender],

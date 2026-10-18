@@ -62,10 +62,12 @@ describe("reference catalog candidates", () => {
     }
   });
 
-  it("NEVER fabricates product URLs or images", () => {
+  it("NEVER fabricates product URLs; images are the bundled bottle photos", () => {
     for (const candidate of getReferenceCatalogCandidates()) {
       expect(candidate.productUrl).toBeNull();
-      expect(candidate.imageUrl).toBeNull();
+      expect(candidate.imageUrl).toBe(
+        `/perfumes/${candidate.perfumeId.replace(/^ref-/, "")}.webp`,
+      );
     }
   });
 
@@ -110,9 +112,12 @@ describe("reference mode recommendations (REFERENCE_CATALOG)", () => {
     for (const rec of result.recommendations) {
       expect(rec.storeId).toBe("reference-catalog");
       expect(rec.perfumeId.startsWith("ref-")).toBe(true);
-      // No fabricated links in the output either.
+      // No fabricated links in the output either; the bundled photo passes
+      // through untouched.
       expect(rec.productUrl).toBeNull();
-      expect(rec.imageUrl).toBeNull();
+      expect(rec.imageUrl).toBe(
+        `/perfumes/${rec.perfumeId.replace(/^ref-/, "")}.webp`,
+      );
     }
   });
 
