@@ -12,7 +12,7 @@ import type { Archetype, PersonalityVector } from "@/types/personality";
 export const ARCHETYPES: Archetype[] = [
   {
     id: "mysterious-explorer",
-    accentColor: "#5B2A86",
+    accentColor: "#6D28C8",
     name: "The Moon",
     label: "ماه",
     emoji: "🖤",
@@ -34,7 +34,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "clean-minimalist",
-    accentColor: "#0E6E4E",
+    accentColor: "#0A7A52",
     name: "The Droplet",
     label: "قطره",
     emoji: "🤍",
@@ -56,7 +56,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "charismatic",
-    accentColor: "#B2430F",
+    accentColor: "#B53A00",
     name: "The Sun",
     label: "خورشید",
     emoji: "✨",
@@ -78,7 +78,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "elegant-classic",
-    accentColor: "#7A5A10",
+    accentColor: "#8A6400",
     name: "The Diamond",
     label: "الماس",
     emoji: "🕊️",
@@ -100,7 +100,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "free-spirit",
-    accentColor: "#0E6E9E",
+    accentColor: "#0069B4",
     name: "The Feather",
     label: "پر",
     emoji: "🌊",
@@ -122,7 +122,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "romantic",
-    accentColor: "#A4133C",
+    accentColor: "#C00A3D",
     name: "The Rose",
     label: "رز",
     emoji: "🌹",
@@ -144,7 +144,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "bold-one",
-    accentColor: "#B01E24",
+    accentColor: "#C8102E",
     name: "The Flame",
     label: "شعله",
     emoji: "🔥",
@@ -166,7 +166,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "sophisticated",
-    accentColor: "#1B3A6B",
+    accentColor: "#1D4ED8",
     name: "The Crown",
     label: "تاج",
     emoji: "💎",
