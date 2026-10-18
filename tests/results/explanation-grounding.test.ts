@@ -266,7 +266,7 @@ describe("grounding facts reach the Qwen prompt", () => {
     // And the real prompt builder must actually render them.
     const prompt = buildExplanationUserPrompt({
       recommendation: grounded,
-      archetypeLabel: "کاشف مرموز",
+      archetypeLabel: "ماه",
       perfume: {
         perfumeId: grounded.perfumeId,
         name: grounded.name,
@@ -299,7 +299,7 @@ describe("grounding facts reach the Qwen prompt", () => {
 
     const prompt = buildExplanationUserPrompt({
       recommendation: ranked(1)[0],
-      archetypeLabel: "کاشف مرموز",
+      archetypeLabel: "ماه",
       perfume: {
         perfumeId: ranked(1)[0].perfumeId,
         name: ranked(1)[0].name,
@@ -327,7 +327,7 @@ describe("partial AI failure degrades per item", () => {
   const inputsFor = () =>
     ranked(3).map((r) => ({
       recommendation: r,
-      archetypeLabel: "کاشف مرموز",
+      archetypeLabel: "ماه",
       perfume: { perfumeId: r.perfumeId, name: r.name, brand: r.brand },
       traits: [{ label: "گرم", value: 80 }],
     }));

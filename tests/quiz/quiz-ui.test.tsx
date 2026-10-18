@@ -146,7 +146,7 @@ describe("archetype reveal stage", () => {
     const html = render(
       <ArchetypeRevealStage
         archetypeId="mysterious-explorer"
-        label="کاشف مرموز"
+        label="ماه"
         selectionBasis={SELECTION_BASIS}
         onContinue={noopContinue}
       />,
@@ -210,8 +210,7 @@ describe("archetype reveal stage", () => {
   it("wipes the fog from the right inward, locked to the light sweep", () => {
     const html = render(
       <ArchetypeRevealStage
-        archetypeId="elegant-classic"
-        label="کلاسیک شیک"
+        archetypeId="elegant-classic"          label="الماس"
         selectionBasis={SELECTION_BASIS}
         onContinue={noopContinue}
       />,
@@ -267,14 +266,14 @@ describe("archetype reveal stage", () => {
     const html = render(
       <ArchetypeRevealStage
         archetypeId="romantic"
-        label="رمانتیک"
+        label="رز"
         selectionBasis={SELECTION_BASIS}
         onContinue={noopContinue}
       />,
     );
 
     expect(html).toContain("<h1");
-    expect(html).toContain(">رمانتیک</h1>");
+    expect(html).toContain(">رز</h1>");
     expect(html).not.toMatch(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
   });
 
@@ -282,7 +281,7 @@ describe("archetype reveal stage", () => {
     const html = render(
       <ArchetypeRevealStage
         archetypeId="bold-one"
-        label="جسور"
+        label="شعله"
         selectionBasis={SELECTION_BASIS}
         onContinue={noopContinue}
       />,

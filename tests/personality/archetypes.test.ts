@@ -68,6 +68,25 @@ describe("archetypes", () => {
     expect(ARCHETYPES.map((archetype) => archetype.id)).toEqual(EXPECTED_IDS);
   });
 
+  it("names every archetype after its emblem symbol (nouns, not adjectives)", () => {
+    const expected: Array<[ArchetypeId, string, string]> = [
+      ["mysterious-explorer", "ماه", "The Moon"],
+      ["clean-minimalist", "قطره", "The Droplet"],
+      ["charismatic", "خورشید", "The Sun"],
+      ["elegant-classic", "الماس", "The Diamond"],
+      ["free-spirit", "پر", "The Feather"],
+      ["romantic", "رز", "The Rose"],
+      ["bold-one", "شعله", "The Flame"],
+      ["sophisticated", "تاج", "The Crown"],
+    ];
+
+    for (const [id, label, name] of expected) {
+      const archetype = getArchetypeById(id)!;
+      expect(archetype.label).toBe(label);
+      expect(archetype.name).toBe(name);
+    }
+  });
+
   it("gives every archetype a valid accent color", () => {
     for (const archetype of ARCHETYPES) {
       expect(archetype.accentColor).toMatch(/^#[0-9A-Fa-f]{6}$/);
@@ -135,7 +154,7 @@ describe("archetypes", () => {
     expect(squaredDistance(first, first)).toBe(0);
     expect(squaredDistance(first, second)).toBeGreaterThan(0);
 
-    expect(getArchetypeById("romantic")?.name).toBe("The Romantic");
+    expect(getArchetypeById("romantic")?.name).toBe("The Rose");
     expect(getArchetypeById("not-an-archetype")).toBeUndefined();
   });
 });

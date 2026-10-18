@@ -20,7 +20,7 @@ import type {
 
 export const TEST_STORE_ID = "store-test";
 export const TEST_PERFUME_ID = "perfume-test-noir";
-export const TEST_ARCHETYPE_LABEL = "کاشف مرموز";
+export const TEST_ARCHETYPE_LABEL = "ماه";
 
 /** A flat 0–100 vector: every dimension set to `value`. */
 export function makeVector(value = 50): PersonalityVector {

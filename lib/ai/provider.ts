@@ -85,7 +85,7 @@ export interface AiPerfumeProfileResult {
 export interface AiExplanationInput {
   /** Ranked deterministic recommendation. Score/rank are never sent to the AI. */
   recommendation: MatchedPerfume;
-  /** Persian archetype label from Phase 1, e.g. «کاشف مرموز». */
+  /** Persian archetype label from Phase 1, e.g. «ماه». */
   archetypeLabel: string;
   perfume: AiPerfumeFacts;
   /** Persian-labelled user traits (already normalised 0–100). */

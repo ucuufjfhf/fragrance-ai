@@ -13,8 +13,8 @@ export const ARCHETYPES: Archetype[] = [
   {
     id: "mysterious-explorer",
     accentColor: "#5B2A86",
-    name: "The Mysterious Explorer",
-    label: "کاشف مرموز",
+    name: "The Moon",
+    label: "ماه",
     emoji: "🖤",
     description:
       "کنجکاوی و رمزآلودگی رو با هم دارید؛ دنبال رایحه‌ای هستید که متفاوت باشه و یه ذره سؤال ایجاد کنه.",
@@ -35,8 +35,8 @@ export const ARCHETYPES: Archetype[] = [
   {
     id: "clean-minimalist",
     accentColor: "#0E6E4E",
-    name: "The Clean Minimalist",
-    label: "مینیمالیست تمیز",
+    name: "The Droplet",
+    label: "قطره",
     emoji: "🤍",
     description:
       "سادگی، تمیزی و نظم براتون مهمه؛ رایحه‌ای می‌خواید که سبک و بی‌ادعا باشه ولی خوش‌حس و مرتب.",
@@ -57,8 +57,8 @@ export const ARCHETYPES: Archetype[] = [
   {
     id: "charismatic",
     accentColor: "#B2430F",
-    name: "The Charismatic",
-    label: "جذاب و کاریزماتیک",
+    name: "The Sun",
+    label: "خورشید",
     emoji: "✨",
     description:
       "راحت با آدم‌ها ارتباط می‌گیرید و حضورتون به چشم میاد؛ دوست دارید عطرتون هم همین حس رو منتقل کنه.",
@@ -79,8 +79,8 @@ export const ARCHETYPES: Archetype[] = [
   {
     id: "elegant-classic",
     accentColor: "#7A5A10",
-    name: "The Elegant Classic",
-    label: "کلاسیک شیک",
+    name: "The Diamond",
+    label: "الماس",
     emoji: "🕊️",
     description:
       "سلیقه‌تون ساده اما سنجیده‌ست؛ چیزهای باکیفیت و ماندگار رو به چیزهای پرزرق‌وبرق ترجیح می‌دید.",
@@ -101,8 +101,8 @@ export const ARCHETYPES: Archetype[] = [
   {
     id: "free-spirit",
     accentColor: "#0E6E9E",
-    name: "The Free Spirit",
-    label: "روح آزاد",
+    name: "The Feather",
+    label: "پر",
     emoji: "🌊",
     description:
       "تغییر و تجربه‌های تازه براتون جذابه و دوست ندارید توی یه قالب ثابت بمونید.",
@@ -123,8 +123,8 @@ export const ARCHETYPES: Archetype[] = [
   {
     id: "romantic",
     accentColor: "#A4133C",
-    name: "The Romantic",
-    label: "رمانتیک",
+    name: "The Rose",
+    label: "رز",
     emoji: "🌹",
     description:
       "حس و رابطه‌های گرم براتون مهمه؛ عطر براتون یه یادآوریه، نه فقط یه محصول.",
@@ -145,11 +145,11 @@ export const ARCHETYPES: Archetype[] = [
   {
     id: "bold-one",
     accentColor: "#B01E24",
-    name: "The Bold One",
-    label: "جسور",
+    name: "The Flame",
+    label: "شعله",
     emoji: "🔥",
     description:
-      "ریسک‌پذیری و پرسروصدا بودن براتون غریبه نیست؛ عطرتون هم باید همین‌قدر جسور باشه.",
+      "ریسک‌پذیری و پرسروصدا بودن براتون غریبه نیست؛ عطرتون هم باید مثل شعله بدرخشه.",
     fragranceHint:
       "رایحه‌های ادویه‌ای، گرم و پرپخش بیشتر با سلیقه عطری شما هماهنگ هستند.",
     centroid: {
@@ -167,8 +167,8 @@ export const ARCHETYPES: Archetype[] = [
   {
     id: "sophisticated",
     accentColor: "#1B3A6B",
-    name: "The Sophisticated",
-    label: "باوقار و خاص",
+    name: "The Crown",
+    label: "تاج",
     emoji: "💎",
     description:
       "عمق و آرامش توی انتخاب‌هاتون دیده می‌شه؛ عجله ندارید و سلیقه‌تون خاص و سنجیده‌ست.",

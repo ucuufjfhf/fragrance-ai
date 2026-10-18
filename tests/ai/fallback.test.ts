@@ -57,7 +57,7 @@ function explanationInputFor(rank = 0): AiExplanationInput {
 
   return {
     recommendation,
-    archetypeLabel: "کاشف مرموز",
+    archetypeLabel: "ماه",
     perfume: {
       perfumeId: recommendation.perfumeId,
       name: recommendation.name,
