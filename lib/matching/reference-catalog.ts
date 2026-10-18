@@ -34,8 +34,10 @@ export type { PersonalityAxis };
  * Data provenance / licensing (preserved from the grounding note):
  * the dataset is the Kaggle "Fragrantica.com Fragrance Dataset" bundled for
  * INTERNAL use only. This mode demonstrates the recommendation experience;
- * it never claims a merchant sells these perfumes, never fabricates product
- * URLs, and the underlying data is never exposed raw through a public API.
+ * it never claims a merchant sells these perfumes (the only outbound link
+ * is a Torob price-comparison *search* for the exact perfume, labelled as
+ * such on the card), and the underlying data is never exposed raw through
+ * a public API.
  *
  * The 9 matching axes do not exist in the reference dataset (it only has
  * accords/notes), so each perfume gets a DETERMINISTIC, DEMO-QUALITY vector
@@ -62,6 +64,16 @@ const CURATED_GENDER: Record<CuratedTargetGender, Gender> = {
   unisex: "UNISEX",
 };
 
+/**
+ * A Torob price-comparison search for the exact perfume (`brand + name`).
+ *
+ * Pure and exported for tests: `encodeURIComponent` keeps Persian and
+ * accented Latin names (Chloé, N°5, Lancôme) correctly encoded.
+ */
+export function torobSearchUrl(brand: string, name: string): string {
+  return `https://torob.com/search/?query=${encodeURIComponent(`${brand} ${name}`)}`;
+}
+
 /** The bundled, lazily-built curated demo candidates (one pass, then cached). */
 let cachedCandidates: MatchCandidateInput[] | null = null;
 
@@ -85,8 +97,10 @@ export function getReferenceCatalogCandidates(): MatchCandidateInput[] {
       name: perfume.name,
       brand: perfume.brand,
       slug: null,
-      // NO product URL exists in the dataset: never fabricated (see module doc).
-      productUrl: null,
+      // Price-comparison search on Torob for this exact perfume — a search
+      // link, never a merchant product claim (the dataset has no product
+      // URLs and none is invented). The card labels it honestly as Torob.
+      productUrl: torobSearchUrl(perfume.brand, perfume.name),
       // Bundled bottle photo for this exact curated entry
       // (`public/perfumes/<entry-id>.webp`). Shipped with the repo, not
       // merchant data: nothing here claims a store sells the perfume. The

@@ -8,6 +8,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 
 import AnswerDecode from "@/components/results/AnswerDecode";
+import ShareResultButton from "@/components/results/ShareResultButton";
 import MarkerWipe from "@/components/quiz/MarkerWipe";
 import SectionHeadline from "@/components/results/SectionHeadline";
 import RecommendationCard from "@/components/results/RecommendationCard";
@@ -257,12 +258,15 @@ export default function ResultsView({
         این نتیجه یک تحلیل سلیقه‌ای برای انتخاب عطر است، نه یک تست روانشناسی.
       </p>
 
-      <Link
-        href="/quiz"
-        className="flex min-h-12 items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50 hover:text-foreground"
-      >
-        شروع دوباره
-      </Link>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <ShareResultButton />
+        <Link
+          href="/quiz"
+          className="flex min-h-12 flex-1 items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50 hover:text-foreground"
+        >
+          شروع دوباره
+        </Link>
+      </div>
     </div>
   );
 }

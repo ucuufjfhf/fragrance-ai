@@ -28,9 +28,10 @@ import referenceData from "@/data/fragrantica/reference.json";
  *    weighting or distance logic is touched by this module.
  *  - Candidates keep `REFERENCE_STORE_ID`, so demo output remains isolated from
  *    merchant inventory in both directions.
- *  - Product URLs stay `null`: the dataset has none and none is invented.
- *    Bottle photos are bundled separately (`public/perfumes/<id>.webp`, wired
- *    in `reference-catalog.ts`) — shipped repo assets, never merchant data.
+ *  - The dataset carries no product URLs: `reference-catalog.ts` wires a
+ *    Torob price-comparison *search* link per entry instead of inventing
+ *    one. Bottle photos are bundled separately (`public/perfumes/<id>.webp`)
+ *    — shipped repo assets, never merchant data.
  *
  * Pure and deterministic: the same catalog always yields the same vectors.
  */

@@ -6,7 +6,10 @@ import {
   getCuratedDemoPerfumes,
   getCuratedDemoPerfumesByGender,
 } from "@/lib/matching/curated-catalog";
-import { getReferenceCatalogCandidates } from "@/lib/matching/reference-catalog";
+import {
+  getReferenceCatalogCandidates,
+  torobSearchUrl,
+} from "@/lib/matching/reference-catalog";
 import { PERSONALITY_AXES } from "@/lib/fragrance/axis-derivation";
 import referenceData from "@/data/fragrantica/reference.json";
 
@@ -146,7 +149,11 @@ describe("curated demo catalog — engine candidates", () => {
       expect(candidate.active).toBe(true);
       expect(candidate.inStock).toBe(true);
       expect(candidate.storeId).toBe("reference-catalog");
-      expect(candidate.productUrl).toBeNull();
+      // A Torob price-comparison *search* for the exact perfume — labelled
+      // as Torob on the card, never a merchant product claim.
+      expect(candidate.productUrl).toBe(
+        torobSearchUrl(candidate.brand, candidate.name),
+      );
       // Bundled bottle photo for the exact curated entry — a shipped repo
       // asset, never a merchant claim.
       expect(candidate.imageUrl).toBe(

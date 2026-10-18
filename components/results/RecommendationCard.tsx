@@ -133,7 +133,7 @@ export default function RecommendationCard({
             }}
             className="flex min-h-11 items-center justify-center rounded-2xl border border-border-soft px-5 text-sm font-medium text-foreground transition-colors hover:border-accent/50 hover:text-accent"
           >
-            مشاهده عطر →
+            مشاهده در ترب
           </a>
         ) : null}
       </div>

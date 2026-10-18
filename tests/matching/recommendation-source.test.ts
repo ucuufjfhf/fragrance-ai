@@ -4,7 +4,10 @@ import {
   DEFAULT_RECOMMENDATION_SOURCE,
   getRecommendations,
 } from "@/lib/matching/service";
-import { getReferenceCatalogCandidates } from "@/lib/matching/reference-catalog";
+import {
+  getReferenceCatalogCandidates,
+  torobSearchUrl,
+} from "@/lib/matching/reference-catalog";
 import { CURATED_DEMO_COUNT } from "@/lib/matching/curated-catalog";
 import { makeVector } from "@/tests/ai/fixtures";
 import type { PersonalityVector } from "@/types/personality";
@@ -62,11 +65,27 @@ describe("reference catalog candidates", () => {
     }
   });
 
-  it("NEVER fabricates product URLs; images are the bundled bottle photos", () => {
+  it("links a Torob search per entry; images are the bundled bottle photos", () => {
     for (const candidate of getReferenceCatalogCandidates()) {
-      expect(candidate.productUrl).toBeNull();
+      expect(candidate.productUrl).toBe(
+        torobSearchUrl(candidate.brand, candidate.name),
+      );
       expect(candidate.imageUrl).toBe(
         `/perfumes/${candidate.perfumeId.replace(/^ref-/, "")}.webp`,
+      );
+    }
+  });
+
+  it("every Torob query round-trips to the exact brand + name", () => {
+    const candidates = getReferenceCatalogCandidates();
+    expect(candidates).toHaveLength(CURATED_DEMO_COUNT);
+    for (const candidate of candidates) {
+      const url = new URL(candidate.productUrl!);
+      expect(url.origin + url.pathname).toBe("https://torob.com/search/");
+      // encodeURIComponent output decodes back to the exact query —
+      // Persian, accents (Chloé, Sì) and symbols (N°5) included.
+      expect(url.searchParams.get("query")).toBe(
+        `${candidate.brand} ${candidate.name}`,
       );
     }
   });
@@ -112,9 +131,8 @@ describe("reference mode recommendations (REFERENCE_CATALOG)", () => {
     for (const rec of result.recommendations) {
       expect(rec.storeId).toBe("reference-catalog");
       expect(rec.perfumeId.startsWith("ref-")).toBe(true);
-      // No fabricated links in the output either; the bundled photo passes
-      // through untouched.
-      expect(rec.productUrl).toBeNull();
+      // The Torob search link and the bundled photo pass through untouched.
+      expect(rec.productUrl).toBe(torobSearchUrl(rec.brand, rec.name));
       expect(rec.imageUrl).toBe(
         `/perfumes/${rec.perfumeId.replace(/^ref-/, "")}.webp`,
       );

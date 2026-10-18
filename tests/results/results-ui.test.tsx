@@ -131,8 +131,29 @@ describe("results view rendering", () => {
     };
     const html = render(<RecommendationCard recommendation={noUrl} />);
 
-    expect(html).not.toContain("مشاهده عطر");
+    expect(html).not.toContain("مشاهده در ترب");
     expect(html).not.toContain("<img");
+  });
+
+  it("labels the outbound link honestly as a Torob search", () => {
+    const recommendation = {
+      ...engineResult.recommendations[0],
+      productUrl: "https://torob.com/search/?query=Dior%20Sauvage",
+    };
+    const html = render(<RecommendationCard recommendation={recommendation} />);
+
+    expect(html).toContain("مشاهده در ترب");
+    expect(html).toContain('href="https://torob.com/search/?query=Dior%20Sauvage"');
+    expect(html).toContain('target="_blank"');
+  });
+
+  it("offers sharing the result alongside the restart action", () => {
+    const html = render(
+      <ResultsView vector={vector} archetype={archetype} data={viewData()} />,
+    );
+
+    expect(html).toContain("اشتراک‌گذاری نتیجه");
+    expect(html).toContain("شروع دوباره");
   });
 });
 
