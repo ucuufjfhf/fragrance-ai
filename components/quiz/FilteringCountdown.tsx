@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import { toPersianDigits } from "@/lib/persian";
 
-/** Beat 1 runs ~2 seconds in total (Trade Coffee lineage). */
-export const FILTERING_DURATION_MS = 2000;
+/** Beat 1 runs ~3 seconds in total (Trade Coffee lineage, slowed to breathe). */
+export const FILTERING_DURATION_MS = 3000;
 
 /** The countdown always lands on the 3 kept matches. */
 export const FILTERING_FINAL_COUNT = 3;

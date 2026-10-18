@@ -1,11 +1,15 @@
+import { readFileSync } from "node:fs";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import AnalysisInterstitial, {
   ANALYSIS_DURATION_MS,
-  ANALYSIS_PERCENT_STEPS,
+  ANALYSIS_PROGRESS_STEPS,
+  ANALYSIS_TICK_MS,
+  artworkIndexForTick,
   INTERSTITIAL_LINES,
+  progressForTick,
 } from "@/components/quiz/AnalysisInterstitial";
 import FilteringCountdown, {
   buildCountdownSteps,
@@ -26,16 +30,22 @@ import type { QuizMatchPreview } from "@/types/personality";
  * Phase 2 pacing beats — pure-logic and static-markup tests.
  *
  * They need no browser and no jsdom: the timer choreography itself is proven
- * in the browser gate on the production build (countdown ~2s, interstitial
- * ~3.6s, skip jumps, total ≤ 6s). Here the contracts are locked: the steps
- * start at the live count and land on 3, the % jumps are uneven and never
- * touch 100, the skip link exists, and reduced motion renders static.
+ * in the browser gate on the production build (countdown ~3s, interstitial
+ * ~6.5s, skip jumps, total ~9.5s). Here the contracts are locked: the steps
+ * start at the live count and land on 3, the progress bar fills 0 → 100
+ * monotonically at a steady rate and never holds at 100, the sillage
+ * ornament is fully gone, the skip link exists, and reduced motion renders
+ * static.
  */
 function render(element: ReactElement): string {
   return renderToStaticMarkup(element).replace(/<!--[\s\S]*?-->/g, "");
 }
 
 const noop = (): void => undefined;
+
+const root = new URL("../../", import.meta.url);
+const read = (path: string): string =>
+  readFileSync(new URL(path, root), "utf8");
 
 const previewMatches = (): QuizMatchPreview[] => [
   { perfumeId: "ref-a", name: "نام یک", brand: "برند یک" },
@@ -75,8 +85,10 @@ describe("filtering countdown steps", () => {
     expect(buildCountdownSteps(1)).toEqual([FILTERING_FINAL_COUNT]);
   });
 
-  it("keeps the whole performance inside the wait budget", () => {
-    expect(FILTERING_DURATION_MS + ANALYSIS_DURATION_MS).toBeLessThanOrEqual(6000);
+  it("breathes: countdown ~3s and the whole performance ~9.5s", () => {
+    expect(FILTERING_DURATION_MS).toBe(3000);
+    expect(ANALYSIS_DURATION_MS).toBe(6500);
+    expect(FILTERING_DURATION_MS + ANALYSIS_DURATION_MS).toBe(9500);
   });
 });
 
@@ -108,21 +120,51 @@ describe("filtering countdown rendering", () => {
   });
 });
 
-describe("analysis interstitial performance", () => {
-  it("jumps in large uneven steps and never holds at 100", () => {
-    const steps = [...ANALYSIS_PERCENT_STEPS];
+describe("analysis interstitial progress", () => {
+  it("fills 0 → 100 monotonically at a steady rate", () => {
+    expect(progressForTick(0)).toBe(0);
+    expect(progressForTick(ANALYSIS_PROGRESS_STEPS - 1)).toBe(100);
 
-    expect(steps.length).toBeGreaterThanOrEqual(3);
-    for (const step of steps) {
-      expect(step).toBeGreaterThan(0);
-      expect(step).toBeLessThan(100);
+    const values = Array.from(
+      { length: ANALYSIS_PROGRESS_STEPS },
+      (_, tick) => progressForTick(tick),
+    );
+
+    for (const value of values) {
+      expect(Number.isInteger(value)).toBe(true);
+      expect(value).toBeGreaterThanOrEqual(0);
+      expect(value).toBeLessThanOrEqual(100);
     }
 
-    // Uneven: the successive jumps are not all the same size.
-    const jumps = steps.slice(1).map((step, index) => step - steps[index]);
-    expect(new Set(jumps).size).toBeGreaterThan(1);
+    const deltas = values.slice(1).map((value, index) => value - values[index]);
+    for (const delta of deltas) {
+      // Monotonic, never a jump backwards — and never a leap: one tick is
+      // ~1.5 points, so the fill reads as a constant rate, not jumps.
+      expect(delta).toBeGreaterThanOrEqual(0);
+      expect(delta).toBeLessThanOrEqual(2);
+    }
+
+    // Synced to the duration: 100ms ticks over ~6.5s.
+    expect(ANALYSIS_TICK_MS).toBe(100);
+    expect(ANALYSIS_TICK_MS * ANALYSIS_PROGRESS_STEPS).toBe(
+      ANALYSIS_DURATION_MS,
+    );
   });
 
+  it("cycles through every artwork while the bar fills", () => {
+    const seen = new Set(
+      Array.from({ length: ANALYSIS_PROGRESS_STEPS }, (_, tick) =>
+        artworkIndexForTick(tick, 3),
+      ),
+    );
+
+    expect(seen).toEqual(new Set([0, 1, 2]));
+    expect(artworkIndexForTick(0, 3)).toBe(0);
+    expect(artworkIndexForTick(0, 0)).toBe(0);
+  });
+});
+
+describe("analysis interstitial performance", () => {
   it("rotates warm شما-register microcopy with zero emojis", () => {
     expect(INTERSTITIAL_LINES.length).toBeGreaterThanOrEqual(3);
 
@@ -132,30 +174,34 @@ describe("analysis interstitial performance", () => {
     }
   });
 
-  it("cycles the real matches' artwork with their names beside the %", () => {
+  it("opens the bar at zero with the artwork, lines and skip beside it", () => {
     const matches = previewMatches();
     const html = render(
       <AnalysisInterstitial matches={matches} onDone={noop} onSkip={noop} />,
     );
 
-    // First frame: first jump, first line, first match.
-    expect(html).toContain("۷٪");
+    // First frame: the bar starts empty at ۰٪ with the progressbar contract,
+    // first line, first match.
+    expect(html).toContain("۰٪");
+    expect(html).toContain('role="progressbar"');
+    expect(html).toContain('aria-valuemax="100"');
     expect(html).toContain(INTERSTITIAL_LINES[0]);
     expect(html).toContain(artworkForPerfume(matches[0].perfumeId));
     expect(html).toContain(matches[0].name);
     expect(html).toContain(matches[0].brand);
 
-    // The sillage layer breathes behind the content, decorative and inert.
-    expect(html).toContain("sillage");
-    expect(html).toContain('aria-hidden="true"');
+    // No sillage ornament anywhere: the bar is the hero, images + lines +
+    // ambience carry the rest.
+    expect(html).not.toContain("sillage");
 
     // The skip is always visible: the beat is performed, never a forced gate.
     expect(html).toContain("رد شدن");
 
-    // Unboxed: no card classes on the beat's own section.
+    // Unboxed: no card classes on the beat's own section (the bar track's
+    // `bg-surface-2` is the quiz's own progressbar chrome, not a card).
     expect(html).toContain("quiz-rise");
     expect(html).not.toContain("rounded-3xl");
-    expect(html).not.toContain("bg-surface");
+    expect(html).not.toContain("bg-surface\"");
   });
 
   it("shows one static frame under reduced motion", () => {
@@ -168,16 +214,13 @@ describe("analysis interstitial performance", () => {
       />,
     );
 
-    expect(html).toContain("sillage-static");
+    expect(html).toContain("۳۴٪");
+    expect(html).not.toContain("sillage");
     expect(html).toContain("رد شدن");
   });
 
-  it("animates the sillage by default", () => {
-    const html = render(
-      <AnalysisInterstitial matches={previewMatches()} onDone={noop} onSkip={noop} />,
-    );
-
-    expect(html).not.toContain("sillage-static");
+  it("removes every sillage trace from the stylesheet", () => {
+    expect(read("app/globals.css")).not.toContain("sillage");
   });
 });
 

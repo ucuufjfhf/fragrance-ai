@@ -7,19 +7,36 @@ import { formatPersianPercent } from "@/lib/persian";
 import type { QuizMatchPreview } from "@/types/personality";
 
 /**
- * Beat 2 runs ~3.6 seconds (with the ~2s countdown the added wait stays
- * under the 6-second budget).
+ * Beat 2 runs ~6.5 seconds (with the ~3s countdown the whole performance
+ * breathes like a real engine computing: ~9.5s total, always skippable).
  */
-export const ANALYSIS_DURATION_MS = 3600;
+export const ANALYSIS_DURATION_MS = 6500;
 
-/** One % step every 900ms: four uneven jumps, then the hard cut to results. */
-export const ANALYSIS_TICK_MS = 900;
+/** One progress step every 100ms: 65 even steps fill 0 → 100. */
+export const ANALYSIS_TICK_MS = 100;
+export const ANALYSIS_PROGRESS_STEPS = 65;
 
 /**
- * The performed percentage — LARGE uneven jumps (Scentbird lineage), never
- * linear and never holding at 100%: the last frame cuts straight to results.
+ * The performed percentage — a Scentbird-style bar filling 0 → 100 at a
+ * constant, steady rate, synced to the interstitial duration. Pure function
+ * of the tick so the rate is even by construction; the last step lands
+ * exactly on 100 and the flow hard-cuts to results on the same beat, so it
+ * never lingers at 100%.
  */
-export const ANALYSIS_PERCENT_STEPS = [7, 34, 68, 91] as const;
+export function progressForTick(tick: number): number {
+  const clamped = Math.max(0, Math.min(tick, ANALYSIS_PROGRESS_STEPS - 1));
+  return Math.round((clamped / (ANALYSIS_PROGRESS_STEPS - 1)) * 100);
+}
+
+/** Artwork cycles to the next match about every 1.4s while the bar fills. */
+export const ANALYSIS_ARTWORK_SHIFT_TICKS = 14;
+
+export function artworkIndexForTick(tick: number, count: number): number {
+  if (count <= 0) {
+    return 0;
+  }
+  return Math.floor(Math.max(0, tick) / ANALYSIS_ARTWORK_SHIFT_TICKS) % count;
+}
 
 /** Microcopy rotates every ~1.2s: warm, شما register, zero emojis. */
 export const INTERSTITIAL_LINE_INTERVAL_MS = 1200;
@@ -29,8 +46,13 @@ export const INTERSTITIAL_LINES = [
   "کم مونده تا نتیجه شما آماده بشه…",
 ] as const;
 
-/** The frozen frame reduced motion shows: mid-analysis, mid-first-line. */
-const STATIC_PERCENT_INDEX = 1;
+/**
+ * The frozen frame reduced motion shows: mid-analysis (۳۴٪), first line,
+ * second artwork — the same mid-performance moment as before, minus motion.
+ */
+const STATIC_PROGRESS = 34;
+const STATIC_LINE_INDEX = 0;
+const STATIC_ARTWORK_INDEX = 1;
 
 interface AnalysisInterstitialProps {
   /** The real top matches in rank order — computed BEFORE the wait performs. */
@@ -51,11 +73,12 @@ interface AnalysisInterstitialProps {
  * Beat 2 — the performed-analysis interstitial.
  *
  * The engine already ranked everything (locally, instantly); this screen
- * performs the wait around the real top-3: a jumping percentage, the matched
- * perfumes' own artwork cycling beside it with their names — show-your-work,
- * these are the results being "prepared" — and rotating microcopy. Memo
- * Paris's sillage motif (drifting wavy ink lines + pulsing dots in
- * gold/wine/ink) breathes behind the content. Unboxed: no card anywhere.
+ * performs the wait around the real top-3: a steady 0 → 100 progress bar
+ * with the percentage in Persian digits beside it, the matched perfumes'
+ * own artwork cycling with their names — show-your-work, these are the
+ * results being "prepared" — and rotating microcopy over the ambient
+ * background. The bar is the hero; there is no other ornament. Unboxed: no
+ * card anywhere.
  *
  * Never a forced gate: the «رد شدن» skip is always visible and jumps straight
  * to /result.
@@ -82,8 +105,9 @@ export default function AnalysisInterstitial({
       return () => window.clearTimeout(handle);
     }
 
-    if (tick >= ANALYSIS_PERCENT_STEPS.length - 1) {
-      const handle = window.setTimeout(onDone, ANALYSIS_TICK_MS);
+    if (tick >= ANALYSIS_PROGRESS_STEPS - 1) {
+      // Hard cut on the same beat 100 lands — never linger at 100%.
+      const handle = window.setTimeout(onDone, 0);
       return () => window.clearTimeout(handle);
     }
 
@@ -91,49 +115,46 @@ export default function AnalysisInterstitial({
     return () => window.clearTimeout(handle);
   }, [tick, reduced, onDone]);
 
-  const stepIndex = reduced ? STATIC_PERCENT_INDEX : Math.min(tick, ANALYSIS_PERCENT_STEPS.length - 1);
+  const progress = reduced ? STATIC_PROGRESS : progressForTick(tick);
   const lineIndex = reduced
-    ? 0
+    ? STATIC_LINE_INDEX
     : Math.min(
         INTERSTITIAL_LINES.length - 1,
         Math.floor((tick * ANALYSIS_TICK_MS) / INTERSTITIAL_LINE_INTERVAL_MS),
       );
-  const current = matches.length > 0 ? matches[stepIndex % matches.length] : null;
+  const artworkIndex = reduced
+    ? Math.min(STATIC_ARTWORK_INDEX, Math.max(0, matches.length - 1))
+    : artworkIndexForTick(tick, matches.length);
+  const current = matches.length > 0 ? matches[artworkIndex % matches.length] : null;
 
   return (
     <section className="quiz-rise relative flex flex-col items-center gap-6 overflow-hidden py-10 text-center sm:py-14">
-      {/* Memo sillage: wavy ink lines + pulsing dots, decorative and inert. */}
-      <div aria-hidden="true" className={reduced ? "sillage sillage-static" : "sillage"}>
-        <svg
-          className="sillage-waves"
-          viewBox="0 0 400 200"
-          preserveAspectRatio="none"
-          focusable="false"
-        >
-          <path
-            d="M-20,60 C80,30 160,90 260,60 S380,40 420,70"
-            className="sillage-line sillage-line-gold"
-          />
-          <path
-            d="M-20,110 C90,80 170,140 270,110 S380,90 420,120"
-            className="sillage-line sillage-line-wine"
-          />
-          <path
-            d="M-20,150 C100,130 180,170 280,150 S370,140 420,155"
-            className="sillage-line sillage-line-ink"
-          />
-          <circle cx="90" cy="70" r="4" className="sillage-dot sillage-dot-gold" />
-          <circle cx="250" cy="120" r="5" className="sillage-dot sillage-dot-wine" />
-          <circle cx="330" cy="80" r="3" className="sillage-dot sillage-dot-ink" />
-        </svg>
-      </div>
-
       <span
-        aria-live="polite"
+        id="analysis-percent"
         className="tnum font-display text-7xl font-semibold leading-none tracking-[-0.01em] text-foreground sm:text-8xl"
       >
-        {formatPersianPercent(ANALYSIS_PERCENT_STEPS[stepIndex])}
+        {formatPersianPercent(progress)}
       </span>
+
+      {/* Scentbird-style steady fill, synced to the interstitial duration.
+          The bar itself is the announcement contract (role + value); the big
+          number stays visual-only so screen readers are not spammed ten
+          times a second, while the rotating line below keeps a polite live
+          region. */}
+      <div
+        role="progressbar"
+        aria-labelledby="analysis-percent"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={progress}
+        className="h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-surface-2"
+      >
+        <div
+          aria-hidden="true"
+          className="h-full rounded-full bg-linear-to-l from-accent to-accent/70 transition-[width] duration-100 ease-linear motion-reduce:transition-none"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
 
       {current ? (
         <figure key={current.perfumeId} className="flex flex-col items-center gap-2">
