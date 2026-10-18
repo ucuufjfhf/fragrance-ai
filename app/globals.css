@@ -78,8 +78,18 @@
   --marker-gold: #d99a2b;
 }
 
+/* Solid-button fill — the single AA solution for every solid CTA.
+ *
+ * Cream text on the raw accent is 4.04:1, below the 4.5 floor, so the fill is
+ * drawn from darkened accent mixes instead of the token itself: the LIGHTEST
+ * stop (top) measures 4.63:1 against the cream text, mid 4.99, bottom 5.42
+ * (computed, then verified live in the browser gate). Same hue family — a
+ * deeper amber — and relative, so archetype-scoped buttons (which already
+ * passed) only gain headroom. The opaque gradient covers the `bg-accent`
+ * utility these buttons also carry; unlayered author CSS wins over the
+ * layered utility without touching any component. */
 .btn-primary {
-  background-image: linear-gradient(180deg, color-mix(in srgb, var(--accent) 92%, white) 0%, var(--accent) 58%, color-mix(in srgb, var(--accent) 88%, black) 100%);
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--accent) 84%, black) 0%, color-mix(in srgb, var(--accent) 76%, black) 58%, color-mix(in srgb, var(--accent) 68%, black) 100%);
   box-shadow: var(--shadow-accent);
   transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
 }
