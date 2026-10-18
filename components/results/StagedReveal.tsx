@@ -23,12 +23,14 @@ interface StagedRevealProps {
  * Beat 1 — the staged per-match reveal.
  *
  * Final-first, like the repo's `MarkerWipe` contract: server markup (and
- * no-JS, and reduced motion) shows the full laid-out page, and only a
- * motion-OK browser stages the beats — card 1 present, then one more per
- * beat. Any tap or keypress during the reveal skips straight to the full
- * page. The reveal never reorders, never filters, never touches the cards:
- * it only decides how many are mounted yet (keys preserved, so mounted cards
- * never remount).
+ * no-JS, and reduced motion) shows the full laid-out page. The staging itself
+ * is CSS-driven (`data-shown` + the `.staged-reveal` rules in globals.css):
+ * the server markup already carries `data-shown="1"`, so a motion-OK browser
+ * hides stops 2+ from the very first paint — the first frame can never show
+ * more cards than a later frame (no N-to-1 flash, ever). React only advances
+ * the attribute 1 → 2 → 3, one beat each; any tap or keypress during the
+ * reveal jumps straight to the full page. All items stay mounted throughout
+ * (keys preserved, nothing remounts); the reveal never reorders or filters.
  */
 export default function StagedReveal({
   children,
@@ -45,36 +47,33 @@ export default function StagedReveal({
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches
     );
   });
-  const [shown, setShown] = useState(items.length);
+  // Starts at 1 everywhere — including the server markup — so hydration never
+  // mismatches and the CSS already hides stops 2+ before React boots.
+  const [shown, setShown] = useState(1);
+  const staged = useRef(1);
   const timer = useRef<number | null>(null);
-  const frame = useRef<number | null>(null);
 
   useEffect(() => {
+    // Static path: nothing to stage, so no timer. `data-shown` stays at its
+    // server-rendered "1" — harmless, since neither reduced-motion nor no-JS
+    // ever matches the hiding rules.
     if (!motionOK || items.length <= 1) {
       return;
     }
 
-    // Card 1 is already on screen from the server markup and stays; the
-    // beats add one sibling at a time. Deferred past paint (like the quiz's
-    // own step-enter), never a synchronous cascade.
-    let staged = 1;
-    frame.current = window.requestAnimationFrame(() => {
-      setShown(1);
-      timer.current = window.setInterval(() => {
-        staged += 1;
-        if (staged >= items.length && timer.current !== null) {
-          window.clearInterval(timer.current);
-          timer.current = null;
-        }
-        setShown(Math.min(staged, items.length));
-      }, STAGED_REVEAL_BEAT_MS);
-    });
+    // Beats add one stop at a time, starting past mount (like the quiz's own
+    // step-enter), never a synchronous cascade.
+    staged.current = 1;
+    timer.current = window.setInterval(() => {
+      staged.current = Math.min(staged.current + 1, items.length);
+      if (staged.current >= items.length && timer.current !== null) {
+        window.clearInterval(timer.current);
+        timer.current = null;
+      }
+      setShown(staged.current);
+    }, STAGED_REVEAL_BEAT_MS);
 
     return () => {
-      if (frame.current !== null) {
-        window.cancelAnimationFrame(frame.current);
-        frame.current = null;
-      }
       if (timer.current !== null) {
         window.clearInterval(timer.current);
         timer.current = null;
@@ -92,11 +91,12 @@ export default function StagedReveal({
 
   return (
     <ol
-      className="flex list-none flex-col gap-4"
+      className="staged-reveal flex list-none flex-col gap-4"
+      data-shown={Math.min(shown, items.length)}
       onPointerDown={skip}
       onKeyDown={skip}
     >
-      {items.slice(0, shown)}
+      {items}
     </ol>
   );
 }

@@ -56,6 +56,7 @@ import {
   type QuizFlowState,
 } from "@/lib/personality/quiz-flow";
 import { scoreQuiz } from "@/lib/personality/scoring";
+import { fetchMatchesPreview } from "@/lib/quiz/matches-preview";
 import { serializeResultsParams } from "@/lib/results/params";
 import type {
   QuizMatchesResponse,
@@ -75,57 +76,7 @@ const OFFLINE_NOTICE =
 /** How long a recorded pointer position stays usable as a ripple origin. */
 const POINTER_FRESH_MS = 1500;
 
-/**
- * How long the submit waits for the matches preview before giving up on the
- * Phase 2 beats. The preview is fetched in parallel with the submit and
- * resolves near-instantly (local engine, no AI); if it ever hangs, the flow
- * degrades to the pre-Phase-2 path instead of stalling the shopper.
- */
-const MATCHES_TIMEOUT_MS = 2500;
 
-/**
- * Fetches the Phase 2 beats' data (live catalog count + real top-3) for an
- * answer sheet. Never throws: any failure (network, timeout, malformed
- * payload, empty matches) resolves to null, and the caller skips the beats.
- */
-async function fetchMatchesPreview(
-  answers: { questionId: string; optionId: string }[],
-  audience: AudienceGender | null,
-): Promise<QuizMatchesResponse | null> {
-  try {
-    const response = await Promise.race([
-      fetch("/api/quiz/matches", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers, audience }),
-      }),
-      new Promise<never>((_, reject) =>
-        window.setTimeout(
-          () => reject(new Error("matches preview timed out")),
-          MATCHES_TIMEOUT_MS,
-        ),
-      ),
-    ]);
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = (await response.json()) as QuizMatchesResponse;
-
-    if (
-      typeof data?.count !== "number" ||
-      !Array.isArray(data?.matches) ||
-      data.matches.length === 0
-    ) {
-      return null;
-    }
-
-    return data;
-  } catch {
-    return null;
-  }
-}
 
 interface PointerRecord {
   x: number;

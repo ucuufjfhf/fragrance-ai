@@ -1154,3 +1154,21 @@ h1, h2, h3, h4, h5, h6 {
 .sillage-static .sillage-dot {
   animation: none;
 }
+
+/* Staged per-match reveal (Phase 3, Trade Coffee lineage). The hiding lives
+ * here — not in React state — so the first painted frame can never show more
+ * cards than a later frame (no N-to-1 flash): the `js` class lands via a
+ * beforeInteractive head script, i.e. before first paint and before
+ * hydration, while `data-shown` is already "1" in the server markup.
+ * - no-JS: no `html.js`, so the full laid-out page renders statically.
+ * - reduced-motion: the media query excludes it, so everything is static.
+ * - motion-OK browsers: stops 2+ hide from the very first paint; React only
+ *   flips `data-shown` 1 -> 2 -> 3 (tap/keypress jumps to full). */
+@media (prefers-reduced-motion: no-preference) {
+  html.js .staged-reveal[data-shown="1"] > li:nth-child(n + 2) {
+    display: none;
+  }
+  html.js .staged-reveal[data-shown="2"] > li:nth-child(n + 3) {
+    display: none;
+  }
+}
