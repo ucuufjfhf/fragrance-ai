@@ -33,12 +33,22 @@ export default function SiteFooter() {
         </div>
 
         <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted">
-          <a href="#how" className="transition-colors hover:text-foreground">
+          {/* Root-absolute so the anchor also works from /about and /result. */}
+          <Link href="/#how" className="transition-colors hover:text-foreground">
             چطور کار می‌کند
-          </a>
+          </Link>
           <Link href="/quiz" className="transition-colors hover:text-foreground">
             آزمون سلیقه
           </Link>
+          <Link href="/about" className="transition-colors hover:text-foreground">
+            درباره‌ی فیاژ
+          </Link>
+          <a
+            href="mailto:majidemoon0@gmail.com"
+            className="transition-colors hover:text-foreground"
+          >
+            تماس
+          </a>
         </nav>
 
         <p className="text-xs leading-relaxed text-muted">
