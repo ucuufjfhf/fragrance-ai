@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import FaqSection from "@/components/landing/FaqSection";
+import SampleResultSection from "@/components/landing/SampleResultSection";
 import SiteFooter from "@/components/site/SiteFooter";
 import SiteHeader from "@/components/site/SiteHeader";
 
@@ -9,9 +11,9 @@ import SiteHeader from "@/components/site/SiteHeader";
  *
  * This is a brand page, not a project dashboard: a single editorial hero
  * (headline on the right, dark perfume visual on the left — asymmetric, RTL),
- * a short three-step explainer, and one confident trust line. Operational
- * detail (phase roadmap, status cards, admin routes) belongs to the repo, not
- * to the shopper.
+ * a short three-step explainer, a labelled sample-result preview, an honest
+ * FAQ, and one confident trust line. Operational detail (phase roadmap,
+ * status cards, admin routes) belongs to the repo, not to the shopper.
  */
 
 const steps = [
@@ -96,6 +98,12 @@ export default function Home() {
             </ol>
           </div>
         </section>
+
+        {/* Sample result — one fixed archetype, always labelled an example. */}
+        <SampleResultSection />
+
+        {/* Honest FAQ — verifiable answers only, no stats, no testimonials. */}
+        <FaqSection />
 
         {/* Trust line — said once, with confidence. */}
         <section className="mx-auto w-full max-w-3xl px-5 py-16 text-center sm:px-8 lg:py-24">
