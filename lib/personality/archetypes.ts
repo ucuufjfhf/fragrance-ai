@@ -12,7 +12,7 @@ import type { Archetype, PersonalityVector } from "@/types/personality";
 export const ARCHETYPES: Archetype[] = [
   {
     id: "mysterious-explorer",
-    accentColor: "#5C4A6B",
+    accentColor: "#5B2A86",
     name: "The Mysterious Explorer",
     label: "کاشف مرموز",
     emoji: "🖤",
@@ -34,7 +34,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "clean-minimalist",
-    accentColor: "#8FA88E",
+    accentColor: "#0E6E4E",
     name: "The Clean Minimalist",
     label: "مینیمالیست تمیز",
     emoji: "🤍",
@@ -56,7 +56,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "charismatic",
-    accentColor: "#C9622D",
+    accentColor: "#B2430F",
     name: "The Charismatic",
     label: "جذاب و کاریزماتیک",
     emoji: "✨",
@@ -78,7 +78,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "elegant-classic",
-    accentColor: "#A08654",
+    accentColor: "#7A5A10",
     name: "The Elegant Classic",
     label: "کلاسیک شیک",
     emoji: "🕊️",
@@ -100,7 +100,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "free-spirit",
-    accentColor: "#4A90A4",
+    accentColor: "#0E6E9E",
     name: "The Free Spirit",
     label: "روح آزاد",
     emoji: "🌊",
@@ -122,7 +122,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "romantic",
-    accentColor: "#B5697A",
+    accentColor: "#A4133C",
     name: "The Romantic",
     label: "رمانتیک",
     emoji: "🌹",
@@ -144,7 +144,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "bold-one",
-    accentColor: "#A63D2F",
+    accentColor: "#B01E24",
     name: "The Bold One",
     label: "جسور",
     emoji: "🔥",
@@ -166,7 +166,7 @@ export const ARCHETYPES: Archetype[] = [
   },
   {
     id: "sophisticated",
-    accentColor: "#3D4A5C",
+    accentColor: "#1B3A6B",
     name: "The Sophisticated",
     label: "باوقار و خاص",
     emoji: "💎",
