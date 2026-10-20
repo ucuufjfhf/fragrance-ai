@@ -141,7 +141,7 @@ export default function ContextStep({
         <button
           type="button"
           onClick={onBack}
-          className="flex min-h-12 items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50 hover:text-foreground"
+          className="btn-tertiary btn-tertiary-back min-h-12 shrink-0 px-1 text-sm"
         >
           قبلی
         </button>
@@ -154,7 +154,7 @@ export default function ContextStep({
             // personality result card's legacy behaviour.
             resetAnalyticsFlow();
           }}
-          className="btn-primary flex min-h-12 flex-1 items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background"
+          className="btn-primary flex min-h-12 flex-1 items-center justify-center px-5 font-medium text-background"
         >
           دیدن عطرهای پیشنهادی
         </Link>

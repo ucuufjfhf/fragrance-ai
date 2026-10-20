@@ -65,10 +65,10 @@ import type {
 } from "@/types/personality";
 
 const primaryButton =
-  "btn-primary flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-accent px-6 font-medium text-background disabled:cursor-not-allowed disabled:opacity-50";
+  "btn-primary flex min-h-12 flex-1 items-center justify-center gap-2 px-6 font-medium text-background disabled:cursor-not-allowed disabled:opacity-50";
 
-const secondaryButton =
-  "flex min-h-12 items-center justify-center rounded-2xl border border-border-soft bg-surface px-6 text-sm text-muted transition-colors hover:border-accent/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
+/** Back/skip/restart: text + underline (+ drawn caret), no box. */
+const tertiaryBackButton = "btn-tertiary btn-tertiary-back min-h-12 shrink-0 px-1 text-sm";
 
 const OFFLINE_NOTICE =
   "ارتباط با سرور برقرار نشد؛ پروفایل با همون محاسبه قطعی و به‌صورت آفلاین ساخته شد.";
@@ -472,7 +472,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
         <button
           type="button"
           onClick={handleRestart}
-          className="mx-auto text-xs text-muted underline underline-offset-4 transition-colors hover:text-foreground"
+          className="btn-tertiary mx-auto text-xs"
         >
           شروع دوباره
         </button>
@@ -610,7 +610,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
         <button
           type="button"
           onClick={handleRestart}
-          className="mx-auto text-xs text-muted underline underline-offset-4 transition-colors hover:text-foreground"
+          className="btn-tertiary mx-auto text-xs"
         >          شروع دوباره
         </button>
     </section>,
@@ -651,7 +651,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
           onClick={() => setFlow((current) => goPrevious(current))}
           // From Q1 this returns to the audience step, so it stays available.
           disabled={submitting}
-          className={secondaryButton}
+          className={`${tertiaryBackButton} disabled:cursor-not-allowed disabled:opacity-40`}
         >
           قبلی
         </button>
@@ -676,7 +676,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
       <button
         type="button"
         onClick={handleRestart}
-        className="mx-auto text-xs text-muted underline underline-offset-4 transition-colors hover:text-foreground"
+        className="btn-tertiary mx-auto text-xs"
       >
         شروع دوباره
       </button>

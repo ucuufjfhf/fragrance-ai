@@ -131,7 +131,7 @@ export default function RecommendationCard({
               // Viewing the card never records an event.
               void trackEvent({ eventType: "PERFUME_CLICKED", storeId, perfumeId });
             }}
-            className="flex min-h-11 items-center justify-center rounded-2xl border border-border-soft px-5 text-sm font-medium text-foreground transition-colors hover:border-accent/50 hover:text-accent"
+            className="btn-secondary flex min-h-11 items-center justify-center px-5 text-sm font-medium text-foreground hover:text-accent"
           >
             مشاهده در ترب
           </a>

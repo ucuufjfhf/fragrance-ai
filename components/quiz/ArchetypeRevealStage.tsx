@@ -243,9 +243,9 @@ export default function ArchetypeRevealStage({
         {selectionBasis}
       </p>
 
-      {/* The animation sits on this wrapper, never on the button: `.btn-primary`
-          owns the button's own transform (its hover lift), and a finished
-          animation would otherwise outrank it. */}
+      {/* The entrance animation sits on this wrapper, not on the button: a
+          finished animation would otherwise outrank the button's own hover
+          state. The button itself only shifts fill colour. */}
       <div
         className="archetype-focus-line flex w-full justify-center"
         style={{ animationDelay: CTA_DELAY_MS }}
@@ -253,7 +253,7 @@ export default function ArchetypeRevealStage({
         <button
           type="button"
           onClick={onContinue}
-          className="btn-primary flex min-h-12 w-full max-w-xs items-center justify-center rounded-2xl bg-accent px-6 font-medium text-background"
+          className="btn-primary flex min-h-12 w-full max-w-xs items-center justify-center px-6 font-medium text-background"
         >
           دیدن نتایج
         </button>

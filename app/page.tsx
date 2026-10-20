@@ -53,7 +53,7 @@ export default function Home() {
               </p>
               <Link
                 href="/quiz"
-                className="btn-primary flex min-h-14 items-center justify-center rounded-2xl bg-accent px-9 text-lg font-medium text-background"
+                className="btn-primary flex min-h-14 items-center justify-center px-9 text-lg font-medium text-background"
               >
                 شروع آزمون
               </Link>

@@ -101,7 +101,7 @@ function ResultErrorState() {
           </p>
           <a
             href="/quiz"
-            className="btn-primary mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background sm:w-fit sm:px-8"
+            className="btn-primary mx-auto flex min-h-12 w-full items-center justify-center px-5 font-medium text-background sm:w-fit sm:px-8"
           >
             شروع آزمون
           </a>

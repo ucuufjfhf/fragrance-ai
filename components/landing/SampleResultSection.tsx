@@ -105,7 +105,7 @@ export default function SampleResultSection() {
 
         <Link
           href="/quiz"
-          className="btn-primary flex min-h-14 items-center justify-center rounded-2xl bg-accent px-9 text-lg font-medium text-background sm:w-fit"
+          className="btn-primary flex min-h-14 items-center justify-center px-9 text-lg font-medium text-background sm:w-fit"
         >
           شروع آزمون
         </Link>

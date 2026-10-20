@@ -209,13 +209,13 @@ export default function ResultsView({
                 </p>
                 <Link
                   href={contextRelaxHref}
-                  className="btn-primary mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background sm:w-fit sm:px-8"
+                  className="btn-primary mx-auto flex min-h-12 w-full items-center justify-center px-5 font-medium text-background sm:w-fit sm:px-8"
                 >
                   حذف فیلتر فصل و موقعیت
                 </Link>
                 <Link
                   href="/quiz"
-                  className="mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50 hover:text-foreground sm:w-fit sm:px-8"
+                  className="btn-secondary mx-auto flex min-h-12 w-full items-center justify-center px-5 text-sm text-muted hover:text-foreground sm:w-fit sm:px-8"
                 >
                   شروع دوباره آزمون
                 </Link>
@@ -227,7 +227,7 @@ export default function ResultsView({
                 </p>
                 <Link
                   href="/quiz"
-                  className="btn-primary mx-auto flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background sm:w-fit sm:px-8"
+                  className="btn-primary mx-auto flex min-h-12 w-full items-center justify-center px-5 font-medium text-background sm:w-fit sm:px-8"
                 >
                   شروع دوباره آزمون
                 </Link>
@@ -262,7 +262,7 @@ export default function ResultsView({
         <ShareResultButton />
         <Link
           href="/quiz"
-          className="flex min-h-12 flex-1 items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50 hover:text-foreground"
+          className="btn-secondary flex min-h-12 flex-1 items-center justify-center px-5 text-sm text-muted hover:text-foreground"
         >
           شروع دوباره
         </Link>

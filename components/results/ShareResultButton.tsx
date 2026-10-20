@@ -46,7 +46,7 @@ export default function ShareResultButton() {
       type="button"
       onClick={() => void copyUrl()}
       aria-live="polite"
-      className="flex min-h-12 flex-1 items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50 hover:text-foreground"
+      className="btn-secondary flex min-h-12 flex-1 items-center justify-center px-5 text-sm text-muted hover:text-foreground"
     >
       {copied ? "لینک کپی شد" : "اشتراک‌گذاری نتیجه"}
     </button>

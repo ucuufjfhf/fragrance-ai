@@ -105,7 +105,7 @@ export default function AboutPage() {
             </ol>
             <Link
               href="/quiz"
-              className="mt-10 flex min-h-14 items-center justify-center rounded-2xl border border-border-soft px-9 text-lg font-medium text-foreground transition-colors hover:border-accent/50 sm:w-fit"
+              className="btn-primary mt-10 flex min-h-14 items-center justify-center px-9 text-lg font-medium text-background sm:w-fit"
             >
               شروع آزمون
             </Link>
@@ -129,7 +129,7 @@ export default function AboutPage() {
           </p>
           <a
             href="mailto:majidemoon0@gmail.com"
-            className="mx-auto mt-8 flex min-h-14 w-full items-center justify-center rounded-2xl border border-border-soft px-9 text-lg font-medium text-foreground transition-colors hover:border-accent/50 sm:w-fit"
+            className="btn-tertiary btn-tertiary-forward mx-auto mt-8 text-lg font-medium"
           >
             ایمیل بزنید
           </a>

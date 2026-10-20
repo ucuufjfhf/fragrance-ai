@@ -41,13 +41,13 @@ export default function ResultError({
           <button
             type="button"
             onClick={reset}
-            className="flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-5 font-medium text-background transition-colors hover:bg-accent/90 sm:w-fit sm:px-8"
+            className="btn-primary flex min-h-12 w-full items-center justify-center px-5 font-medium text-background sm:w-fit sm:px-8"
           >
             تلاش دوباره
           </button>
           <Link
             href="/quiz"
-            className="flex min-h-11 items-center justify-center px-4 text-sm text-muted underline underline-offset-4 transition-colors hover:text-foreground"
+            className="btn-tertiary min-h-11 px-4 text-sm"
           >
             شروع دوباره آزمون
           </Link>

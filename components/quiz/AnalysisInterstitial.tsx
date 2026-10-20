@@ -181,7 +181,7 @@ export default function AnalysisInterstitial({
       <button
         type="button"
         onClick={onSkip}
-        className="mx-auto text-xs text-muted underline underline-offset-4 transition-colors hover:text-foreground"
+        className="btn-tertiary mx-auto text-xs"
       >
         رد شدن
       </button>

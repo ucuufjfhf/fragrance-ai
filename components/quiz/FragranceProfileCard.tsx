@@ -221,7 +221,7 @@ export default function FragranceProfileCard({
             // navigation and again for a future attempt (Phase 7, §12).
             resetAnalyticsFlow();
           }}
-          className="btn-primary flex min-h-12 w-full items-center justify-center rounded-2xl bg-accent px-6 font-medium text-background"
+          className="btn-primary flex min-h-12 w-full items-center justify-center px-6 font-medium text-background"
         >
           دیدن عطرهای پیشنهادی
         </Link>
@@ -244,7 +244,7 @@ export default function FragranceProfileCard({
       <button
         type="button"
         onClick={onRestart}
-        className="btn-primary flex min-h-12 items-center justify-center rounded-2xl bg-accent px-6 font-medium text-background"
+        className="btn-secondary mx-auto flex min-h-12 items-center justify-center px-6 text-sm text-muted"
       >
         شروع دوباره
       </button>

@@ -185,14 +185,14 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
         <button
           type="button"
           onClick={() => void handleSubmit()}
-          className="mt-4 flex min-h-12 w-full items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-white transition-colors hover:bg-accent/90"
+          className="btn-primary mt-4 flex min-h-12 w-full items-center justify-center px-5 font-medium text-white"
         >
           تلاش دوباره
         </button>
         <button
           type="button"
           onClick={handleRestart}
-          className="mt-2 flex min-h-12 w-full items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50"
+          className="btn-secondary mt-2 flex min-h-12 w-full items-center justify-center px-5 text-sm text-muted"
         >
           شروع دوباره آزمون
         </button>
@@ -227,7 +227,7 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
         <button
           type="button"
           onClick={handleStart}
-          className="flex min-h-12 flex-1 items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-white transition-colors hover:bg-accent/90"
+          className="btn-primary flex min-h-12 flex-1 items-center justify-center px-5 font-medium text-white"
         >
           عطر خودتون رو پیدا کنید
         </button>
@@ -258,7 +258,7 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
         <button
           type="button"
           onClick={() => setState((current) => ({ ...current, flow: goPrevious(current.flow) }))}
-          className="flex min-h-12 items-center justify-center rounded-2xl border border-border-soft px-5 text-sm text-muted transition-colors hover:border-accent/50"
+          className="btn-secondary flex min-h-12 items-center justify-center px-5 text-sm text-muted"
         >
           قبلی
         </button>
@@ -272,7 +272,7 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
               setState((current) => ({ ...current, flow: goNext(current.flow) }));
             }
           }}
-          className="flex min-h-12 flex-1 items-center justify-center rounded-2xl btn-primary bg-accent px-5 font-medium text-white transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn-primary flex min-h-12 flex-1 items-center justify-center px-5 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isLastQuestion ? "دیدن نتیجه" : "بعدی"}
         </button>

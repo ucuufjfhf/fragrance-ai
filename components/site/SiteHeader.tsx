@@ -49,12 +49,11 @@ export default function SiteHeader() {
           >
             چطور کار می‌کند
           </a>
-          {/* btn-primary carries the AA-passing fill (and its hover); the
-              raw bg-accent + /90 hover it replaces failed AA and got worse
-              on hover. Shape and size stay the pill's own. */}
+          {/* btn-primary owns the AA fill, the flat hover and the 3px corner;
+              size and placement stay the header CTA's own. */}
           <Link
             href="/quiz"
-            className="btn-primary flex min-h-10 items-center rounded-full px-5 font-medium text-background transition-colors"
+            className="btn-primary flex min-h-10 items-center px-5 font-medium text-background"
           >
             شروع آزمون
           </Link>
