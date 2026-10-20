@@ -38,7 +38,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fa" dir="rtl" className={`${persianFont.variable} h-full antialiased`}>
+    <html lang="fa" dir="rtl" suppressHydrationWarning className={`${persianFont.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <Script id="fiage-js-flag" strategy="beforeInteractive">
           {`document.documentElement.classList.add("js")`}
