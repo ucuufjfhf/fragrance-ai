@@ -7,6 +7,7 @@ import { BrandMark } from "@/components/ui-icons";
 
 import Question from "@/components/quiz/Question";
 import WidgetRecommendationCard from "@/components/widget/WidgetRecommendationCard";
+import WidgetStoreHeader from "@/components/widget/WidgetStoreHeader";
 import { trackEvent } from "@/lib/analytics/client";
 import {
   resetAnalyticsFlow,
@@ -27,7 +28,7 @@ import {
   type QuizFlowState,
 } from "@/lib/personality/quiz-flow";
 import { scoreQuiz } from "@/lib/personality/scoring";
-import { isValidStoreId, type WidgetRecommendationResponse } from "@/lib/widget/contract";
+import { isValidStoreId, type WidgetConfigResult, type WidgetRecommendationResponse, type WidgetStoreConfig } from "@/lib/widget/contract";
 import type { QuizResult } from "@/types/personality";
 
 /**
@@ -45,6 +46,8 @@ type WidgetPhase = "validating" | "unavailable" | "intro" | "question" | "loadin
 interface WidgetState {
   phase: WidgetPhase;
   flow: QuizFlowState;
+  /** Public store identity from the config endpoint — powers the header. */
+  store: WidgetStoreConfig | null;
   result: QuizResult | null;
   recommendations: WidgetRecommendationResponse | null;
 }
@@ -58,6 +61,7 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
   const [state, setState] = useState<WidgetState>({
     phase: isValidStoreId(storeId) ? "validating" : "unavailable",
     flow: createInitialQuizFlowState(),
+    store: null,
     result: null,
     recommendations: null,
   });
@@ -78,10 +82,19 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
           throw new Error(`config ${response.status}`);
         }
 
-        // Store is valid and active — hand over to the quiz intro.
+        const data = (await response.json()) as WidgetConfigResult;
+
+        if (!data.ok) {
+          throw new Error("config unavailable");
+        }
+
+        // Store is valid and active — hand over to the quiz intro, keeping the
+        // customer-safe identity so every screen can show whose store it is.
         if (!cancelled) {
           setState((current) =>
-            current.phase === "validating" ? { ...current, phase: "intro" } : current,
+            current.phase === "validating"
+              ? { ...current, phase: "intro", store: data.config }
+              : current,
           );
         }
       } catch {
@@ -166,20 +179,36 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
     }
   }, [state.flow, storeId]);
 
+  // Every phase sits under the same chrome: once the store is known, its
+  // identity (logo + name) is visible on the intro, each question, the
+  // loading notice and the results. Before validation completes there is
+  // nothing truthful to show, so the header is simply absent rather than a
+  // placeholder.
+  const header = state.store ? (
+    <WidgetStoreHeader name={state.store.storeName} logoUrl={state.store.logoUrl} />
+  ) : null;
+
+  const shell = (body: React.ReactNode) => (
+    <div className="flex flex-col gap-5">
+      {header}
+      {body}
+    </div>
+  );
+
   if (state.phase === "unavailable") {
-    return <WidgetNotice>{STORE_UNAVAILABLE}</WidgetNotice>;
+    return shell(<WidgetNotice>{STORE_UNAVAILABLE}</WidgetNotice>);
   }
 
   if (state.phase === "validating") {
-    return <WidgetNotice>{LOADING}</WidgetNotice>;
+    return shell(<WidgetNotice>{LOADING}</WidgetNotice>);
   }
 
   if (state.phase === "loading") {
-    return <WidgetNotice>{LOADING}</WidgetNotice>;
+    return shell(<WidgetNotice>{LOADING}</WidgetNotice>);
   }
 
   if (state.phase === "error") {
-    return (
+    return shell(
       <WidgetNotice>
         {RECOMMENDATION_ERROR}
         <button
@@ -196,23 +225,23 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
         >
           شروع دوباره آزمون
         </button>
-      </WidgetNotice>
+      </WidgetNotice>,
     );
   }
 
   if (state.phase === "result" && state.result && state.recommendations) {
-    return (
+    return shell(
       <WidgetResult
         storeId={storeId}
         result={state.result}
         data={state.recommendations}
         onRestart={handleRestart}
-      />
+      />,
     );
   }
 
   if (state.flow.phase === "intro") {
-    return (
+    return shell(
       <section className="flex flex-col gap-5 rounded-3xl border border-border-soft bg-surface p-6">
         <div className="flex flex-col gap-2">
           <span className="w-fit rounded-full border border-border-soft bg-accent-soft px-4 py-1 text-sm text-accent">
@@ -231,7 +260,7 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
         >
           عطر خودتون رو پیدا کنید
         </button>
-      </section>
+      </section>,
     );
   }
 
@@ -241,7 +270,7 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
   const isLastQuestion = state.flow.questionIndex === QUIZ_QUESTIONS.length - 1;
   const canContinue = typeof selectedOptionId === "string";
 
-  return (
+  return shell(
     <section className="flex flex-col gap-5">
       <ProgressBar current={progress.current} total={progress.total} />
 
@@ -277,7 +306,7 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
           {isLastQuestion ? "دیدن نتیجه" : "بعدی"}
         </button>
       </div>
-    </section>
+    </section>,
   );
 }
 

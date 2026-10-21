@@ -80,7 +80,11 @@ function makeMatchResult(storeId: string, count: number): MatchResult {
 beforeEach(() => {
   vi.clearAllMocks();
   resetRateLimitsForTests();
-  mocks.storeFindFirst.mockResolvedValue({ name: "فروشگاه نمونه", websiteUrl: "https://shop.example" });
+  mocks.storeFindFirst.mockResolvedValue({
+    name: "فروشگاه نمونه",
+    websiteUrl: "https://shop.example",
+    logoUrl: "https://shop.example/logo.png",
+  });
   mocks.createAIProvider.mockReturnValue({ isAvailable: () => false });
 });
 
@@ -103,12 +107,46 @@ describe("GET /api/widget/config — store validation (§11)", () => {
     expect(response.status).toBe(200);
     expect(body).toEqual({
       ok: true,
-      config: { storeId: "store-A", storeName: "فروشگاه نمونه", active: true },
+      config: {
+        storeId: "store-A",
+        storeName: "فروشگاه نمونه",
+        logoUrl: "https://shop.example/logo.png",
+        active: true,
+      },
     });
     expect(mocks.storeFindFirst).toHaveBeenCalledWith({
       where: { id: "store-A", active: true },
-      select: { name: true, websiteUrl: true },
+      select: { name: true, websiteUrl: true, logoUrl: true },
     });
+  });
+
+  it("keeps the payload minimal — id, name, logo and active only", async () => {
+    const response = await configGet(new Request("https://app.test/api/widget/config?storeId=store-A"));
+    const body = await response.json();
+
+    expect(Object.keys(body).sort()).toEqual(["config", "ok"]);
+    expect(Object.keys(body.config).sort()).toEqual([
+      "active", "logoUrl", "storeId", "storeName",
+    ]);
+    // The slug, timestamps and the rest of the Store row stay server-side.
+    expect(JSON.stringify(body)).not.toContain("createdAt");
+    expect(JSON.stringify(body)).not.toContain("slug");
+  });
+
+  it("reports a null logo when the merchant has not set one", async () => {
+    mocks.storeFindFirst.mockResolvedValue({
+      name: "فروشگاه نمونه",
+      websiteUrl: null,
+      logoUrl: null,
+    });
+
+    const response = await configGet(new Request("https://app.test/api/widget/config?storeId=store-A"));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.config.logoUrl).toBeNull();
+    // Name-only stores still work: the name is always present.
+    expect(body.config.storeName).toBe("فروشگاه نمونه");
   });
 
   it("rejects a malformed store id before touching the DB", async () => {

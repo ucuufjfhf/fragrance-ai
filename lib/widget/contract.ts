@@ -21,6 +21,13 @@ export function isValidStoreId(value: unknown): value is string {
 export interface WidgetStoreConfig {
   storeId: string;
   storeName: string;
+  /**
+   * The merchant's logo (absolute http(s) URL, validated at provisioning) so
+   * the widget can show whose store it belongs to. Null when unset — the
+   * widget then shows the name alone. Customer-safe: it is public branding
+   * the merchant embeds on their own site anyway.
+   */
+  logoUrl: string | null;
   /** Always true in a 200 response; absent/error body implies unavailable. */
   active: true;
 }
