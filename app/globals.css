@@ -242,6 +242,29 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* Question atmosphere band: one fixed editorial photo per question screen.
+ * Opacity-only fade (no transform, so the layout never shifts); the figure is
+ * keyed by question id, so the fade replays on each screen change. Fully
+ * static under prefers-reduced-motion. */
+.quiz-photo-band {
+  animation: quiz-photo-fade 450ms ease-out;
+}
+
+@keyframes quiz-photo-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quiz-photo-band {
+    animation: none;
+  }
+}
+
 /* Trait bars (results page): the fill's leading edge glows while it grows, and
  * each bar plays a brief completion pulse once it settles. Both are decorative
  * and skipped for reduced-motion users. Colors come from the scoped --accent
