@@ -60,18 +60,21 @@ export default function Home() {
               <p className="text-sm text-muted">حدود دو دقیقه وقت می‌گیره · بدون ثبت‌نام</p>
             </div>
 
-            <div className="relative">
-              <div className="relative aspect-4/5 w-full overflow-hidden rounded-[2rem] border border-border-soft shadow-[var(--shadow-soft)] sm:aspect-3/4 lg:aspect-4/5">
+            <div className="relative mx-auto w-full max-w-[270px] sm:max-w-[300px] lg:max-w-[330px]">
+              <div className="relative aspect-[293/669] w-full">
                 <Image
-                  src="/hero/perfume-hero.jpg"
-                  alt="شیشه عطر کهربایی در نور کم، با دود و بافت زغالی"
+                  src="/hero/sauvage-bottle.webp"
+                  alt="بطری استوانه‌ای عطر ساواج دیور با شیشه آبی سرمه‌ای تیره که در قسمت پایین به رنگ کهربایی می‌گراید"
                   fill
                   priority
-                  sizes="(min-width: 1024px) 45vw, 100vw"
-                  className="object-cover"
+                  sizes="(min-width: 1024px) 42vw, (min-width: 640px) 448px, 90vw"
+                  className="object-contain"
                 />
-                <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/10 to-transparent" />
               </div>
+              <div
+                aria-hidden
+                className="absolute inset-x-10 bottom-1 h-8 rounded-[100%] bg-black/25 blur-2xl"
+              />
             </div>
           </div>
         </section>
