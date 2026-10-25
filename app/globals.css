@@ -242,15 +242,17 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* Question atmosphere band: one fixed editorial photo per question screen.
- * Opacity-only fade (no transform, so the layout never shifts); the figure is
- * keyed by question id, so the fade replays on each screen change. Fully
- * static under prefers-reduced-motion. */
-.quiz-photo-band {
-  animation: quiz-photo-fade 450ms ease-out;
+/* Question illustration stage: one fixed flat drawing per question screen.
+ * Opacity-only fade (no transform, so the layout never shifts); the stage is
+ * keyed by question id, so the fade replays on each screen change. The stage
+ * itself is a bare fixed-height box — no background, border or shadow, so the
+ * transparent drawing sits directly on the quiz ambience. Fully static under
+ * prefers-reduced-motion. */
+.quiz-illustration {
+  animation: quiz-illustration-fade 450ms ease-out;
 }
 
-@keyframes quiz-photo-fade {
+@keyframes quiz-illustration-fade {
   from {
     opacity: 0;
   }
@@ -260,7 +262,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .quiz-photo-band {
+  .quiz-illustration {
     animation: none;
   }
 }

@@ -3,10 +3,7 @@ import Image from "next/image";
 import MarkerWipe from "@/components/quiz/MarkerWipe";
 import QuizOption from "@/components/quiz/QuizOption";
 import { toPersianDigits } from "@/lib/persian";
-import {
-  questionPhotoFocusFor,
-  questionPhotoFor,
-} from "@/lib/quiz/question-photos";
+import { questionIllustrationFor } from "@/lib/quiz/question-illustrations";
 import {
   HIGHLIGHTED_QUESTION_IDS,
   QUESTION_HIGHLIGHTS,
@@ -29,7 +26,8 @@ interface QuestionProps {
  * wrapped in a marker-wipe highlight on the allowlisted screens only (Q1/Q5/
  * Q10 — a signature stays rare) — set in the display face at tight leading.
  * The prompt, the option values and everything downstream (scoring,
- * matching, /result) are untouched.
+ * matching, /result) are untouched. Above the prompt sits one flat
+ * illustration per question, decorative and frameless.
  */
 export default function Question({
   question,
@@ -39,34 +37,35 @@ export default function Question({
   const highlight = HIGHLIGHTED_QUESTION_IDS.has(question.id)
     ? splitHighlighted(question.prompt, QUESTION_HIGHLIGHTS[question.id])
     : null;
-  const photo = questionPhotoFor(question.id);
-  const photoFocus = questionPhotoFocusFor(question.id);
+  const illustration = questionIllustrationFor(question.id);
 
   return (
     <div className="flex flex-col gap-8 py-2 sm:gap-10 sm:py-4">
       <span aria-hidden="true" className="h-px w-12 bg-accent/50" />
-      {/* Atmosphere band: one fixed editorial photo per question screen,
+      {/* Illustration stage: one fixed flat drawing per question screen,
           above the question text. Decorative (the prompt carries the
           meaning), so the img is alt="" and aria-hidden while the options
-          stay text rows. The fixed aspect ratio keeps the rendered height
-          identical on every question, so the layout never jumps; keyed by
+          stay text rows. The stage height is fixed per breakpoint, so the
+          rendered height is identical on every question and the layout never
+          jumps. Each drawing has a transparent background and is
+          contain-fitted — never cropped — straight onto the quiz ambience, so
+          there is no frame, card, border or shadow behind it. Keyed by
           question id so the fade replays on each screen change. */}
-      {photo ? (
-        <figure
+      {illustration ? (
+        <div
           key={question.id}
           aria-hidden="true"
-          className="quiz-photo-band relative block aspect-[16/10] w-full overflow-hidden rounded-2xl sm:aspect-[21/9]"
+          className="quiz-illustration relative h-[170px] w-full sm:h-[210px]"
         >
           <Image
-            src={photo}
+            src={illustration}
             alt=""
             aria-hidden="true"
             fill
             sizes="(max-width: 1024px) 100vw, 1024px"
-            className="object-cover"
-            style={{ objectPosition: photoFocus }}
+            className="object-contain"
           />
-        </figure>
+        </div>
       ) : null}
       {/* The 48px title-to-options room lives on the legend's margin, not on
           the fieldset's gap: a rendered <legend> is laid out specially and
