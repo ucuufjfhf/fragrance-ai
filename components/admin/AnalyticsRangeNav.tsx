@@ -17,16 +17,23 @@ const PRESETS: Array<{ key: AnalyticsRangePreset; label: string }> = [
 export default function AnalyticsRangeNav({
   storeId,
   current,
+  hrefFor,
 }: {
-  storeId: string;
+  storeId?: string;
   current: AnalyticsRangePreset;
+  /** Custom link builder (e.g. the tokenized store report); defaults to the admin dashboard. */
+  hrefFor?: (preset: AnalyticsRangePreset) => string;
 }) {
+  const buildHref =
+    hrefFor ??
+    ((preset: AnalyticsRangePreset) =>
+      `/admin/analytics?store=${encodeURIComponent(storeId ?? "")}&range=${preset}`);
   return (
     <nav aria-label="بازه زمانی" className="flex flex-wrap gap-2">
       {PRESETS.map((preset) => (
         <Link
           key={preset.key}
-          href={`/admin/analytics?store=${encodeURIComponent(storeId)}&range=${preset.key}`}
+          href={buildHref(preset.key)}
           aria-current={preset.key === current ? "true" : undefined}
           className={`rounded-full border px-4 py-1.5 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
             preset.key === current

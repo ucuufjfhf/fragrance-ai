@@ -7,6 +7,7 @@ import {
   type AnalyticsRangePreset,
 } from "@/lib/analytics/service";
 import AnalyticsRangeNav from "@/components/admin/AnalyticsRangeNav";
+import ReportLinkPanel from "@/components/admin/ReportLinkPanel";
 import { formatPersianPercent, toPersianDigits } from "@/lib/persian";
 import type { Metadata } from "next";
 
@@ -100,6 +101,12 @@ export default async function AdminAnalyticsPage({ searchParams }: AdminAnalytic
       </nav>
 
       <AnalyticsRangeNav storeId={selectedStore.id} current={data.range} />
+
+      <ReportLinkPanel
+        storeId={selectedStore.id}
+        storeName={selectedStore.name}
+        reportToken={selectedStore.reportToken}
+      />
 
       {!data.hasData ? (
         <div

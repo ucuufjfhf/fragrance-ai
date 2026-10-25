@@ -105,6 +105,11 @@ model Store {
   /// Soft deactivation. Once a store has history it is deactivated, not deleted.
   active Boolean @default(true)
 
+  /// Capability token for the read-only store report page
+  /// (/store-report/[token]). Crypto-random and unguessable; null until
+  /// issued. The token IS the capability — no admin login required.
+  reportToken String? @unique
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

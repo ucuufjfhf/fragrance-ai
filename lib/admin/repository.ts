@@ -31,6 +31,8 @@ export interface AdminStoreView {
   id: string;
   name: string;
   slug: string;
+  /** Null until a report token is issued (see lib/store-report/report.ts). */
+  reportToken: string | null;
 }
 
 export interface AdminPerfumeRow {
@@ -90,7 +92,7 @@ export async function getActiveStores(): Promise<AdminStoreView[]> {
 
   return prisma.store.findMany({
     where: { active: true },
-    select: { id: true, name: true, slug: true },
+    select: { id: true, name: true, slug: true, reportToken: true },
     orderBy: { name: "asc" },
   });
 }
