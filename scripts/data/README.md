@@ -50,9 +50,10 @@ span the personality space.
 
 `profileSource = AI`: the vectors are machine-proposed from public note and
 family knowledge — not merchant-authored (`MANUAL`) and not read off a
-reference profile (`REFERENCE`). The CSV import path stamps `MANUAL` by its
-documented contract, so the import step relabels exactly the rows it created
-(scoped by the 100 slugs in this file) to `AI`.
+reference profile (`REFERENCE`). The CSV import service defaults to `MANUAL`
+for admin uploads; this dataset is imported by a trusted server-side caller
+that passes the explicit `profileSource: "AI"` option. No form field or CSV
+column can request that provenance.
 
 ## Import
 

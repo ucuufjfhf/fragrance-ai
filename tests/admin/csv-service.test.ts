@@ -145,6 +145,50 @@ describe("confirmCsvImport — atomicity and re-validation (§11/§16/§17)", ()
     expect(profile.social).toBe(60); // authored CSV value, untouched
   });
 
+  it("defaults the provenance to MANUAL when the caller passes no option", async () => {
+    await confirmCsvImport(makeCsv(ROW), "store-1");
+
+    const profile = mocks.perfumeCreate.mock.calls[0][0].data.profile.create;
+
+    expect(profile.profileSource).toBe("MANUAL");
+  });
+
+  it("honours an explicit AI provenance for the trusted server-side caller", async () => {
+    const csv = makeCsv(ROW, ROW.replace("night-perfume", "day-perfume"));
+    const result = await confirmCsvImport(csv, "store-1", { profileSource: "AI" });
+
+    expect(result).toEqual({ ok: true, importedCount: 2 });
+    expect(mocks.perfumeCreate).toHaveBeenCalledTimes(2);
+
+    for (const call of mocks.perfumeCreate.mock.calls) {
+      const profile = call[0].data.profile.create;
+
+      expect(profile.profileSource).toBe("AI");
+      // Provenance is the ONLY difference: authored CSV axes are still written
+      // and the rest of the profile shape is unchanged.
+      expect(profile.social).toBe(60);
+      expect(call[0].data.storeId).toBe("store-1");
+    }
+  });
+
+  it("the AI option does not bypass CSV validation — nothing is written", async () => {
+    const csv = makeCsv(ROW, ROW.replace(",65,", ",165,"));
+    const result = await confirmCsvImport(csv, "store-1", { profileSource: "AI" });
+
+    expect(result.ok).toBe(false);
+    expect(mocks.transaction).not.toHaveBeenCalled();
+    expect(mocks.perfumeCreate).not.toHaveBeenCalled();
+  });
+
+  it("the AI option does not bypass the duplicate gate", async () => {
+    mocks.findManyPerfume.mockResolvedValue([{ slug: "night-perfume" }]);
+    const result = await confirmCsvImport(makeCsv(ROW), "store-1", { profileSource: "AI" });
+
+    expect(result.ok).toBe(false);
+    expect(mocks.transaction).not.toHaveBeenCalled();
+    expect(mocks.perfumeCreate).not.toHaveBeenCalled();
+  });
+
   it("creates exactly one profile per perfume (§13)", async () => {
     const csv = makeCsv(ROW);
     await confirmCsvImport(csv, "store-1");

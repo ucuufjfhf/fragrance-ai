@@ -32,6 +32,16 @@ import { STORE_CURRENCY } from "@/lib/pricing/currency";
  * wants reference/AI enrichment for imported rows runs the dedicated bulk
  * profiling workflow (Phase 12 / reference-first processor), whose fill-only
  * merge preserves all authored CSV values.
+ *
+ * TRUSTED-CALLER PROVENANCE (additive, server-side only): curated/machine-
+ * proposed datasets are imported through this same service but are not
+ * merchant-authored, so their true source is `AI`. `confirmCsvImport` accepts
+ * an optional `profileSource` for that case and defaults to `MANUAL` when it is
+ * absent. This is a PROGRAMMATIC option with no form, query or column behind
+ * it: no CSV column can set it (unknown columns are rejected) and the admin
+ * upload action never passes it, so an ordinary admin CSV upload can never
+ * claim AI provenance. Validation, duplicate detection and the atomic
+ * transaction are identical for both provenances.
  */
 
 export interface CsvPreviewRow {
@@ -65,6 +75,24 @@ export type CsvPreviewResult =
 export type CsvImportResult =
   | { ok: true; importedCount: number }
   | { ok: false; error: string; details?: Array<{ row?: number; column?: string; message: string }> };
+
+/**
+ * Provenance an import may claim for the profiles it creates.
+ *
+ * `MANUAL` is the merchant-authoritative default. `AI` exists only for
+ * trusted server-side callers importing machine-proposed datasets — it is not
+ * reachable from the admin upload form (see the module's provenance contract).
+ */
+export type CsvImportProvenance = "MANUAL" | "AI";
+
+export interface CsvImportOptions {
+  /**
+   * Provenance stamped on the created profiles. Omitted → `MANUAL`.
+   *
+   * Server-side callers only: the admin action deliberately never sets this.
+   */
+  profileSource?: CsvImportProvenance;
+}
 
 /** File-size gate (spec §8) — checked before any parsing. */
 export function isFileSizeWithinLimit(bytes: number): boolean {
@@ -156,8 +184,18 @@ export async function previewCsvImport(raw: string, storeId: string): Promise<Cs
  * "validated" flag, §16), re-checks duplicate slugs against the live DB to
  * close the preview→confirm race (§17), then imports every row in a single
  * transaction — 500 valid rows means 500 created or 0, never 300/200 (§11).
+ *
+ * `options.profileSource` defaults to `MANUAL`; only a trusted server-side
+ * caller passes `AI`, and the trusted option never bypasses any of the checks
+ * above (validation, duplicate gates and atomicity are unchanged).
  */
-export async function confirmCsvImport(raw: string, storeId: string): Promise<CsvImportResult> {
+export async function confirmCsvImport(
+  raw: string,
+  storeId: string,
+  options: CsvImportOptions = {},
+): Promise<CsvImportResult> {
+  const profileSource = options.profileSource ?? "MANUAL";
+
   // The store must exist and be active at commit time.
   const prisma = getPrisma();
   const store = await prisma.store.findFirst({
@@ -285,8 +323,10 @@ export async function confirmCsvImport(raw: string, storeId: string): Promise<Cs
                 ...(input.profile.family !== undefined ? { family: input.profile.family } : {}),
                 ...(input.profile.season !== undefined ? { season: input.profile.season } : {}),
                 ...(input.profile.occasion !== undefined ? { occasion: input.profile.occasion } : {}),
-                // CSV values are authoritative merchant data (§21) — MANUAL.
-                profileSource: "MANUAL",
+                // MANUAL by default (CSV values are authoritative merchant
+                // data, §21); a trusted server-side caller may declare AI for
+                // machine-proposed datasets. Never set by an admin upload.
+                profileSource,
               },
             },
           },
