@@ -337,6 +337,13 @@ export async function confirmCsvImport(
       }
 
       return count;
+    }, {
+      // Interactive-transaction defaults are too tight for this workload:
+      // `maxWait` (2s) fails with P2028 ("Unable to start a transaction in the
+      // given time") against remote poolers such as Supabase, and `timeout`
+      // (5s) cannot cover a several-hundred-row create loop.
+      maxWait: 10_000,
+      timeout: 300_000,
     });
 
     return { ok: true, importedCount };
