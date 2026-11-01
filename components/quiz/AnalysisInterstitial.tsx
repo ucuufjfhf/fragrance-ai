@@ -31,6 +31,14 @@ export function progressForTick(tick: number): number {
 /** Artwork cycles to the next match about every 1.4s while the bar fills. */
 export const ANALYSIS_ARTWORK_SHIFT_TICKS = 14;
 
+/**
+ * Every cycling slide is mounted at once (the top matches are at most three),
+ * stacked in one grid cell and crossfaded with opacity only. Remounting a
+ * `<figure key={perfumeId}>` per cycle made a phone reload and re-decode the
+ * artwork on every swap — the visible flash this replaces.
+ */
+export const ANALYSIS_MAX_SLIDES = 3;
+
 export function artworkIndexForTick(tick: number, count: number): number {
   if (count <= 0) {
     return 0;
@@ -125,7 +133,27 @@ export default function AnalysisInterstitial({
   const artworkIndex = reduced
     ? Math.min(STATIC_ARTWORK_INDEX, Math.max(0, matches.length - 1))
     : artworkIndexForTick(tick, matches.length);
-  const current = matches.length > 0 ? matches[artworkIndex % matches.length] : null;
+
+  // All slides stay mounted; the cycle only moves the active one, so no image
+  // element is ever recreated and no artwork is re-decoded mid-performance.
+  const slides = matches.slice(0, ANALYSIS_MAX_SLIDES);
+  const activeIndex = slides.length > 0 ? artworkIndex % slides.length : 0;
+  const artworkKey = slides
+    .map((match) => artworkForPerfume(match.perfumeId))
+    .join("|");
+
+  // Warm the artwork before the cycle reaches it: the bundled files are local,
+  // so this only moves their decode off the swap frame (never a network fetch).
+  useEffect(() => {
+    if (typeof window === "undefined" || artworkKey === "") {
+      return;
+    }
+    artworkKey.split("|").forEach((source) => {
+      const image = new window.Image();
+      image.decoding = "async";
+      image.src = source;
+    });
+  }, [artworkKey]);
 
   return (
     <section className="quiz-rise relative flex flex-col items-center gap-6 overflow-hidden py-10 text-center sm:py-14">
@@ -156,22 +184,39 @@ export default function AnalysisInterstitial({
         />
       </div>
 
-      {current ? (
-        <figure key={current.perfumeId} className="flex flex-col items-center gap-2">
-          {/* Plain <img> for the bundled artwork (the repo's convention for
-              local files — see components/results/RecommendationCard.tsx). */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={artworkForPerfume(current.perfumeId)}
-            alt=""
-            aria-hidden="true"
-            className="h-28 w-44 rounded-2xl object-cover"
-          />
-          <figcaption>
-            <span className="block font-medium leading-7 text-foreground">{current.name}</span>
-            <span className="block text-sm leading-7 text-muted">{current.brand}</span>
-          </figcaption>
-        </figure>
+      {slides.length > 0 ? (
+        // One grid cell holds every slide, so the stack keeps the single
+        // figure's footprint: no layout change on a swap, only a crossfade.
+        <div className="grid">
+          {slides.map((match, index) => {
+            const active = index === activeIndex;
+            return (
+              <figure
+                key={match.perfumeId}
+                aria-hidden={active ? undefined : true}
+                className={`col-start-1 row-start-1 flex flex-col items-center gap-2 transition-opacity duration-300 ease-out motion-reduce:transition-none ${
+                  active ? "opacity-100" : "pointer-events-none opacity-0"
+                }`}
+              >
+                {/* Plain <img> for the bundled artwork (the repo's convention
+                    for local files — see components/results/RecommendationCard.tsx). */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={artworkForPerfume(match.perfumeId)}
+                  alt=""
+                  aria-hidden="true"
+                  decoding="async"
+                  draggable={false}
+                  className="h-28 w-44 rounded-2xl object-cover"
+                />
+                <figcaption>
+                  <span className="block font-medium leading-7 text-foreground">{match.name}</span>
+                  <span className="block text-sm leading-7 text-muted">{match.brand}</span>
+                </figcaption>
+              </figure>
+            );
+          })}
+        </div>
       ) : null}
 
       <p aria-live="polite" className="font-editorial leading-8 text-muted">

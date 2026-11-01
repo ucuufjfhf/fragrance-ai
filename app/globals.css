@@ -270,10 +270,11 @@ h1, h2, h3, h4, h5, h6 {
 /* Trait bars (results page): the fill's leading edge glows while it grows, and
  * each bar plays a brief completion pulse once it settles. Both are decorative
  * and skipped for reduced-motion users. Colors come from the scoped --accent
- * custom property so they follow the user's archetype. */
+ * custom property so they follow the user's archetype. The tip's softness is
+ * its own radial gradient — deliberately NOT a blur filter, which would be a
+ * second, permanently re-rastered effect on an infinitely animated node. */
 .trait-bar-tip {
   background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 35%, white), transparent);
-  filter: blur(2px);
   animation: trait-bar-tip-pulse 700ms ease-in-out infinite alternate;
 }
 
@@ -323,13 +324,11 @@ h1, h2, h3, h4, h5, h6 {
     transparent 72%
   );
   box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 30%, transparent);
-  filter: blur(1.2px);
   opacity: var(--particle-opacity, 0.4);
   animation-name: ambient-particle-drift;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
   animation-direction: alternate;
-  will-change: transform, opacity;
 }
 
 @keyframes ambient-particle-drift {
@@ -925,7 +924,6 @@ h1, h2, h3, h4, h5, h6 {
   animation-name: quiz-mote-drift;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
-  will-change: transform, opacity;
 }
 
 @keyframes quiz-mote-drift {
@@ -1155,6 +1153,29 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* Perf (coarse pointers only): the same rise, minus the painted blur filter —
+ * the worst moment to raster a 10px blur is exactly while the shopper is
+ * scrolling the headline into view. The look on desktop keeps the fogged-mirror
+ * focus pull unchanged; this only drops a filter a phone cannot afford to
+ * animate mid-scroll. Never armed, so no filter is left on the element once it
+ * finishes (the base state is the finished look). */
+@keyframes section-headline-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (pointer: coarse) {
+  .section-headline.is-inview {
+    animation-name: section-headline-rise;
+  }
+}
+
 /* Sparkle cursor: compound-sparkle SVG artwork as CSS data-URI cursors
  * with native fallbacks (never a hidden cursor driven by JS). A 4-pointed star
  * with concave sides plus 4 small satellite triangles at the diagonals, each
@@ -1265,5 +1286,55 @@ h1, h2, h3, h4, h5, h6 {
   }
   html.js .staged-reveal[data-shown="2"] > li:nth-child(n + 3) {
     display: none;
+  }
+}
+
+/* ── Mobile rendering budget (coarse pointers) ─────────────────────────────
+ * A phone pays twice for every live blur: once to raster it, and again on each
+ * scroll frame because a backdrop-filter samples the page behind it. Over the
+ * FIXED, continuously animated ambience that is the expensive case, so on
+ * coarse pointers only, the same colours and geometry are kept with cheaper
+ * effects. Desktop is untouched — these rules never match a fine pointer.
+ *
+ *  - `.quiz-frost` (the profile card on the quiz route) and the sticky header:
+ *    a more opaque plate instead of a backdrop blur over moving air;
+ *  - `.rank-chip` (the recommendation's rank badge): opaque, no self-blur;
+ *  - `.quiz-wash` and `.ambient-particle`: their loops are 13–30s and move a
+ *    few percent, which a phone cannot resolve. They stay painted at their
+ *    base state — depth, not motion — and stop spending frames while scrolling.
+ *    The orbs, the motes and every entrance are unaffected.
+ */
+.site-header {
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.rank-chip {
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+@media (pointer: coarse) {
+  .site-header {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: color-mix(in srgb, var(--background) 94%, transparent);
+  }
+
+  .rank-chip {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: color-mix(in srgb, var(--background) 94%, transparent);
+  }
+
+  .quiz-frost {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: color-mix(in srgb, var(--surface) 93%, transparent);
+  }
+
+  .quiz-wash,
+  .ambient-particle {
+    animation: none;
   }
 }

@@ -185,13 +185,13 @@ describe("archetype reveal stage", () => {
 
     // Entry is fogged, never sharp: the fog layer's base state is the WIPED
     // one (so a static run shows a sharp emblem), while its first keyframe —
-    // held through the 300ms delay by `both` — is the fully fogged mirror.
+    // held through the 300ms delay by `backwards` — is the fully fogged mirror.
     expect(html).toContain("filter: blur(22px) saturate(0.68) brightness(1.08)");
     expect(html).toContain(".archetype-focus-fog {\n");
     expect(html).toContain("clip-path: inset(0 100% 0 0);");
     expect(html).toContain("from { clip-path: inset(0 0% 0 0); }");
     expect(html).toContain(
-      "archetype-focus-wipe 1300ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both",
+      "archetype-focus-wipe 1300ms cubic-bezier(0.22, 1, 0.36, 1) 300ms backwards",
     );
 
     // A soft mist over the blur, on an opaque milky bed so the blur's soft rim
@@ -225,7 +225,7 @@ describe("archetype reveal stage", () => {
     // one delay, one easing as the clip — so the wet edge stays locked to the
     // light instead of drifting ahead of it.
     expect(html).toContain(
-      "archetype-focus-sweep 1300ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both",
+      "archetype-focus-sweep 1300ms cubic-bezier(0.22, 1, 0.36, 1) 300ms backwards",
     );
     expect(html).toContain("translateX(117%) skewX(-8deg)");
     expect(html).toContain("translateX(-50%) skewX(-8deg)");
@@ -304,9 +304,13 @@ describe("archetype reveal stage", () => {
 
     // Nothing bounces: the glow eases out, the three text lines ease out.
     expect(html).toContain(
-      "archetype-focus-glow 900ms cubic-bezier(0.22, 1, 0.36, 1) 700ms both",
+      "archetype-focus-glow 900ms cubic-bezier(0.22, 1, 0.36, 1) 700ms backwards",
     );
-    expect(html).toContain(".archetype-focus-line { animation: archetype-focus-line 600ms ease-out both; }");
+    expect(html).toContain(".archetype-focus-line { animation: archetype-focus-line 600ms ease-out backwards; }");
+    // The entrance holds no animation and no filter once it ends, so a finished
+    // stage keeps nothing to re-raster while the shopper scrolls.
+    expect(html).toContain(".archetype-stage.is-entrance-done .archetype-focus-fog");
+    expect(html).toContain(".archetype-stage.is-entrance-done .archetype-focus-glow { filter: none; }");
     // The previous overshoot curve is gone: this reveal never bounces.
     expect(html).not.toContain("cubic-bezier(0.34, 1.3, 0.64, 1)");
 

@@ -76,7 +76,7 @@ export default function RecommendationCard({
 
         <span
           aria-label={`رتبه ${rank}`}
-          className="tnum absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/45 bg-background/85 text-sm font-bold text-accent shadow-[var(--shadow-card)] backdrop-blur"
+          className="rank-chip tnum absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/45 bg-background/85 text-sm font-bold text-accent shadow-[var(--shadow-card)]"
         >
           {rank}
         </span>

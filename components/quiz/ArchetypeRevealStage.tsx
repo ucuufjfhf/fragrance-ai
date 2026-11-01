@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useState } from "react";
 
 import { archetypeEmblemImageFor } from "@/components/archetype-emblems";
 import type { ArchetypeId } from "@/types/personality";
@@ -65,7 +65,7 @@ export const ARCHETYPE_REVEAL_CSS = `
   background: color-mix(in srgb, var(--accent) 12%, white);
   filter: blur(22px) saturate(0.68) brightness(1.08);
   clip-path: inset(0 100% 0 0);
-  animation: archetype-focus-wipe 1300ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both;
+  animation: archetype-focus-wipe 1300ms cubic-bezier(0.22, 1, 0.36, 1) 300ms backwards;
 }
 .archetype-focus-fog::after {
   content: "";
@@ -80,17 +80,25 @@ export const ARCHETYPE_REVEAL_CSS = `
 }
 .archetype-focus-sweep {
   opacity: 0;
-  animation: archetype-focus-sweep 1300ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both;
+  animation: archetype-focus-sweep 1300ms cubic-bezier(0.22, 1, 0.36, 1) 300ms backwards;
 }
 .archetype-focus-glow {
-  animation: archetype-focus-glow 900ms cubic-bezier(0.22, 1, 0.36, 1) 700ms both;
+  animation: archetype-focus-glow 900ms cubic-bezier(0.22, 1, 0.36, 1) 700ms backwards;
 }
-.archetype-focus-line { animation: archetype-focus-line 600ms ease-out both; }
+.archetype-focus-line { animation: archetype-focus-line 600ms ease-out backwards; }
+/* Perf: backwards (not both) means the animation stops applying once it ends,
+ * so the entrance never leaves a held animation behind. The fog and the glow
+ * are the two layers carrying a live filter; both drop it on animationend (see
+ * the component), so a finished stage keeps no full-screen blur to re-raster
+ * while the shopper scrolls. */
+.archetype-stage.is-entrance-done .archetype-focus-fog,
+.archetype-stage.is-entrance-done .archetype-focus-glow { filter: none; }
 @media (prefers-reduced-motion: reduce) {
   .archetype-focus-fog,
   .archetype-focus-sweep,
   .archetype-focus-glow,
   .archetype-focus-line { animation: none; }
+  .archetype-focus-fog { filter: none; }
 }
 `;
 
@@ -147,11 +155,16 @@ export default function ArchetypeRevealStage({
 }: ArchetypeRevealStageProps) {
   const headingId = useId();
   const emblemSrc = archetypeEmblemImageFor(archetypeId);
+  // Set when the entrance finishes, so the fog and glow stop carrying a filter
+  // (see the CSS). Reduced motion never animates, so it never flips.
+  const [entranceDone, setEntranceDone] = useState(false);
 
   return (
     <section
       aria-labelledby={headingId}
-      className="archetype-stage relative flex min-h-screen w-full flex-col items-center justify-center gap-6 overflow-hidden px-4 py-14 text-center"
+      className={`archetype-stage relative flex min-h-screen w-full flex-col items-center justify-center gap-6 overflow-hidden px-4 py-14 text-center${
+        entranceDone ? " is-entrance-done" : ""
+      }`}
     >
       {/* Motion contract — reduced-motion bypass included. */}
       <style>{ARCHETYPE_REVEAL_CSS}</style>
@@ -165,6 +178,11 @@ export default function ArchetypeRevealStage({
       >
         <span
           className="archetype-focus-glow block h-full w-full rounded-full blur-3xl"
+          onAnimationEnd={(event) => {
+            if (event.animationName === "archetype-focus-glow") {
+              setEntranceDone(true);
+            }
+          }}
           style={{
             background:
               "radial-gradient(closest-side, color-mix(in srgb, var(--accent) 32%, white), transparent)",
