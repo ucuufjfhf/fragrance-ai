@@ -14,6 +14,12 @@ import WidgetApp from "@/components/widget/WidgetApp";
  * All traffic inside the iframe is same-origin to the app; only the two
  * public widget APIs are additionally exposed cross-origin for direct
  * integrations. The iframe is resized via postMessage by the app below.
+ *
+ * Atmosphere: ONE static warm wash plus the same static film grain the quiz
+ * uses, painted behind a single centred column. Nothing animates, nothing is
+ * fixed, and no layer is a backdrop-filter — the widget sits on a merchant's
+ * page, often on a phone, so it must stay as cheap as the coarse-pointer
+ * budget expects. The layers are decorative, `aria-hidden` and inert.
  */
 
 export const metadata: Metadata = {
@@ -34,10 +40,17 @@ export default async function WidgetPage({ searchParams }: WidgetPageProps) {
     <main
       dir="rtl"
       lang="fa"
-      className="flex min-h-dvh w-full flex-col bg-background p-4"
+      className="widget-shell relative flex min-h-dvh w-full flex-col bg-background p-4 sm:p-6"
       data-widget-root=""
     >
-      <WidgetApp storeId={storeId} />
+      {/* Static warmth + grain: the widget's whole atmosphere, painted once
+          behind the column (see the widget block in app/globals.css). */}
+      <div aria-hidden="true" className="widget-ambience pointer-events-none absolute inset-0 -z-10" />
+
+      <div className="mx-auto flex w-full max-w-md flex-col">
+        <WidgetApp storeId={storeId} />
+      </div>
+
       <WidgetResizeBridge />
     </main>
   );

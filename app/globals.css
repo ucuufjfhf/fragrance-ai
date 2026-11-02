@@ -1338,3 +1338,39 @@ h1, h2, h3, h4, h5, h6 {
     animation: none;
   }
 }
+
+/* ── Embeddable store widget — its own chrome ──────────────────────────────
+ * The widget runs inside a merchant's page as an iframe (max width 480px),
+ * often on a phone, so its atmosphere is the cheapest end of the quiz's: ONE
+ * static warm wash plus the same static film grain, painted behind the
+ * content column. Nothing here animates, nothing is `position: fixed`, and no
+ * layer carries a `backdrop-filter` over moving air — so no frame re-samples
+ * the page behind a blur while the shopper scrolls, and the coarse-pointer
+ * rendering budget of 8f36e21 needs no widget exception because there is
+ * nothing left to downgrade. Cards stay opaque `--surface` plates.
+ *
+ * `isolation: isolate` on the shell keeps the ambience's `-z-10` inside the
+ * widget document, so it can never paint under the page (or, in an iframe,
+ * under the merchant's own background).
+ */
+.widget-shell {
+  isolation: isolate;
+}
+
+.widget-ambience {
+  background:
+    radial-gradient(120% 80% at 12% 0%, rgb(217 154 43 / 0.13) 0%, transparent 62%),
+    radial-gradient(110% 70% at 94% 10%, rgb(181 101 45 / 0.09) 0%, transparent 58%),
+    radial-gradient(140% 85% at 50% 110%, rgb(138 35 51 / 0.06) 0%, transparent 62%);
+}
+
+/* The grain: the quiz's own tile, static (no animation to freeze). */
+.widget-ambience::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='wgrain' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.2' intercept='-0.6'/%3E%3CfeFuncG type='linear' slope='2.2' intercept='-0.6'/%3E%3CfeFuncB type='linear' slope='2.2' intercept='-0.6'/%3E%3CfeFuncA type='linear' slope='0' intercept='1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23wgrain)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+}
