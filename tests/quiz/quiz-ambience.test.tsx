@@ -407,6 +407,89 @@ describe("big glow orbs", () => {
   });
 });
 
+/**
+ * The coarse-pointer rendering budget (touch devices).
+ *
+ * A phone that animates a fixed, full-screen ambience behind translucent cards
+ * runs out of compositor frames, and the failure mode is not "slow" — content
+ * layers drop whole frames, so the cards visibly vanish and pop back and the
+ * analysis counter strobes. Every CONTINUOUS layer is therefore frozen and its
+ * layer promotion released; entrances are untouched. These assertions pin the
+ * scope of that block, so a new continuous layer cannot be added without either
+ * freezing it here or failing loudly.
+ */
+describe("coarse-pointer rendering budget", () => {
+  /** The budget block itself (the one that also carries `.quiz-frost`). */
+  const budget = (() => {
+    const start = CSS.indexOf("@media (pointer: coarse) {\n  .site-header {");
+    expect(start, "the coarse-pointer rendering budget block moved").toBeGreaterThan(-1);
+
+    let depth = 0;
+    for (let index = CSS.indexOf("{", start); index < CSS.length; index += 1) {
+      if (CSS[index] === "{") depth += 1;
+      if (CSS[index] === "}") {
+        depth -= 1;
+        if (depth === 0) return CSS.slice(start, index + 1);
+      }
+    }
+    throw new Error("unterminated coarse-pointer block");
+  })();
+
+  /** Every selector a declaration applies to, inside one block. */
+  const selectorsOf = (source: string, declaration: string): string[] =>
+    // Comments are stripped first: an explanatory comment inside the block
+    // would otherwise be glued to the first selector of the rule it precedes.
+    [...source.replace(/\/\*[\s\S]*?\*\//g, "").matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter(([, , body]) => body.includes(declaration))
+      .flatMap(([, selector]) => selector.split(",").map((part) => part.trim()));
+
+  it("freezes the two washes and all three continuous layers", () => {
+    const frozen = selectorsOf(budget, "animation: none;");
+
+    for (const selector of [
+      ".quiz-wash",
+      ".ambient-particle",
+      ".quiz-orb",
+      ".quiz-plume",
+      ".quiz-mote",
+    ]) {
+      expect(frozen, `${selector} still animates on touch devices`).toContain(selector);
+    }
+  });
+
+  it("releases the layer promotion on the frozen layers that declared one", () => {
+    const released = selectorsOf(budget, "will-change: auto;");
+
+    expect(released).toContain(".quiz-orb");
+    expect(released).toContain(".quiz-plume");
+    // Desktop keeps both promotions: the base rules are what a fine pointer sees.
+    expect(block(".quiz-orb")).toContain("will-change: transform;");
+    expect(block(".quiz-plume")).toContain("will-change: transform, opacity;");
+  });
+
+  it("keeps each frozen layer at its own base state — no compensating styles", () => {
+    // The orbs keep their glow (base translate + --orb-opacity); the plumes and
+    // motes keep their base `opacity: 0`, so they simply do not appear.
+    expect(block(".quiz-orb")).toContain("transform: translate(-50%, -50%);");
+    expect(block(".quiz-orb")).toContain("opacity: var(--orb-opacity, 0.3);");
+    expect(block(".quiz-plume")).toContain("opacity: 0;");
+    expect(block(".quiz-mote")).toContain("opacity: 0;");
+
+    // The budget block only freezes and un-promotes: no colour, opacity or
+    // geometry overrides are smuggled in for these layers.
+    expect(budget).not.toContain("opacity:");
+    expect(budget).not.toContain("transform:");
+  });
+
+  it("leaves the fine-pointer rendering alone", () => {
+    // The animation declarations still live on the base rules, outside the
+    // media query, so desktop motion is unchanged.
+    expect(block(".quiz-orb")).toContain("animation-name: quiz-orb-drift;");
+    expect(block(".quiz-plume")).toContain("animation-name: quiz-plume-puff;");
+    expect(block(".quiz-mote")).toContain("animation-name: quiz-mote-drift;");
+  });
+});
+
 describe("frosted-glass quiz cards", () => {
   const ambience = render();
   const frost = block(".quiz-frost");

@@ -1302,7 +1302,16 @@ h1, h2, h3, h4, h5, h6 {
  *  - `.quiz-wash` and `.ambient-particle`: their loops are 13–30s and move a
  *    few percent, which a phone cannot resolve. They stay painted at their
  *    base state — depth, not motion — and stop spending frames while scrolling.
- *    The orbs, the motes and every entrance are unaffected.
+ *  - `.quiz-orb`, `.quiz-plume` and `.quiz-mote`: the remaining continuous
+ *    layers, and the expensive ones — six large radial-gradient orbs, the mist
+ *    plumes and 48 motes, all fixed behind the content. A mid-range phone GPU
+ *    cannot composite those and still paint the cards evenly while scrolling:
+ *    content layers drop whole frames, which is the flicker the owner saw
+ *    (cards vanishing mid-scroll, the counter and artwork strobing). They are
+ *    frozen here and their `will-change` is released so they stop reserving a
+ *    compositor layer. Base states are kept as they are — the orbs rest as a
+ *    static glow at their origin, the plumes and motes rest at `opacity: 0`
+ *    and simply do not appear. Entrances are unaffected.
  */
 .site-header {
   -webkit-backdrop-filter: blur(8px);
@@ -1334,8 +1343,18 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .quiz-wash,
-  .ambient-particle {
+  .ambient-particle,
+  .quiz-orb,
+  .quiz-plume,
+  .quiz-mote {
     animation: none;
+  }
+
+  /* A frozen layer must not keep a compositor layer reserved for the whole
+     session: the promotion is released wherever the base rule declared one. */
+  .quiz-orb,
+  .quiz-plume {
+    will-change: auto;
   }
 }
 
