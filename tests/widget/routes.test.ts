@@ -19,12 +19,18 @@ vi.mock("@/lib/rate-limit", () => ({
 const mocks = vi.hoisted(() => ({
   storeFindFirst: vi.fn(),
   perfumeFindMany: vi.fn(),
+  // The route's own store-scoped price lookup (distinct from the inventory
+  // repository mock above, which stands in for getEligiblePerfumesForStore).
+  priceFindMany: vi.fn(),
   matchPerfumes: vi.fn(),
   createAIProvider: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
-  getPrisma: () => ({ store: { findFirst: mocks.storeFindFirst } }),
+  getPrisma: () => ({
+    store: { findFirst: mocks.storeFindFirst },
+    perfume: { findMany: mocks.priceFindMany },
+  }),
 }));
 
 vi.mock("@/lib/matching/repository", () => ({
@@ -85,6 +91,7 @@ beforeEach(() => {
     websiteUrl: "https://shop.example",
     logoUrl: "https://shop.example/logo.png",
   });
+  mocks.priceFindMany.mockResolvedValue([]);
   mocks.createAIProvider.mockReturnValue({ isAvailable: () => false });
 });
 
@@ -111,6 +118,8 @@ describe("GET /api/widget/config — store validation (§11)", () => {
         storeId: "store-A",
         storeName: "فروشگاه نمونه",
         logoUrl: "https://shop.example/logo.png",
+        // The merchant's own site — the fallback CTA's destination.
+        websiteUrl: "https://shop.example",
         active: true,
       },
     });
@@ -126,7 +135,7 @@ describe("GET /api/widget/config — store validation (§11)", () => {
 
     expect(Object.keys(body).sort()).toEqual(["config", "ok"]);
     expect(Object.keys(body.config).sort()).toEqual([
-      "active", "logoUrl", "storeId", "storeName",
+      "active", "logoUrl", "storeId", "storeName", "websiteUrl",
     ]);
     // The slug, timestamps and the rest of the Store row stay server-side.
     expect(JSON.stringify(body)).not.toContain("createdAt");
@@ -285,10 +294,56 @@ describe("POST /api/widget/recommend — response contract (§12)", () => {
 
     // `explanation` is absent when the AI is unavailable (JSON drops undefined).
     expect(Object.keys(first).sort()).toEqual([
-      "brand", "imageUrl", "matchPercent", "name", "perfumeId", "productUrl", "rank",
+      "brand", "imageUrl", "matchPercent", "name", "perfumeId", "price", "productUrl", "rank",
     ]);
     expect(first.explanation).toBeUndefined();
     expect(first.perfumeId).toBe("store-A-perfume-1"); // minimum identifier (§12)
+  });
+
+  it("includes each perfume's stored price, and null when there is none", async () => {
+    mocks.matchPerfumes.mockReturnValue(makeMatchResult("store-A", 2));
+    mocks.priceFindMany.mockResolvedValue([
+      { id: "store-A-perfume-1", price: 890_000 },
+      { id: "store-A-perfume-2", price: null },
+    ]);
+
+    const response = await recommendPost(
+      new Request("https://app.test/api/widget/recommend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storeId: "store-A", personalityVector: VECTOR }),
+      }),
+    );
+
+    const body = await response.json();
+
+    expect(body.recommendations[0].price).toBe(890_000);
+    expect(body.recommendations[1].price).toBeNull();
+    // The price lookup is store-scoped, like every other widget read.
+    expect(mocks.priceFindMany).toHaveBeenCalledWith({
+      where: { storeId: "store-A", id: { in: ["store-A-perfume-1", "store-A-perfume-2"] } },
+      select: { id: true, price: true },
+    });
+  });
+
+  it("still returns the recommendations when the price lookup fails", async () => {
+    mocks.matchPerfumes.mockReturnValue(makeMatchResult("store-A", 1));
+    mocks.priceFindMany.mockRejectedValue(new Error("connection refused"));
+
+    const response = await recommendPost(
+      new Request("https://app.test/api/widget/recommend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storeId: "store-A", personalityVector: VECTOR }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+
+    const body = await response.json();
+
+    expect(body.recommendations).toHaveLength(1);
+    expect(body.recommendations[0].price).toBeNull();
   });
 
   it("empty inventory returns an empty recommendation list, not an error", async () => {

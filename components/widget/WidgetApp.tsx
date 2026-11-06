@@ -324,6 +324,7 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
     return shell(
       <WidgetResult
         storeId={storeId}
+        storeWebsiteUrl={state.store?.websiteUrl ?? null}
         result={state.result}
         data={state.recommendations}
         onRestart={handleRestart}
@@ -415,11 +416,14 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
 
 function WidgetResult({
   storeId,
+  storeWebsiteUrl,
   result,
   data,
   onRestart,
 }: {
   storeId: string;
+  /** The merchant's own site — the card's fallback CTA destination. */
+  storeWebsiteUrl: string | null;
   result: QuizResult;
   data: WidgetRecommendationResponse;
   onRestart: () => void;
@@ -509,6 +513,7 @@ function WidgetResult({
                 <WidgetRecommendationCard
                   recommendation={recommendation}
                   storeId={storeId}
+                  storeWebsiteUrl={storeWebsiteUrl}
                 />
               </li>
             ))}

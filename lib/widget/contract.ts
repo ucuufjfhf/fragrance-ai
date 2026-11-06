@@ -28,6 +28,14 @@ export interface WidgetStoreConfig {
    * the merchant embeds on their own site anyway.
    */
   logoUrl: string | null;
+  /**
+   * The merchant's own public site, when they have set one.
+   *
+   * Customer-safe (it is the page the widget is embedded on) and used ONLY as
+   * the destination of the fallback CTA for a recommendation that has no
+   * product page — never as a substitute for a product URL when one exists.
+   */
+  websiteUrl: string | null;
   /** Always true in a 200 response; absent/error body implies unavailable. */
   active: true;
 }
@@ -49,6 +57,12 @@ export interface WidgetRecommendation {
   brand: string;
   productUrl: string | null;
   imageUrl: string | null;
+  /**
+   * Stored price in Toman (`Perfume.price`), or null when the merchant has not
+   * set one. Display only — the widget never converts the unit and never
+   * invents a number.
+   */
+  price: number | null;
   /** Presentation score (round(score × 10) / 10) — display only. */
   matchPercent: number;
   /** Persian «چرا این عطر؟» copy when the AI answered; absent otherwise. */

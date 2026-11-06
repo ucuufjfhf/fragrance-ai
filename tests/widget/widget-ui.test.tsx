@@ -26,6 +26,7 @@ const MATCHES: readonly WidgetRecommendation[] = [
     brand: "برند یک",
     productUrl: "https://shop.example/p/1",
     imageUrl: "https://shop.example/p/1.jpg",
+    price: 1_250_000,
     matchPercent: 91.4,
   },
   {
@@ -35,6 +36,7 @@ const MATCHES: readonly WidgetRecommendation[] = [
     brand: "برند دو",
     productUrl: null,
     imageUrl: null,
+    price: null,
     matchPercent: 78.2,
     explanation: "چون رایحه‌های گرم و چوبی با سلیقه شما هماهنگ‌اند.",
   },
@@ -45,6 +47,7 @@ const MATCHES: readonly WidgetRecommendation[] = [
     brand: "برند سه",
     productUrl: null,
     imageUrl: null,
+    price: 0,
     matchPercent: 64,
   },
 ];
@@ -97,18 +100,84 @@ describe("WidgetRecommendationCard — data contracts", () => {
     expect(html).toContain('aria-valuenow="78"');
     expect(html).toContain("تطابق");
     expect(html).toContain("چرا بهتون میاد؟");
-    // No productUrl on this match → no CTA at all, never a fake link.
+    // No productUrl AND no store site → no CTA at all, never a fake link.
     expect(html).not.toContain("<a ");
     expect(html).not.toContain("مشاهده عطر");
+    expect(html).not.toContain("مشاهده در فروشگاه");
   });
 
-  it("renders the CTA only for a real productUrl", () => {
+  it("renders the product CTA with render-time UTM attribution", () => {
     const html = renderToStaticMarkup(
       <WidgetRecommendationCard recommendation={MATCHES[0]} storeId="store-A" />,
     );
 
-    expect(html).toContain('href="https://shop.example/p/1"');
+    // The stored URL is not mutated; the tags are appended where it is used.
+    expect(html).toContain(
+      'href="https://shop.example/p/1?utm_source=fiage_widget&amp;utm_medium=quiz&amp;utm_campaign=store-A"',
+    );
     expect(html).toContain("مشاهده عطر");
+    expect(html).toContain('rel="noopener noreferrer"');
+    expect(html).toContain('target="_blank"');
+  });
+
+  it("never shows the product CTA when there is no productUrl", () => {
+    const html = renderToStaticMarkup(
+      <WidgetRecommendationCard
+        recommendation={MATCHES[2]}
+        storeId="store-A"
+        storeWebsiteUrl="https://shop.example"
+      />,
+    );
+
+    expect(html).not.toContain("مشاهده عطر");
+  });
+
+  it("falls back to the store site when a recommendation has no productUrl", () => {
+    const html = renderToStaticMarkup(
+      <WidgetRecommendationCard
+        recommendation={MATCHES[2]}
+        storeId="store-A"
+        storeWebsiteUrl="https://shop.example"
+      />,
+    );
+
+    expect(html).toContain("مشاهده در فروشگاه");
+    expect(html).toContain(
+      'href="https://shop.example?utm_source=fiage_widget&amp;utm_medium=quiz&amp;utm_campaign=store-A"',
+    );
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain('rel="noopener noreferrer"');
+  });
+
+  it("prefers the product link over the fallback when both exist", () => {
+    const html = renderToStaticMarkup(
+      <WidgetRecommendationCard
+        recommendation={MATCHES[0]}
+        storeId="store-A"
+        storeWebsiteUrl="https://shop.example"
+      />,
+    );
+
+    expect(html).toContain("مشاهده عطر");
+    expect(html).not.toContain("مشاهده در فروشگاه");
+  });
+
+  it("renders the stored price in Persian digits, with the currency label", () => {
+    const html = renderToStaticMarkup(
+      <WidgetRecommendationCard recommendation={MATCHES[0]} storeId="store-A" />,
+    );
+
+    expect(html).toContain("۱,۲۵۰,۰۰۰ تومان");
+  });
+
+  it("renders no price line for a null or zero price", () => {
+    for (const recommendation of [MATCHES[1], MATCHES[2]]) {
+      const html = renderToStaticMarkup(
+        <WidgetRecommendationCard recommendation={recommendation} storeId="store-A" />,
+      );
+
+      expect(html).not.toContain("تومان");
+    }
   });
 
   it("falls back to BottleMark (not invented artwork) when imageUrl is absent", () => {

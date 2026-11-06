@@ -54,6 +54,9 @@ export async function GET(request: Request): Promise<Response> {
           storeId,
           storeName: store.name,
           logoUrl: store.logoUrl,
+          // The merchant's own public site — the fallback CTA destination when
+          // a recommendation has no product page. Already selected for CORS.
+          websiteUrl: store.websiteUrl,
           active: true,
         },
       } satisfies WidgetConfigResult & { ok: true },

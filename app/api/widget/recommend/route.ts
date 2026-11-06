@@ -140,7 +140,31 @@ export async function POST(request: Request): Promise<Response> {
     }
   }
 
-  // --- 5. customer-safe payload (§12) ---
+  // --- 5. prices for the returned ids (display only) ---
+  //
+  // Read here rather than threaded through the shared matching engine: the
+  // engine's output type is part of the main quiz's contract and must not gain
+  // a widget-only field. One store-scoped query for at most Top-N ids, and a
+  // failure only costs the price line — never the recommendations.
+  const prices = new Map<string, number | null>();
+  const recommendationIds = matchResult.recommendations.map((recommendation) => recommendation.perfumeId);
+
+  if (recommendationIds.length > 0) {
+    try {
+      const rows = await prisma.perfume.findMany({
+        where: { storeId: body.storeId, id: { in: recommendationIds } },
+        select: { id: true, price: true },
+      });
+
+      for (const row of rows) {
+        prices.set(row.id, row.price);
+      }
+    } catch {
+      // Prices are decoration; the recommendation list is the contract.
+    }
+  }
+
+  // --- 6. customer-safe payload (§12) ---
   const response: WidgetRecommendationResponse = {
     aiAvailable,
     recommendations: matchResult.recommendations.map(
@@ -151,6 +175,7 @@ export async function POST(request: Request): Promise<Response> {
         brand: recommendation.brand,
         productUrl: recommendation.productUrl ?? null,
         imageUrl: recommendation.imageUrl ?? null,
+        price: prices.get(recommendation.perfumeId) ?? null,
         matchPercent: recommendation.presentationScore,
         explanation: explanations.get(recommendation.perfumeId),
       }),

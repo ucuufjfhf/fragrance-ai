@@ -3,6 +3,8 @@
 import { BottleMark } from "@/components/ui-icons";
 import { trackEvent } from "@/lib/analytics/client";
 import { formatPersianScore } from "@/lib/persian";
+import { formatTomanPrice } from "@/lib/pricing/currency";
+import { withWidgetAttribution } from "@/lib/widget/attribution";
 import type { WidgetRecommendation } from "@/lib/widget/contract";
 
 /**
@@ -18,8 +20,16 @@ import type { WidgetRecommendation } from "@/lib/widget/contract";
  *  - `matchPercent` is displayed as-is (the engine rounds once) and the bar
  *    keeps its accessible progressbar contract;
  *  - the explanation renders only when the AI answered;
- *  - a missing `productUrl` renders NO CTA at all — a fake URL is never
- *    invented (§17), and PERFUME_CLICKED fires on actual clicks only;
+ *  - the CTA never dead-ends: a real `productUrl` is the primary action, and
+ *    when there is none but the merchant has a site, «مشاهده در فروشگاه» sends
+ *    the shopper there instead. With neither URL the card renders NO CTA — a
+ *    destination is never invented (§17) — and PERFUME_CLICKED fires only on
+ *    the product link, exactly as before;
+ *  - outbound links carry render-time UTM attribution (`fiage_widget` / `quiz` /
+ *    store id), so the merchant can see the visit in their own analytics. The
+ *    stored URL itself is never modified;
+ *  - the stored price (Toman) renders as «۱,۲۵۰,۰۰۰ تومان» when it is a positive
+ *    number, and not at all otherwise — a zero or absent price is not a price;
  *  - a missing `imageUrl` falls back to `BottleMark`, never to invented
  *    merchant data (the main site's curated artwork is not used here: these
  *    are the merchant's own products).
@@ -27,11 +37,21 @@ import type { WidgetRecommendation } from "@/lib/widget/contract";
 export default function WidgetRecommendationCard({
   recommendation,
   storeId,
+  storeWebsiteUrl = null,
 }: {
   recommendation: WidgetRecommendation;
   storeId: string;
+  /** The merchant's own site — the fallback CTA's destination, or null. */
+  storeWebsiteUrl?: string | null;
 }) {
-  const { rank, name, brand, productUrl, imageUrl, matchPercent, explanation } = recommendation;
+  const { rank, name, brand, productUrl, imageUrl, matchPercent, explanation, price } = recommendation;
+
+  // Attribution is applied at render time only — the stored URLs are untouched.
+  const productHref = productUrl ? withWidgetAttribution(productUrl, storeId) : null;
+  const storeHref =
+    !productUrl && storeWebsiteUrl ? withWidgetAttribution(storeWebsiteUrl, storeId) : null;
+  // A price is shown only when it is a real positive amount (Toman).
+  const hasPrice = typeof price === "number" && Number.isFinite(price) && price > 0;
 
   return (
     <article className="quiz-rise relative flex flex-col overflow-hidden rounded-[1.5rem] border border-border-soft bg-surface shadow-[var(--shadow-card)]">
@@ -67,6 +87,11 @@ export default function WidgetRecommendationCard({
         <div className="flex flex-col gap-0.5">
           <h3 className="font-heading text-base font-bold leading-7 text-foreground">{name}</h3>
           <span className="text-sm text-muted">{brand}</span>
+          {hasPrice ? (
+            <span className="tnum mt-1 text-sm font-semibold text-foreground">
+              {formatTomanPrice(price)}
+            </span>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-3">
@@ -99,9 +124,9 @@ export default function WidgetRecommendationCard({
           </div>
         ) : null}
 
-        {productUrl ? (
+        {productHref ? (
           <a
-            href={productUrl}
+            href={productHref}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => {
@@ -111,6 +136,18 @@ export default function WidgetRecommendationCard({
             className="btn-secondary flex min-h-11 items-center justify-center px-5 text-sm font-medium text-foreground hover:text-accent"
           >
             مشاهده عطر →
+          </a>
+        ) : storeHref ? (
+          // Fallback destination, deliberately quieter than the product CTA.
+          // No analytics event: the merchant sees this visit through the UTM
+          // parameters in their own analytics.
+          <a
+            href={storeHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex min-h-11 items-center justify-center rounded-full border border-border-soft px-5 text-sm font-medium text-muted transition-colors hover:border-accent/50 hover:text-accent"
+          >
+            مشاهده در فروشگاه
           </a>
         ) : null}
       </div>
