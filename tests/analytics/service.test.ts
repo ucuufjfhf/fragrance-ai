@@ -11,13 +11,14 @@ import { recordAnalyticsEvent } from "@/lib/analytics/service";
 const mocks = vi.hoisted(() => ({
   storeFindFirst: vi.fn(),
   perfumeFindFirst: vi.fn(),
+  perfumeFindMany: vi.fn(),
   eventCreate: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
   getPrisma: () => ({
     store: { findFirst: mocks.storeFindFirst },
-    perfume: { findFirst: mocks.perfumeFindFirst },
+    perfume: { findFirst: mocks.perfumeFindFirst, findMany: mocks.perfumeFindMany },
     analyticsEvent: { create: mocks.eventCreate },
   }),
 }));
@@ -37,6 +38,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.storeFindFirst.mockResolvedValue({ id: "store-1" });
   mocks.perfumeFindFirst.mockResolvedValue({ id: "perfume-1" });
+  mocks.perfumeFindMany.mockResolvedValue([]);
 });
 
 describe("recordAnalyticsEvent — relationship validation (§10/§13)", () => {
@@ -102,6 +104,68 @@ describe("recordAnalyticsEvent — relationship validation (§10/§13)", () => {
     expect(result.ok).toBe(false);
     expect(mocks.storeFindFirst).not.toHaveBeenCalled();
     expect(mocks.eventCreate).not.toHaveBeenCalled();
+  });
+
+  it("keeps metadata.perfumeIds when every id belongs to the event's store", async () => {
+    mocks.perfumeFindMany.mockResolvedValue([{ id: "perfume-1" }, { id: "perfume-2" }]);
+
+    const result = await recordAnalyticsEvent({
+      eventType: "RECOMMENDATIONS_SHOWN",
+      storeId: "store-1",
+      metadata: { count: 2, perfumeIds: ["perfume-1", "perfume-2"] },
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(mocks.perfumeFindMany).toHaveBeenCalledWith({
+      where: { storeId: "store-1", id: { in: ["perfume-1", "perfume-2"] } },
+      select: { id: true },
+    });
+
+    const written = mocks.eventCreate.mock.calls[0][0];
+
+    expect(written.metadata).toEqual({ count: 2, perfumeIds: ["perfume-1", "perfume-2"] });
+  });
+
+  it("drops perfumeIds when any id is foreign — and still records the count", async () => {
+    // Only one of the two ids exists in this store: the list is enrichment, so
+    // the whole list goes and the impression count survives.
+    mocks.perfumeFindMany.mockResolvedValue([{ id: "perfume-1" }]);
+
+    const result = await recordAnalyticsEvent({
+      eventType: "RECOMMENDATIONS_SHOWN",
+      storeId: "store-1",
+      metadata: { count: 2, perfumeIds: ["perfume-1", "perfume-from-store-2"] },
+    });
+
+    expect(result).toEqual({ ok: true });
+
+    const written = mocks.eventCreate.mock.calls[0][0];
+
+    expect(written.metadata).toEqual({ count: 2 });
+  });
+
+  it("drops perfumeIds when the membership query fails (never loses the count)", async () => {
+    mocks.perfumeFindMany.mockRejectedValue(new Error("connection refused"));
+
+    const result = await recordAnalyticsEvent({
+      eventType: "RECOMMENDATIONS_SHOWN",
+      storeId: "store-1",
+      metadata: { count: 1, perfumeIds: ["perfume-1"] },
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(mocks.eventCreate.mock.calls[0][0].metadata).toEqual({ count: 1 });
+  });
+
+  it("drops perfumeIds when the event carries no store to verify against", async () => {
+    const result = await recordAnalyticsEvent({
+      eventType: "RECOMMENDATIONS_SHOWN",
+      metadata: { count: 2, perfumeIds: ["perfume-1"] },
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(mocks.perfumeFindMany).not.toHaveBeenCalled();
+    expect(mocks.eventCreate.mock.calls[0][0].metadata).toEqual({ count: 2 });
   });
 
   it("does not throw when persistence fails — analytics never breaks the flow", async () => {

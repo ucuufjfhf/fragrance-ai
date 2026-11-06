@@ -124,3 +124,101 @@ describe("validateAnalyticsEvent — payload shape (§11)", () => {
     }
   });
 });
+
+/**
+ * `metadata.perfumeIds` — the per-perfume impression list on
+ * RECOMMENDATIONS_SHOWN.
+ *
+ * The rule that matters here: the ids are ENRICHMENT, not identity. A malformed
+ * list is dropped and the event is still accepted, because losing the count to
+ * protect the list would cost the merchant the very number this feature exists
+ * to surface. Ownership is the service's DB check, not this pure boundary.
+ */
+describe("validateAnalyticsEvent — perfumeIds enrichment", () => {
+  const shown = (perfumeIds: unknown) => ({
+    eventType: "RECOMMENDATIONS_SHOWN",
+    storeId: "store-1",
+    metadata: { count: 3, perfumeIds },
+  });
+
+  it("accepts up to three id-shaped strings and preserves display order", () => {
+    const result = validateAnalyticsEvent(shown(["perfume-c", "perfume-a", "perfume-b"]));
+
+    expect(result.ok).toBe(true);
+
+    if (result.ok) {
+      expect(result.value.metadata?.perfumeIds).toEqual(["perfume-c", "perfume-a", "perfume-b"]);
+      // The count field is untouched by the enrichment.
+      expect(result.value.metadata?.count).toBe(3);
+    }
+  });
+
+  it("strips an oversized list instead of rejecting the event", () => {
+    const result = validateAnalyticsEvent(shown(["p1", "p2", "p3", "p4"]));
+
+    expect(result.ok).toBe(true);
+
+    if (result.ok) {
+      expect(result.value.metadata?.perfumeIds).toBeUndefined();
+      expect(result.value.metadata?.count).toBe(3);
+    }
+  });
+
+  it("strips malformed entries (empty, non-string, bad characters, too long)", () => {
+    const malformed: unknown[] = [
+      [""],
+      [42],
+      ["bad id!"],
+      ["x".repeat(65)],
+      ["p1", null],
+    ];
+
+    for (const ids of malformed) {
+      const result = validateAnalyticsEvent(shown(ids));
+
+      expect(result.ok, `payload was rejected for ids ${JSON.stringify(ids)}`).toBe(true);
+
+      if (result.ok) {
+        expect(result.value.metadata?.perfumeIds).toBeUndefined();
+      }
+    }
+  });
+
+  it("strips a non-array value (string, object, empty array)", () => {
+    for (const ids of ["perfume-a", { 0: "perfume-a" }, []]) {
+      const result = validateAnalyticsEvent(shown(ids));
+
+      expect(result.ok).toBe(true);
+
+      if (result.ok) {
+        expect(result.value.metadata?.perfumeIds).toBeUndefined();
+      }
+    }
+  });
+
+  it("does not let a huge malformed list push the count past the byte limit", () => {
+    // 200 junk ids would blow the metadata budget on their own; stripping first
+    // means the small, valid `count` still lands.
+    const result = validateAnalyticsEvent(shown(Array.from({ length: 200 }, (_, index) => `!!${index}`)));
+
+    expect(result.ok).toBe(true);
+
+    if (result.ok) {
+      expect(result.value.metadata).toEqual({ count: 3 });
+    }
+  });
+
+  it("leaves metadata untouched when perfumeIds is absent", () => {
+    const result = validateAnalyticsEvent({
+      eventType: "RECOMMENDATIONS_SHOWN",
+      storeId: "store-1",
+      metadata: { count: 3 },
+    });
+
+    expect(result.ok).toBe(true);
+
+    if (result.ok) {
+      expect(result.value.metadata).toEqual({ count: 3 });
+    }
+  });
+});

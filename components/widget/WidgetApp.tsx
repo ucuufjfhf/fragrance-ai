@@ -238,7 +238,12 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
     void trackEvent({
       eventType: "RECOMMENDATIONS_SHOWN",
       storeId,
-      metadata: { count: data.recommendations.length },
+      // `count` is the list size; `perfumeIds` is what actually rendered, in
+      // display order (the same enrichment the main quiz sends server-side).
+      metadata: {
+        count: data.recommendations.length,
+        perfumeIds: data.recommendations.map((recommendation) => recommendation.perfumeId),
+      },
     });
 
     setState((current) =>

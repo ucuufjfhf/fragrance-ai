@@ -92,9 +92,12 @@ describe("getTopPerfumes — aggregation and store-scoped join (§17/§18)", () 
 
     const rows = await getTopPerfumes("store-1", RANGE);
 
+    // `shownCount` is the row's authoritative shown number: with no id lists in
+    // play it equals the historical per-perfume tally, so legacy reports keep
+    // the exact numbers they showed before this change.
     expect(rows).toEqual([
-      { perfumeId: "p1", name: "عطر آلفا", brand: "Brand A", recommendationCount: 5, clickCount: 2 },
-      { perfumeId: "p2", name: "عطر بتا", brand: "Brand B", recommendationCount: 4, clickCount: 1 },
+      { perfumeId: "p1", name: "عطر آلفا", brand: "Brand A", shownCount: 5, recommendationCount: 5, clickCount: 2 },
+      { perfumeId: "p2", name: "عطر بتا", brand: "Brand B", shownCount: 4, recommendationCount: 4, clickCount: 1 },
     ]);
 
     // The catalog join is store-scoped — a foreign perfume can never appear.
@@ -130,8 +133,70 @@ describe("getTopPerfumes — aggregation and store-scoped join (§17/§18)", () 
     const rows = await getTopPerfumes("store-1", RANGE);
 
     expect(rows).toEqual([
-      { perfumeId: "p-gone", name: "عطر حذف‌شده", brand: "—", recommendationCount: 1, clickCount: 1 },
+      { perfumeId: "p-gone", name: "عطر حذف‌شده", brand: "—", shownCount: 1, recommendationCount: 1, clickCount: 1 },
     ]);
+  });
+
+  it("counts one impression per listed id and mixes historical rows without ids", async () => {
+    mocks.findMany
+      .mockResolvedValueOnce([{ perfumeId: "p1", eventType: "PERFUME_CLICKED" }])
+      .mockResolvedValueOnce([
+        // Current shape: a list-level event naming every perfume shown.
+        { perfumeId: null, metadata: { count: 3, perfumeIds: ["p1", "p2", "p3"] } },
+        { perfumeId: null, metadata: { count: 3, perfumeIds: ["p1", "p2"] } },
+        // Historical shape: a per-perfume count, no ids.
+        { perfumeId: "p2", metadata: { count: 4 } },
+        // Neither a perfume nor ids: contributes nothing at all.
+        { perfumeId: null, metadata: { count: 2 } },
+      ]);
+
+    mocks.perfumeFindMany.mockResolvedValue([
+      { id: "p1", name: "A", brand: "a" },
+      { id: "p2", name: "B", brand: "b" },
+      { id: "p3", name: "C", brand: "c" },
+    ]);
+
+    const rows = await getTopPerfumes("store-1", RANGE);
+
+    // p2 = 2 listed + 4 historical; p1 = 2 listed (+1 click); p3 = 1 listed, no
+    // click at all — an impression-only row, which is the whole point.
+    expect(rows).toEqual([
+      { perfumeId: "p2", name: "B", brand: "b", shownCount: 6, recommendationCount: 4, clickCount: 0 },
+      { perfumeId: "p1", name: "A", brand: "a", shownCount: 2, recommendationCount: 0, clickCount: 1 },
+      { perfumeId: "p3", name: "C", brand: "c", shownCount: 1, recommendationCount: 0, clickCount: 0 },
+    ]);
+  });
+
+  it("renders a row from impressions alone — no click and no product URL needed", async () => {
+    // The catalog join selects id/name/brand only: a perfume with no productUrl
+    // is indistinguishable here, so a store whose perfumes are not linkable
+    // still gets a non-empty «most recommended» section.
+    mocks.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { perfumeId: null, metadata: { count: 1, perfumeIds: ["p-no-url"] } },
+      ]);
+
+    mocks.perfumeFindMany.mockResolvedValue([{ id: "p-no-url", name: "عطر بی‌لینک", brand: "برند" }]);
+
+    const rows = await getTopPerfumes("store-1", RANGE);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ perfumeId: "p-no-url", shownCount: 1, clickCount: 0 });
+  });
+
+  it("ignores malformed id lists in stored metadata (never NaN or phantom rows)", async () => {
+    mocks.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { perfumeId: null, metadata: { count: 1, perfumeIds: "p1" } },
+        { perfumeId: null, metadata: { count: 1, perfumeIds: [null, 7] } },
+      ]);
+
+    const rows = await getTopPerfumes("store-1", RANGE);
+
+    expect(rows).toEqual([]);
+    expect(mocks.perfumeFindMany).not.toHaveBeenCalled();
   });
 
   it("returns an empty list when no perfume-scoped events exist", async () => {

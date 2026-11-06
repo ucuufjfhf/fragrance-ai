@@ -172,7 +172,13 @@ export async function getResultsViewData(
     await recordAnalyticsEvent({
       eventType: "RECOMMENDATIONS_SHOWN",
       storeId,
-      metadata: { count: recommendations.length },
+      // `count` stays the list size; `perfumeIds` names exactly which perfumes
+      // were on screen, in display order — so the report can count per-perfume
+      // impressions without depending on a click (or on a product URL).
+      metadata: {
+        count: recommendations.length,
+        perfumeIds: recommendations.map((row) => row.perfumeId),
+      },
     });
   }
 

@@ -23,6 +23,44 @@ export type RecordEventResult =
   | { ok: true }
   | { ok: false; reason: "INVALID_EVENT" | "STORE_NOT_FOUND" | "PERFUME_NOT_IN_STORE"; detail?: string };
 
+/**
+ * Keeps `metadata.perfumeIds` only when EVERY listed id belongs to the event's
+ * store.
+ *
+ * The shape is already guaranteed by the contract; ownership is the DB half.
+ * Any doubt — no store on the event, a foreign id, or a failed query — drops
+ * the field and keeps the event: the list is enrichment and must never cost the
+ * merchant the impression count it rides on.
+ */
+async function withVerifiedShownIds(event: AnalyticsEventInput): Promise<AnalyticsEventInput> {
+  const metadata = event.metadata;
+
+  if (metadata === undefined || metadata.perfumeIds === undefined) {
+    return event;
+  }
+
+  const ids = metadata.perfumeIds as string[];
+  const { perfumeIds: _dropped, ...rest } = metadata;
+
+  if (event.storeId === undefined) {
+    return { ...event, metadata: rest };
+  }
+
+  try {
+    const prisma = getPrisma();
+    const found = await prisma.perfume.findMany({
+      where: { storeId: event.storeId, id: { in: ids } },
+      select: { id: true },
+    });
+
+    // Fewer rows than ids means at least one id is not this store's (or does
+    // not exist) — the whole list goes, the event stays.
+    return found.length === ids.length ? event : { ...event, metadata: rest };
+  } catch {
+    return { ...event, metadata: rest };
+  }
+}
+
 export async function recordAnalyticsEvent(input: unknown): Promise<RecordEventResult> {
   const validation = validateAnalyticsEvent(input);
 
@@ -30,7 +68,7 @@ export async function recordAnalyticsEvent(input: unknown): Promise<RecordEventR
     return { ok: false, reason: "INVALID_EVENT", detail: validation.reason };
   }
 
-  const event = validation.value;
+  const event = await withVerifiedShownIds(validation.value);
 
   // Store relationship check — an event with an unknown/inactive store id is
   // rejected rather than silently attributed to nobody.

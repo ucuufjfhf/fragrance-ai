@@ -128,13 +128,13 @@ export default async function StoreReportPage({ params, searchParams }: StoreRep
                         <td className="px-3 py-2 tnum">{toPersianDigits(index + 1)}</td>
                         <td className="px-3 py-2 font-medium">{row.name}</td>
                         <td className="px-3 py-2">{row.brand}</td>
-                        <td className="px-3 py-2 tnum">{toPersianDigits(row.recommendationCount)}</td>
+                        <td className="px-3 py-2 tnum">{toPersianDigits(row.shownCount)}</td>
                         <td className="px-3 py-2 tnum">{toPersianDigits(row.clickCount)}</td>
                         <td className="px-3 py-2 tnum">
-                          {row.recommendationCount === 0
+                          {row.shownCount === 0
                             ? "—"
                             : formatPersianPercent(
-                                Math.round((row.clickCount / row.recommendationCount) * 100),
+                                Math.round((row.clickCount / row.shownCount) * 100),
                               )}
                         </td>
                       </tr>

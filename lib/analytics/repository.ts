@@ -81,6 +81,17 @@ export interface TopPerfumeRow {
   perfumeId: string;
   name: string;
   brand: string;
+  /**
+   * Times this perfume appeared in a recommendation list — the authoritative
+   * "shown" number the report renders and rates against.
+   *
+   * Two write shapes feed it, and both are counted exactly once per impression:
+   * the current one (`metadata.perfumeIds` on a list-level event) and the
+   * historical one (a per-perfume `metadata.count` on a row that carried
+   * `perfumeId`). Rows with neither contribute nothing.
+   */
+  shownCount: number;
+  /** Legacy tally only: `metadata.count` from rows that carried `perfumeId`. */
   recommendationCount: number;
   clickCount: number;
 }
@@ -118,16 +129,28 @@ export async function getTopPerfumes(
   });
 
   const recommendationCounts = new Map<string, number>();
+  // The per-perfume impression list: one tally per id per event, in the order
+  // the shopper saw them. Events without ids (all historical ones) add nothing.
+  const listedCounts = new Map<string, number>();
 
   for (const event of shown) {
-    if (event.perfumeId === null) continue;
+    const metadata = event.metadata as { count?: unknown; perfumeIds?: unknown } | null;
 
-    const metadata = event.metadata as { count?: unknown } | null;
-    const count = typeof metadata?.count === "number" && Number.isInteger(metadata.count) && metadata.count >= 0
-      ? metadata.count
-      : 0;
+    if (event.perfumeId !== null) {
+      const count = typeof metadata?.count === "number" && Number.isInteger(metadata.count) && metadata.count >= 0
+        ? metadata.count
+        : 0;
 
-    recommendationCounts.set(event.perfumeId, (recommendationCounts.get(event.perfumeId) ?? 0) + count);
+      recommendationCounts.set(event.perfumeId, (recommendationCounts.get(event.perfumeId) ?? 0) + count);
+    }
+
+    if (Array.isArray(metadata?.perfumeIds)) {
+      for (const id of metadata.perfumeIds) {
+        if (typeof id !== "string" || id === "") continue;
+
+        listedCounts.set(id, (listedCounts.get(id) ?? 0) + 1);
+      }
+    }
   }
 
   const clickCounts = new Map<string, number>();
@@ -138,7 +161,9 @@ export async function getTopPerfumes(
     clickCounts.set(event.perfumeId, (clickCounts.get(event.perfumeId) ?? 0) + 1);
   }
 
-  const perfumeIds = [...new Set([...recommendationCounts.keys(), ...clickCounts.keys()])];
+  const perfumeIds = [
+    ...new Set([...recommendationCounts.keys(), ...listedCounts.keys(), ...clickCounts.keys()]),
+  ];
 
   if (perfumeIds.length === 0) {
     return [];
@@ -156,15 +181,18 @@ export async function getTopPerfumes(
     .map((perfumeId) => {
       const known = catalog.get(perfumeId);
 
+      const recommendationCount = recommendationCounts.get(perfumeId) ?? 0;
+
       return {
         perfumeId,
         name: known?.name ?? "عطر حذف‌شده",
         brand: known?.brand ?? "—",
-        recommendationCount: recommendationCounts.get(perfumeId) ?? 0,
+        shownCount: recommendationCount + (listedCounts.get(perfumeId) ?? 0),
+        recommendationCount,
         clickCount: clickCounts.get(perfumeId) ?? 0,
       };
     })
-    .sort((a, b) => b.recommendationCount - a.recommendationCount || b.clickCount - a.clickCount || a.perfumeId.localeCompare(b.perfumeId));
+    .sort((a, b) => b.shownCount - a.shownCount || b.clickCount - a.clickCount || a.perfumeId.localeCompare(b.perfumeId));
 }
 
 export interface DailyAnalyticsRow {
