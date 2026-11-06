@@ -493,7 +493,7 @@ the admin page falls back to the request origin — no production hostname is in
 its own `<script>`, validates `data-store-id`, guards duplicate initialization, derives
 the base URL from its own `src` (overridable via `data-base-url`), and mounts an
 **iframe** at `/widget?store=…`. The iframe is the CSS isolation boundary — complete
-two-way isolation from hostile merchant CSS (verified with `public/widget-demo.html`,
+two-way isolation from hostile merchant CSS (verified with `tools/widget-demo.html`,
 a deliberately hostile merchant-page simulator with a manual checklist). Shadow DOM
 was evaluated and rejected: it would require shipping a separate React bundle with a
 new build step, while the iframe reuses the app's real components with zero
@@ -531,7 +531,7 @@ mocked Prisma + SSR, no live DB in the suite. Suite total **278/278 across 26 fi
 Live HTTP smoke test passed (20 checks): config validation, store isolation both
 directions, deterministic ranking, all five events with the widget storeId, foreign
 perfume rejection, inactive exclusion, full cleanup (events back to baseline). Manual
-browser verification: `public/widget-demo.html` with a 10-point checklist (automated
+browser verification: `tools/widget-demo.html` with a 10-point checklist (automated
 browser testing was not performed in this environment).
 
 ---

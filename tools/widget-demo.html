@@ -7,10 +7,18 @@
   styles, box-sizing overrides) — to prove the iframe isolates the widget
   from merchant styles in both directions.
 
-  Usage (local dev):
-    1. npm run dev
-    2. open http://localhost:3000/widget-demo.html
+  It is a local dev tool, NOT part of the deployed site: it lives in tools/
+  and is never served by the app, so a production visitor cannot reach it.
+
+  Usage (local verification only):
+    1. npm run dev                     (the loader and the widget app)
+    2. serve this file from the checkout, e.g.
+         python3 -m http.server -d tools 8080
+       then open http://localhost:8080/widget-demo.html
     3. walk through the manual checklist below.
+
+  The loader is loaded from the dev server explicitly, because this page is no
+  longer served from the widget deployment's own origin.
 -->
 <html lang="fa">
 <head>
@@ -34,8 +42,9 @@
     استایل‌ها نمایش داده شود.
   </p>
 
-  <!-- The exact installation snippet a merchant copies from /admin/perfumes -->
-  <script src="/widget.js" data-store-id="store-demo-perfume-shop"></script>
+  <!-- The exact installation snippet a merchant copies from /admin/perfumes
+       (pointed at the local dev server, since tools/ is not served by the app) -->
+  <script src="http://localhost:3000/widget.js" data-store-id="store-demo-perfume-shop"></script>
 
   <hr style="margin-top: 40px" />
   <h2>چک‌لیست تأیید دستی</h2>
