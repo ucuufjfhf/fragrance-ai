@@ -9,7 +9,11 @@ import { validateStoreProvisioning } from "@/lib/admin/store-provisioning";
  * Usage:
  *
  *   npx tsx scripts/create-store.ts --name "عطر فروشگاه من" \
- *     --slug my-shop [--website-url https://my-shop.ir] [--logo-url https://.../logo.png]
+ *     --slug my-shop [--website-url https://my-shop.ir] [--logo-url https://.../logo.png] \
+ *     [--accent-color "#1F6F5C"]
+ *
+ * `--accent-color` is optional: omitting it stores NULL, which is exactly the
+ * FIAGE default accent every store had before the field existed.
  *
  * Creates ONE merchant Store with a Prisma-generated cuid id and a unique
  * slug. The printed id is what the admin panel and the widget embed snippet
@@ -25,6 +29,7 @@ interface ParsedArgs {
   slug?: string;
   websiteUrl?: string;
   logoUrl?: string;
+  accentColor?: string;
 }
 
 function parseArgs(argv: readonly string[]): ParsedArgs {
@@ -49,6 +54,10 @@ function parseArgs(argv: readonly string[]): ParsedArgs {
         args.logoUrl = value;
         i += 1;
         break;
+      case "--accent-color":
+        args.accentColor = value;
+        i += 1;
+        break;
       default:
         // Unknown flags are ignored so typo'd flags cannot create garbage.
         break;
@@ -65,6 +74,7 @@ async function main(): Promise<number> {
     slug: args.slug ?? "",
     websiteUrl: args.websiteUrl,
     logoUrl: args.logoUrl,
+    accentColor: args.accentColor,
   });
 
   if (!validation.ok) {
@@ -76,11 +86,11 @@ async function main(): Promise<number> {
   }
 
   const prisma = getPrisma();
-  const { name, slug, websiteUrl, logoUrl } = validation.value;
+  const { name, slug, websiteUrl, logoUrl, accentColor } = validation.value;
 
   try {
     const store = await prisma.store.create({
-      data: { name, slug, websiteUrl, logoUrl },
+      data: { name, slug, websiteUrl, logoUrl, accentColor },
       select: { id: true, slug: true, name: true },
     });
 
@@ -88,6 +98,7 @@ async function main(): Promise<number> {
     console.log(`  id:    ${store.id}`);
     console.log(`  slug:  ${store.slug}`);
     console.log(`  name:  ${store.name}`);
+    console.log(`  accent: ${accentColor ?? "(FIAGE default)"}`);
     console.log("");
     console.log("مرحلهٔ بعد:");
     console.log(`  1) /admin/perfumes?store=${store.id} → محصولات را وارد کنید.`);

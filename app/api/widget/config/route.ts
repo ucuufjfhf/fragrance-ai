@@ -1,4 +1,5 @@
 import { getPrisma } from "@/lib/db";
+import { normalizeAccentColor } from "@/lib/store/branding";
 import { isValidStoreId, type WidgetConfigResult } from "@/lib/widget/contract";
 import { widgetCorsHeaders } from "@/lib/widget/cors";
 
@@ -36,7 +37,7 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const store = await prisma.store.findFirst({
       where: { id: storeId, active: true },
-      select: { name: true, websiteUrl: true, logoUrl: true },
+      select: { name: true, websiteUrl: true, logoUrl: true, accentColor: true },
     });
     headers = widgetCorsHeaders(origin, store?.websiteUrl);
 
@@ -57,6 +58,9 @@ export async function GET(request: Request): Promise<Response> {
           // The merchant's own public site — the fallback CTA destination when
           // a recommendation has no product page. Already selected for CORS.
           websiteUrl: store.websiteUrl,
+          // Brand colour for the widget shell; null (or a column that somehow
+          // holds a non-`#rrggbb` value) means the FIAGE default accent.
+          accentColor: normalizeAccentColor(store.accentColor),
           active: true,
         },
       } satisfies WidgetConfigResult & { ok: true },

@@ -36,6 +36,11 @@ export interface WidgetStoreConfig {
    * product page — never as a substitute for a product URL when one exists.
    */
   websiteUrl: string | null;
+  /**
+   * The merchant's brand colour for the widget shell (`#rrggbb`, lowercase), or
+   * null for the FIAGE default. Applied inside the widget only.
+   */
+  accentColor: string | null;
   /** Always true in a 200 response; absent/error body implies unavailable. */
   active: true;
 }

@@ -10,6 +10,7 @@ import StagedReveal from "@/components/results/StagedReveal";
 import { BrandMark } from "@/components/ui-icons";
 import WidgetAnalysis from "@/components/widget/WidgetAnalysis";
 import WidgetRecommendationCard from "@/components/widget/WidgetRecommendationCard";
+import WidgetShell from "@/components/widget/WidgetShell";
 import WidgetStoreHeader from "@/components/widget/WidgetStoreHeader";
 import { trackEvent } from "@/lib/analytics/client";
 import {
@@ -273,11 +274,14 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
     <WidgetStoreHeader name={state.store.storeName} logoUrl={state.store.logoUrl} />
   ) : null;
 
+  // The shell owns the merchant accent (scoped to the widget only) and the one
+  // privacy link every phase shows — the shopper can read what is collected
+  // without leaving the quiz.
   const shell = (body: React.ReactNode) => (
-    <div className="flex flex-col gap-5">
+    <WidgetShell accentColor={state.store?.accentColor ?? null}>
       {header}
       {body}
-    </div>
+    </WidgetShell>
   );
 
   if (state.phase === "unavailable") {

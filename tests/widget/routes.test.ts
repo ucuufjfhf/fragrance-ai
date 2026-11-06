@@ -90,6 +90,8 @@ beforeEach(() => {
     name: "فروشگاه نمونه",
     websiteUrl: "https://shop.example",
     logoUrl: "https://shop.example/logo.png",
+    // Stored upper-case on purpose: the payload must carry the normalised form.
+    accentColor: "#1F6F5C",
   });
   mocks.priceFindMany.mockResolvedValue([]);
   mocks.createAIProvider.mockReturnValue({ isAvailable: () => false });
@@ -120,12 +122,14 @@ describe("GET /api/widget/config — store validation (§11)", () => {
         logoUrl: "https://shop.example/logo.png",
         // The merchant's own site — the fallback CTA's destination.
         websiteUrl: "https://shop.example",
+        // Normalised to lower case by the canonical rule.
+        accentColor: "#1f6f5c",
         active: true,
       },
     });
     expect(mocks.storeFindFirst).toHaveBeenCalledWith({
       where: { id: "store-A", active: true },
-      select: { name: true, websiteUrl: true, logoUrl: true },
+      select: { name: true, websiteUrl: true, logoUrl: true, accentColor: true },
     });
   });
 
@@ -135,11 +139,28 @@ describe("GET /api/widget/config — store validation (§11)", () => {
 
     expect(Object.keys(body).sort()).toEqual(["config", "ok"]);
     expect(Object.keys(body.config).sort()).toEqual([
-      "active", "logoUrl", "storeId", "storeName", "websiteUrl",
+      "accentColor", "active", "logoUrl", "storeId", "storeName", "websiteUrl",
     ]);
     // The slug, timestamps and the rest of the Store row stay server-side.
     expect(JSON.stringify(body)).not.toContain("createdAt");
     expect(JSON.stringify(body)).not.toContain("slug");
+  });
+
+  it("falls back to the default accent when the stored colour is absent or invalid", async () => {
+    for (const stored of [null, "chartreuse", "#12345"]) {
+      mocks.storeFindFirst.mockResolvedValue({
+        name: "فروشگاه نمونه",
+        websiteUrl: "https://shop.example",
+        logoUrl: null,
+        accentColor: stored,
+      });
+
+      const response = await configGet(new Request("https://app.test/api/widget/config?storeId=store-A"));
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body.config.accentColor).toBeNull();
+    }
   });
 
   it("reports a null logo when the merchant has not set one", async () => {

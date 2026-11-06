@@ -11,16 +11,20 @@
  * Prisma `@default(cuid())` — never by this code.
  */
 
+import { validateAccentColor } from "@/lib/store/branding";
+
 export interface StoreProvisioningInput {
   name: string;
   slug: string;
   websiteUrl?: string;
   logoUrl?: string;
+  /** Optional widget brand colour (`#RRGGBB`); omitted keeps the FIAGE default. */
+  accentColor?: string;
 }
 
 export type StoreProvisioningValidation =
   | { ok: true; value: Required<Pick<StoreProvisioningInput, "name" | "slug">> & StoreProvisioningInput }
-  | { ok: false; field: "name" | "slug" | "websiteUrl" | "logoUrl"; reason: string };
+  | { ok: false; field: "name" | "slug" | "websiteUrl" | "logoUrl" | "accentColor"; reason: string };
 
 /** 3–64 chars: lowercase letters, digits and hyphens; no edge hyphens. */
 const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/;
@@ -86,6 +90,14 @@ export function validateStoreProvisioning(
     return logo;
   }
 
+  // Brand colour: the canonical rule (lib/store/branding.ts) is the only one
+  // that decides what is storable, and it normalises to lowercase.
+  const accent = validateAccentColor(input.accentColor);
+
+  if (!accent.ok) {
+    return { ok: false, field: "accentColor", reason: accent.reason };
+  }
+
   const websiteUrl = input.websiteUrl?.trim();
   const logoUrl = input.logoUrl?.trim();
 
@@ -96,6 +108,7 @@ export function validateStoreProvisioning(
       slug,
       ...(websiteUrl ? { websiteUrl } : {}),
       ...(logoUrl ? { logoUrl } : {}),
+      ...(accent.value ? { accentColor: accent.value } : {}),
     },
   };
 }

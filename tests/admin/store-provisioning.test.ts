@@ -45,6 +45,45 @@ describe("validateStoreProvisioning — valid input", () => {
   });
 });
 
+describe("validateStoreProvisioning — accent colour", () => {
+  it("keeps and lowercases a valid #RRGGBB colour", () => {
+    const result = validateStoreProvisioning({ name: "X", slug: "shop", accentColor: " #1F6F5C " });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.accentColor).toBe("#1f6f5c");
+    }
+  });
+
+  it("omits the field when no colour is given (the FIAGE default)", () => {
+    const result = validateStoreProvisioning({ name: "X", slug: "shop" });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.accentColor).toBeUndefined();
+    }
+
+    const blank = validateStoreProvisioning({ name: "X", slug: "shop", accentColor: "   " });
+
+    expect(blank.ok).toBe(true);
+    if (blank.ok) {
+      expect(blank.value.accentColor).toBeUndefined();
+    }
+  });
+
+  it("rejects a malformed colour with its own field", () => {
+    for (const bad of ["#12345", "1f6f5c", "#GGGGGG", "red"]) {
+      const result = validateStoreProvisioning({ name: "X", slug: "shop", accentColor: bad });
+
+      expect(result.ok, `${bad} was accepted`).toBe(false);
+      if (!result.ok) {
+        expect(result.field).toBe("accentColor");
+        expect(result.reason).toContain("#RRGGBB");
+      }
+    }
+  });
+});
+
 describe("validateStoreProvisioning — invalid name", () => {
   it("rejects empty/whitespace/oversized names", () => {
     expect(validateStoreProvisioning({ name: "", slug: "shop" }).ok).toBe(false);

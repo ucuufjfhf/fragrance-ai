@@ -102,6 +102,13 @@ model Store {
   /// this to the real merchant origin before using the store in production.
   logoUrl    String?
 
+  /// Merchant brand colour for the embedded widget, `#rrggbb` (lowercase).
+  /// NULL = the FIAGE default accent. Applied ONLY inside the widget shell
+  /// (`components/widget/WidgetShell.tsx`), never on the main site. Written
+  /// through `validateAccentColor` (lib/store/branding.ts) so an invalid value
+  /// is rejected at the boundary rather than stored.
+  accentColor String?
+
   /// Soft deactivation. Once a store has history it is deactivated, not deleted.
   active Boolean @default(true)
 
