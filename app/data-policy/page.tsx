@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 
 import SiteFooter from "@/components/site/SiteFooter";
 import SiteHeader from "@/components/site/SiteHeader";
-import { ANALYTICS_EVENT_TYPES, type AnalyticsEventType } from "@/lib/analytics/types";
+import { ANALYTICS_EVENT_TYPES } from "@/lib/analytics/types";
+import {
+  COLLECTED_DATA,
+  CONTACT_EMAIL,
+  EVENT_LABELS,
+  NOT_COLLECTED,
+} from "@/lib/data-policy/content";
 
 /**
  * GET /data-policy — the public answer to «داده‌ی مشتری من دست کیه؟».
@@ -14,10 +20,11 @@ import { ANALYTICS_EVENT_TYPES, type AnalyticsEventType } from "@/lib/analytics/
  *    attempt, no identity);
  *  - the event list is `ANALYTICS_EVENT_TYPES` itself, rendered through a
  *    `Record<AnalyticsEventType, string>` — so adding an event to the contract
- *    without a plain-language label here is a TYPE error, and the page can never
+ *    without a plain-language label is a TYPE error, and the page can never
  *    quietly fall out of date with what is actually recorded;
- *  - `COLLECTED_DATA` / `NOT_COLLECTED` are exported so the copy test can prove
- *    the page claims nothing the code does not do.
+ *  - the copy lives in `lib/data-policy/content.ts`, not here: a page module may
+ *    export only `metadata` and the default component, or Next's generated build
+ *    validator rejects it and the production type check fails.
  *
  * Honesty rules this page keeps: no retention period is promised (none is
  * implemented), merchant export/deletion is stated as on-request (there is no
@@ -30,50 +37,6 @@ export const metadata: Metadata = {
   description:
     "چه داده‌هایی در فیاژ جمع می‌شود، کجا نگه داشته می‌شود و هر فروشگاه چه چیزی می‌بیند.",
 };
-
-/** What the widget actually records — one entry per real data category. */
-export const COLLECTED_DATA = [
-  {
-    title: "پاسخ‌های شما به ۱۰ سؤال",
-    detail: "همان گزینه‌هایی که انتخاب می‌کنید؛ بدون نام، بدون حساب کاربری.",
-  },
-  {
-    title: "پروفایل عطری ۹محوره",
-    detail: "برای هر محور یک عدد بین ۰ تا ۱۰۰ که فقط از پاسخ‌های خودتان محاسبه می‌شود.",
-  },
-  {
-    title: "یک توکن نشست ناشناس",
-    detail:
-      "یک رشتهٔ تصادفی در حافظهٔ همان تب مرورگر؛ فقط برای اینکه رویدادهای یک تلاش به هم وصل شوند و با بستن تب پاک می‌شود.",
-  },
-  {
-    title: "رویدادهای آماری",
-    detail: "فقط نام رویداد و شناسهٔ فروشگاه؛ فهرست کامل در بخش بعدی آمده است.",
-  },
-] as const;
-
-/** Categories the widget never asks for — stated so nobody has to guess. */
-export const NOT_COLLECTED = [
-  "نام و نام خانوادگی",
-  "ایمیل",
-  "شماره تلفن",
-  "آدرس",
-  "اطلاعات پرداخت",
-  "شماره کارت",
-  "موقعیت مکانی",
-] as const;
-
-/** Plain-language label for every canonical event. Exhaustive by type. */
-export const EVENT_LABELS: Record<AnalyticsEventType, string> = {
-  QUIZ_STARTED: "شروع آزمون",
-  QUIZ_COMPLETED: "تکمیل آزمون",
-  RESULT_VIEWED: "دیدن نتیجه",
-  RECOMMENDATIONS_SHOWN: "نمایش پیشنهادها",
-  PERFUME_CLICKED: "کلیک روی یک عطر",
-  WIDGET_VIEWED: "باز شدن ویجت",
-};
-
-export const CONTACT_EMAIL = "majidemoon0@gmail.com";
 
 export default function DataPolicyPage() {
   return (

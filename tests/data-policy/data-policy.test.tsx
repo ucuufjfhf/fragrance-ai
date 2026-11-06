@@ -1,14 +1,16 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import DataPolicyPage, {
+import DataPolicyPage, { metadata } from "@/app/data-policy/page";
+import { ANALYTICS_EVENT_TYPES } from "@/lib/analytics/types";
+// The copy lives outside the page module (a page may export only metadata and
+// the component), so the assertions read it from there.
+import {
   COLLECTED_DATA,
   CONTACT_EMAIL,
   EVENT_LABELS,
   NOT_COLLECTED,
-  metadata,
-} from "@/app/data-policy/page";
-import { ANALYTICS_EVENT_TYPES } from "@/lib/analytics/types";
+} from "@/lib/data-policy/content";
 
 /**
  * The public data page, rendered statically (same convention as the other UI
