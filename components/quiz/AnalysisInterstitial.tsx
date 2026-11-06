@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 import { artworkForPerfume } from "@/lib/perfumes/artwork";
@@ -181,6 +182,23 @@ export default function AnalysisInterstitial({
           aria-hidden="true"
           className="h-full rounded-full bg-linear-to-l from-accent to-accent/70 transition-[width] duration-100 ease-linear motion-reduce:transition-none"
           style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      {/* Ink motif: one decorative scene band directly under the bar — the
+          screen's ornament, carrying no meaning and no state. Cover-fitted so
+          it reads edge to edge at both heights. */}
+      <div
+        aria-hidden="true"
+        className="relative h-24 w-full overflow-hidden rounded-2xl sm:h-28"
+      >
+        <Image
+          src="/quiz/motif-ink-hero.webp"
+          alt=""
+          aria-hidden="true"
+          fill
+          sizes="(max-width: 1024px) 100vw, 1024px"
+          className="object-cover object-center"
         />
       </div>
 

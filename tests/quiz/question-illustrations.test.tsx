@@ -8,6 +8,7 @@ import Question from "@/components/quiz/Question";
 import { QUIZ_QUESTIONS } from "@/lib/personality/questions";
 import {
   QUESTION_ILLUSTRATIONS,
+  QUESTION_ILLUSTRATION_FOCUS,
   questionIllustrationFor,
 } from "@/lib/quiz/question-illustrations";
 
@@ -23,7 +24,8 @@ const CSS = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf
 const MAX_ILLUSTRATION_BYTES = 150 * 1024;
 
 /** The fixed stage height, identical on all ten questions per breakpoint. */
-const STAGE_CLASSES = "quiz-illustration relative h-[170px] w-full sm:h-[210px]";
+const STAGE_CLASSES =
+  "quiz-illustration relative h-[170px] w-full overflow-hidden rounded-2xl sm:h-[210px]";
 
 describe("question illustrations", () => {
   it("covers every question in the bank, keyed by question id", () => {
@@ -77,18 +79,29 @@ describe("question illustrations", () => {
       expect(html).toContain('alt=""');
       expect(html).toContain('aria-hidden="true"');
 
-      // The drawing is contain-fitted, never cropped: no fixed-ratio crop box,
-      // no object-cover and no focus map.
-      expect(html).toContain("object-contain");
-      expect(html).not.toContain("object-cover");
-      expect(html).not.toContain("object-position");
+      // The art is a full scene with its own background, so it is cover-fitted
+      // into the scene band — never letterboxed with contain.
+      expect(html).toContain("object-cover");
+      expect(html).toContain("object-center");
+      expect(html).not.toContain("object-contain");
 
-      // The stage is a bare box: no background, border, shadow or rounded
-      // frame around the transparent artwork.
+      // A scene whose subject is off-centre carries its focal position from the
+      // map; every other scene keeps the plain centred crop.
+      const focus = QUESTION_ILLUSTRATION_FOCUS[question.id];
+      if (focus) {
+        expect(html).toContain(`object-position:${focus}`);
+      } else {
+        expect(html).not.toContain("object-position");
+      }
+
+      // The stage is a clipped scene band at the site's small media radius:
+      // no background, border or shadow of its own.
       const stage = html.match(/<div[^>]*class="quiz-illustration[^"]*"[^>]*>/)?.[0];
       expect(stage, "missing illustration stage").toBeDefined();
       expect(stage).toContain(`class="${STAGE_CLASSES}"`);
-      for (const ban of ["rounded", "shadow", "border", "bg-", "overflow-hidden", "style="]) {
+      expect(stage).toContain("overflow-hidden");
+      expect(stage).toContain("rounded-2xl");
+      for (const ban of ["shadow", "border", "bg-", "style="]) {
         expect(stage, `stage must not carry ${ban}`).not.toContain(ban);
       }
       stages.add(stage!);

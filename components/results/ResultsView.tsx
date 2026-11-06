@@ -5,6 +5,7 @@ import AmbientParticles from "@/components/AmbientParticles";
 import TraitBars from "@/components/results/TraitBars";
 
 import type { CSSProperties } from "react";
+import Image from "next/image";
 import Link from "next/link";
 
 import AnswerDecode from "@/components/results/AnswerDecode";
@@ -174,8 +175,18 @@ export default function ResultsView({
       <TraitBars vector={vector} />
 
       {/* --- recommendations: a travel note in three stops (Memo lineage) --- */}
-      <section className="flex flex-col gap-4" aria-live="polite">
-        <div className="flex flex-col gap-2">
+      <section className="relative flex flex-col gap-4" aria-live="polite">
+        {/* The travel note's own postage stamp, tucked into the section's top
+            corner. Ink motif, decorative only — no meaning, no state. */}
+        <Image
+          src="/quiz/motif-ink-stamp.webp"
+          alt=""
+          aria-hidden="true"
+          width={72}
+          height={72}
+          className="pointer-events-none absolute -top-2 end-0 h-auto w-[72px] -rotate-6 select-none"
+        />
+        <div className="relative flex flex-col gap-2 pe-24 sm:pe-28">
           <span aria-hidden="true" className="h-px w-12 bg-accent/50" />
           <p className="text-sm font-medium text-muted">عطرهایی که بهتون میاد</p>
           <h2 className="font-display text-3xl font-semibold leading-[1.1] tracking-[-0.01em] text-foreground sm:text-4xl">
@@ -192,6 +203,19 @@ export default function ResultsView({
           <p className="font-editorial text-sm leading-7 text-muted">
             سه ایستگاه در سفر عطری شما؛ هر عطر، یک مقصد.
           </p>
+        </div>
+
+        {/* Ink motif: the inked rule that closes the travel note and opens the
+            three stops. Decorative only. */}
+        <div aria-hidden="true" className="flex justify-center py-1">
+          <Image
+            src="/quiz/motif-ink-divider.webp"
+            alt=""
+            aria-hidden="true"
+            width={1600}
+            height={686}
+            className="h-8 w-auto object-contain"
+          />
         </div>
 
         {isEmpty ? (

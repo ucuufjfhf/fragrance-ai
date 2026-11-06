@@ -3,7 +3,10 @@ import Image from "next/image";
 import MarkerWipe from "@/components/quiz/MarkerWipe";
 import QuizOption from "@/components/quiz/QuizOption";
 import { toPersianDigits } from "@/lib/persian";
-import { questionIllustrationFor } from "@/lib/quiz/question-illustrations";
+import {
+  questionIllustrationFocusFor,
+  questionIllustrationFor,
+} from "@/lib/quiz/question-illustrations";
 import {
   HIGHLIGHTED_QUESTION_IDS,
   QUESTION_HIGHLIGHTS,
@@ -26,7 +29,7 @@ interface QuestionProps {
  * wrapped in a marker-wipe highlight on the allowlisted screens only (Q1/Q5/
  * Q10 — a signature stays rare) — set in the display face at tight leading.
  * The prompt, the option values and everything downstream (scoring,
- * matching, /result) are untouched. Above the prompt sits one flat
+ * matching, /result) are untouched. Above the prompt sits one full-scene
  * illustration per question, decorative and frameless.
  */
 export default function Question({
@@ -38,24 +41,27 @@ export default function Question({
     ? splitHighlighted(question.prompt, QUESTION_HIGHLIGHTS[question.id])
     : null;
   const illustration = questionIllustrationFor(question.id);
+  const focus = questionIllustrationFocusFor(question.id);
 
   return (
     <div className="flex flex-col gap-8 py-2 sm:gap-10 sm:py-4">
       <span aria-hidden="true" className="h-px w-12 bg-accent/50" />
-      {/* Illustration stage: one fixed flat drawing per question screen,
-          above the question text. Decorative (the prompt carries the
+      {/* Illustration stage: one full-scene editorial drawing per question
+          screen, above the question text. Decorative (the prompt carries the
           meaning), so the img is alt="" and aria-hidden while the options
           stay text rows. The stage height is fixed per breakpoint, so the
           rendered height is identical on every question and the layout never
-          jumps. Each drawing has a transparent background and is
-          contain-fitted — never cropped — straight onto the quiz ambience, so
-          there is no frame, card, border or shadow behind it. Keyed by
-          question id so the fade replays on each screen change. */}
+          jumps. Each scene is opaque and carries its own background, so it is
+          cover-fitted into a full-width band with clipped overflow and the
+          site's small media radius — edge to edge, with no frame, border or
+          shadow. Where a centred crop would cut the subject, the focus map
+          nudges the cover crop (framing only). Keyed by question id so the
+          fade replays on each screen change. */}
       {illustration ? (
         <div
           key={question.id}
           aria-hidden="true"
-          className="quiz-illustration relative h-[170px] w-full sm:h-[210px]"
+          className="quiz-illustration relative h-[170px] w-full overflow-hidden rounded-2xl sm:h-[210px]"
         >
           <Image
             src={illustration}
@@ -63,7 +69,8 @@ export default function Question({
             aria-hidden="true"
             fill
             sizes="(max-width: 1024px) 100vw, 1024px"
-            className="object-contain"
+            className="object-cover object-center"
+            style={focus ? { objectPosition: focus } : undefined}
           />
         </div>
       ) : null}
