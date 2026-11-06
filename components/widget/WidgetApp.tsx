@@ -281,6 +281,14 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
     <WidgetShell accentColor={state.store?.accentColor ?? null}>
       {header}
       {body}
+      <a
+        href="/data-policy"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-1 self-center text-xs text-muted underline-offset-4 transition-colors hover:text-foreground hover:underline"
+      >
+        حریم خصوصی و داده‌ها
+      </a>
     </WidgetShell>
   );
 

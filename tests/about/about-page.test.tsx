@@ -52,6 +52,9 @@ describe("site footer trust links", () => {
     expect(html).toContain("درباره‌ی فیاژ");
     expect(html).toContain(`mailto:${CONTACT_EMAIL}`);
     expect(html).toContain("تماس");
+    // The data page is linked from the same row (it exists, so link it).
+    expect(html).toContain('href="/data-policy"');
+    expect(html).toContain("حریم خصوصی و داده‌ها");
     // Existing links and the protected tagline are untouched.
     expect(html).toContain("آزمون سلیقه");
     expect(html).toContain("چطور کار می‌کند");

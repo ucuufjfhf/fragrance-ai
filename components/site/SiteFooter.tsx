@@ -43,6 +43,9 @@ export default function SiteFooter() {
           <Link href="/about" className="transition-colors hover:text-foreground">
             درباره‌ی فیاژ
           </Link>
+          <Link href="/data-policy" className="transition-colors hover:text-foreground">
+            حریم خصوصی و داده‌ها
+          </Link>
           <a
             href="mailto:majidemoon0@gmail.com"
             className="transition-colors hover:text-foreground"
