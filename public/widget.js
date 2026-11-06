@@ -12,7 +12,9 @@
  *   3. guards against duplicate initialization (extra copies are no-ops);
  *   4. creates a mount point and an iframe pointed at this deployment's
  *      /widget?store=… route (same origin as this script file);
- *   5. sizes the iframe from postMessage resize events emitted by the page.
+ *   5. sizes the iframe from postMessage resize events emitted by the page;
+ *   6. tells the widget when the mount is actually visible (WIDGET_VIEWED),
+ *      so an impression is a view and not merely a page load.
  *
  * The iframe is the CSS isolation boundary (§8): complete two-way isolation
  * with zero dependencies, while the app inside reuses the one real quiz UI,
@@ -107,6 +109,65 @@
   iframe.setAttribute("scrolling", "no");
 
   mount.appendChild(iframe);
+
+  // --- "actually seen" signal (WIDGET_VIEWED) ---
+  // Injecting the iframe says nothing about whether a shopper ever saw it: it
+  // may be below the fold, in a background tab, or on a pre-rendered page. So
+  // observe the mount point and tell the widget the FIRST time any part of it
+  // enters the merchant page's viewport, then stop observing. Delivery waits
+  // for the iframe's load event (a message sent to a document that is not ready
+  // yet is lost) and is attempted at most once. Without IntersectionObserver —
+  // or if it throws — the signal goes out on load, i.e. today's fire-on-mount
+  // behaviour as the floor. Nothing here may throw and break an embed.
+  var visible = false;
+  var delivered = false;
+  var loaded = false;
+
+  function deliverVisible() {
+    if (!visible || !loaded || delivered) {
+      return;
+    }
+
+    delivered = true;
+
+    try {
+      if (iframe.contentWindow) {
+        iframe.contentWindow.postMessage(
+          { type: "fiage-widget:visible", storeId: storeId },
+          baseUrl
+        );
+      }
+    } catch (error) {
+      void error;
+    }
+  }
+
+  iframe.addEventListener("load", function () {
+    loaded = true;
+    deliverVisible();
+  });
+
+  try {
+    if (typeof IntersectionObserver === "function") {
+      var observer = new IntersectionObserver(function (entries) {
+        for (var index = 0; index < entries.length; index += 1) {
+          if (entries[index].isIntersecting) {
+            observer.disconnect();
+            visible = true;
+            deliverVisible();
+            return;
+          }
+        }
+      });
+
+      observer.observe(mount);
+    } else {
+      visible = true;
+    }
+  } catch (error) {
+    void error;
+    visible = true;
+  }
 
   // --- auto-resize from the widget page's postMessage bridge (§8) ---
   window.addEventListener("message", function (event) {

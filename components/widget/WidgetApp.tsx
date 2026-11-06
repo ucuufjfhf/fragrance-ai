@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { archetypeEmblemImageFor } from "@/components/archetype-emblems";
 import MarkerWipe from "@/components/quiz/MarkerWipe";
@@ -40,6 +40,11 @@ import {
   type WidgetRecommendationResponse,
   type WidgetStoreConfig,
 } from "@/lib/widget/contract";
+import {
+  isEmbeddedWidget,
+  shouldFireFromMessage,
+  shouldFireWidgetViewedOnMount,
+} from "@/lib/widget/visibility";
 import type { QuizResult } from "@/types/personality";
 
 /**
@@ -102,6 +107,11 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
     analysisDone: false,
   });
 
+  // Embedded widgets fire WIDGET_VIEWED once, on the loader's first visibility
+  // message — a local guard so a duplicate message is a no-op even before the
+  // tracker's own once-guard is consulted.
+  const viewedRef = useRef(false);
+
   // --- store validation through the public config endpoint (§11) ---
   useEffect(() => {
     if (state.phase !== "validating") {
@@ -145,17 +155,44 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
     };
   }, [state.phase, storeId]);
 
-  // WIDGET_VIEWED: the funnel's first step — the widget was actually shown to a
-  // shopper, so it fires as soon as the store config resolves and never before
-  // (an unavailable/failed store renders no widget to view and fires nothing).
-  // The once-guard in the tracker makes re-renders a no-op, so this is one event
-  // per widget mount; a restart does not re-fire it.
+  // WIDGET_VIEWED: the funnel's first step, and only when the widget was
+  // actually put in front of a shopper.
+  //
+  //  - TOP-LEVEL (a direct visit, e.g. the owner demoing /widget): the widget is
+  //    the page, so it fires when the store config resolves — unchanged.
+  //  - EMBEDDED: mounting the iframe happens on page load, whether the widget is
+  //    below the fold or in a background tab, so mounting proves nothing. The
+  //    loader's IntersectionObserver posts `fiage-widget:visible` the first time
+  //    the mount is on screen; only a message naming THIS store counts, and the
+  //    once-guard means one event per visibility, never per re-render. A restart
+  //    does not re-fire it (the effect does not re-run).
   useEffect(() => {
     if (state.store === null) {
       return;
     }
 
-    trackWidgetViewed(storeId);
+    if (shouldFireWidgetViewedOnMount(isEmbeddedWidget(window))) {
+      trackWidgetViewed(storeId);
+      return;
+    }
+
+    const onMessage = (event: MessageEvent) => {
+      if (event.source !== window.parent) {
+        return;
+      }
+
+      if (!shouldFireFromMessage(event.data, storeId, viewedRef.current)) {
+        return;
+      }
+
+      viewedRef.current = true;
+      window.removeEventListener("message", onMessage);
+      trackWidgetViewed(storeId);
+    };
+
+    window.addEventListener("message", onMessage);
+
+    return () => window.removeEventListener("message", onMessage);
   }, [state.store, storeId]);
 
   const handleStart = useCallback(() => {

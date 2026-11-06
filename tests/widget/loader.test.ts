@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+import { WIDGET_VISIBLE_MESSAGE } from "@/lib/widget/visibility";
+
 /**
  * Phase 8 widget asset + page verification (§33 widget configuration,
  * §30 servability). The loader is plain browser JS: rather than boot a DOM,
@@ -53,6 +55,34 @@ describe("public/widget.js — shipped loader safety structure", () => {
   it("fails gracefully (console.warn, no throw) on bad configuration", () => {
     expect(LOADER).toContain("console.warn");
     expect(LOADER).toContain("function fail(");
+  });
+});
+
+describe("public/widget.js — WIDGET_VIEWED is an impression, not a load", () => {
+  it("posts the visibility message with the store id the loader was given", () => {
+    // The same literal the widget listens for (lib/widget/visibility.ts).
+    expect(WIDGET_VISIBLE_MESSAGE).toBe("fiage-widget:visible");
+    expect(LOADER).toContain('{ type: "fiage-widget:visible", storeId: storeId }');
+  });
+
+  it("observes the mount point and stops on the first intersection", () => {
+    expect(LOADER).toContain('typeof IntersectionObserver === "function"');
+    expect(LOADER).toContain("observer.observe(mount);");
+    expect(LOADER).toContain("entries[index].isIntersecting");
+    expect(LOADER).toContain("observer.disconnect();");
+  });
+
+  it("falls back to today's fire-on-load floor when no observer exists", () => {
+    expect(LOADER).toMatch(/\} else \{\n      visible = true;/);
+    expect(LOADER).toContain('iframe.addEventListener("load"');
+    // At most one delivery, and never into a document that is not ready yet.
+    expect(LOADER).toContain("if (!visible || !loaded || delivered)");
+    expect(LOADER).toContain("delivered = true;");
+  });
+
+  it("cannot throw out of the visibility bridge", () => {
+    expect(LOADER).toContain("void error;\n    visible = true;");
+    expect(LOADER).toContain("if (iframe.contentWindow)");
   });
 });
 
