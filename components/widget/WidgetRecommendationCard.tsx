@@ -26,7 +26,8 @@ import type { WidgetRecommendation } from "@/lib/widget/contract";
  *    destination is never invented (§17) — and PERFUME_CLICKED fires only on
  *    the product link, exactly as before;
  *  - outbound links carry render-time UTM attribution (`fiage_widget` / `quiz` /
- *    store id), so the merchant can see the visit in their own analytics. The
+ *    the store's SLUG, the readable identifier a merchant recognises in their
+ *    own analytics, falling back to the store id when no slug is known). The
  *    stored URL itself is never modified;
  *  - the stored price (Toman) renders as «۱,۲۵۰,۰۰۰ تومان» when it is a positive
  *    number, and not at all otherwise — a zero or absent price is not a price;
@@ -37,19 +38,28 @@ import type { WidgetRecommendation } from "@/lib/widget/contract";
 export default function WidgetRecommendationCard({
   recommendation,
   storeId,
+  storeSlug = null,
   storeWebsiteUrl = null,
 }: {
   recommendation: WidgetRecommendation;
   storeId: string;
+  /** The store's public slug — `utm_campaign` when known, else the store id. */
+  storeSlug?: string | null;
   /** The merchant's own site — the fallback CTA's destination, or null. */
   storeWebsiteUrl?: string | null;
 }) {
   const { rank, name, brand, productUrl, imageUrl, matchPercent, explanation, price } = recommendation;
 
+  // The campaign identifier the merchant can actually read. The helper's rules
+  // are unchanged; only the value handed to it changed.
+  const campaignId = storeSlug && storeSlug !== "" ? storeSlug : storeId;
+
   // Attribution is applied at render time only — the stored URLs are untouched.
-  const productHref = productUrl ? withWidgetAttribution(productUrl, storeId) : null;
+  const productHref = productUrl ? withWidgetAttribution(productUrl, campaignId) : null;
   const storeHref =
-    !productUrl && storeWebsiteUrl ? withWidgetAttribution(storeWebsiteUrl, storeId) : null;
+    !productUrl && storeWebsiteUrl
+      ? withWidgetAttribution(storeWebsiteUrl, campaignId)
+      : null;
   // A price is shown only when it is a real positive amount (Toman).
   const hasPrice = typeof price === "number" && Number.isFinite(price) && price > 0;
 

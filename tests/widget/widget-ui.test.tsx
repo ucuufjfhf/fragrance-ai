@@ -120,6 +120,47 @@ describe("WidgetRecommendationCard — data contracts", () => {
     expect(html).toContain('target="_blank"');
   });
 
+  it("attributes with the store SLUG — the campaign id a merchant can read", () => {
+    const html = renderToStaticMarkup(
+      <WidgetRecommendationCard
+        recommendation={MATCHES[0]}
+        storeId="clx0opaqueid000"
+        storeSlug="my-shop"
+      />,
+    );
+
+    expect(html).toContain(
+      'href="https://shop.example/p/1?utm_source=fiage_widget&amp;utm_medium=quiz&amp;utm_campaign=my-shop"',
+    );
+    // The opaque store id is not what the merchant reads.
+    expect(html).not.toContain("utm_campaign=clx0opaqueid000");
+  });
+
+  it("attributes the fallback CTA with the slug too", () => {
+    const html = renderToStaticMarkup(
+      <WidgetRecommendationCard
+        recommendation={MATCHES[2]}
+        storeId="clx0opaqueid000"
+        storeSlug="my-shop"
+        storeWebsiteUrl="https://shop.example"
+      />,
+    );
+
+    expect(html).toContain("utm_campaign=my-shop");
+  });
+
+  it("falls back to the store id when no slug is known", () => {
+    const html = renderToStaticMarkup(
+      <WidgetRecommendationCard
+        recommendation={MATCHES[0]}
+        storeId="store-A"
+        storeSlug={null}
+      />,
+    );
+
+    expect(html).toContain("utm_campaign=store-A");
+  });
+
   it("never shows the product CTA when there is no productUrl", () => {
     const html = renderToStaticMarkup(
       <WidgetRecommendationCard

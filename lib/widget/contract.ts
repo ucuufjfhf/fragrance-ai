@@ -29,6 +29,12 @@ export interface WidgetStoreConfig {
    */
   logoUrl: string | null;
   /**
+   * The store's public slug — the readable identifier, used as the outbound
+   * `utm_campaign` value so a merchant can recognise the campaign in their own
+   * analytics. Customer-safe: it is already the store's public name.
+   */
+  slug: string;
+  /**
    * The merchant's own public site, when they have set one.
    *
    * Customer-safe (it is the page the widget is embedded on) and used ONLY as

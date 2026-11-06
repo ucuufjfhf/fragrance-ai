@@ -88,6 +88,7 @@ beforeEach(() => {
   resetRateLimitsForTests();
   mocks.storeFindFirst.mockResolvedValue({
     name: "فروشگاه نمونه",
+    slug: "my-shop",
     websiteUrl: "https://shop.example",
     logoUrl: "https://shop.example/logo.png",
     // Stored upper-case on purpose: the payload must carry the normalised form.
@@ -120,6 +121,8 @@ describe("GET /api/widget/config — store validation (§11)", () => {
         storeId: "store-A",
         storeName: "فروشگاه نمونه",
         logoUrl: "https://shop.example/logo.png",
+        // The readable campaign identifier — public by design.
+        slug: "my-shop",
         // The merchant's own site — the fallback CTA's destination.
         websiteUrl: "https://shop.example",
         // Normalised to lower case by the canonical rule.
@@ -129,27 +132,30 @@ describe("GET /api/widget/config — store validation (§11)", () => {
     });
     expect(mocks.storeFindFirst).toHaveBeenCalledWith({
       where: { id: "store-A", active: true },
-      select: { name: true, websiteUrl: true, logoUrl: true, accentColor: true },
+      select: { name: true, slug: true, websiteUrl: true, logoUrl: true, accentColor: true },
     });
   });
 
-  it("keeps the payload minimal — id, name, logo and active only", async () => {
+  it("keeps the payload customer-safe — no admin fields", async () => {
     const response = await configGet(new Request("https://app.test/api/widget/config?storeId=store-A"));
     const body = await response.json();
 
     expect(Object.keys(body).sort()).toEqual(["config", "ok"]);
     expect(Object.keys(body.config).sort()).toEqual([
-      "accentColor", "active", "logoUrl", "storeId", "storeName", "websiteUrl",
+      "accentColor", "active", "logoUrl", "slug", "storeId", "storeName", "websiteUrl",
     ]);
-    // The slug, timestamps and the rest of the Store row stay server-side.
+    // The slug is deliberately public (it is the campaign tag). Everything
+    // operational — timestamps, the report token — must stay server-side.
     expect(JSON.stringify(body)).not.toContain("createdAt");
-    expect(JSON.stringify(body)).not.toContain("slug");
+    expect(JSON.stringify(body)).not.toContain("updatedAt");
+    expect(JSON.stringify(body)).not.toContain("reportToken");
   });
 
   it("falls back to the default accent when the stored colour is absent or invalid", async () => {
     for (const stored of [null, "chartreuse", "#12345"]) {
       mocks.storeFindFirst.mockResolvedValue({
         name: "فروشگاه نمونه",
+        slug: "my-shop",
         websiteUrl: "https://shop.example",
         logoUrl: null,
         accentColor: stored,
@@ -166,6 +172,7 @@ describe("GET /api/widget/config — store validation (§11)", () => {
   it("reports a null logo when the merchant has not set one", async () => {
     mocks.storeFindFirst.mockResolvedValue({
       name: "فروشگاه نمونه",
+      slug: "my-shop",
       websiteUrl: null,
       logoUrl: null,
     });

@@ -8,8 +8,8 @@ import { widgetCorsHeaders } from "@/lib/widget/cors";
  *
  * Smallest possible server-side store context check: the id format is
  * validated, then the store must exist AND be active. The response exposes
- * only customer-safe fields (store id, name and logo) — no admin data, no
- * other stores, no database internals. The logo is the store's own public
+ * only customer-safe fields (store id, name, public slug, logo, own site,
+ * brand colour) — no admin data, no other stores, no database internals. The logo is the store's own public
  * branding, which the merchant already shows on the site the widget is
  * embedded into.
  *
@@ -37,7 +37,7 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const store = await prisma.store.findFirst({
       where: { id: storeId, active: true },
-      select: { name: true, websiteUrl: true, logoUrl: true, accentColor: true },
+      select: { name: true, slug: true, websiteUrl: true, logoUrl: true, accentColor: true },
     });
     headers = widgetCorsHeaders(origin, store?.websiteUrl);
 
@@ -55,6 +55,9 @@ export async function GET(request: Request): Promise<Response> {
           storeId,
           storeName: store.name,
           logoUrl: store.logoUrl,
+          // The readable campaign identifier (utm_campaign). Public by design:
+          // it is the store's own name in its own URL.
+          slug: store.slug,
           // The merchant's own public site — the fallback CTA destination when
           // a recommendation has no product page. Already selected for CORS.
           websiteUrl: store.websiteUrl,

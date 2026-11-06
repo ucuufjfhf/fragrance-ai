@@ -373,6 +373,7 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
     return shell(
       <WidgetResult
         storeId={storeId}
+        storeSlug={state.store?.slug ?? null}
         storeWebsiteUrl={state.store?.websiteUrl ?? null}
         result={state.result}
         data={state.recommendations}
@@ -465,12 +466,15 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
 
 function WidgetResult({
   storeId,
+  storeSlug,
   storeWebsiteUrl,
   result,
   data,
   onRestart,
 }: {
   storeId: string;
+  /** The store's public slug — the readable campaign identifier, or null. */
+  storeSlug: string | null;
   /** The merchant's own site — the card's fallback CTA destination. */
   storeWebsiteUrl: string | null;
   result: QuizResult;
@@ -562,6 +566,7 @@ function WidgetResult({
                 <WidgetRecommendationCard
                   recommendation={recommendation}
                   storeId={storeId}
+                  storeSlug={storeSlug}
                   storeWebsiteUrl={storeWebsiteUrl}
                 />
               </li>
