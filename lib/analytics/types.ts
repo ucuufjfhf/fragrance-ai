@@ -13,6 +13,7 @@ export const ANALYTICS_EVENT_TYPES = [
   "RESULT_VIEWED",
   "RECOMMENDATIONS_SHOWN",
   "PERFUME_CLICKED",
+  "WIDGET_VIEWED",
 ] as const;
 
 export type AnalyticsEventType = (typeof ANALYTICS_EVENT_TYPES)[number];

@@ -233,6 +233,7 @@ describe("getAnalyticsDashboardData — KPI math (§16/§18)", () => {
     const repositoryMock = vi.mocked(await import("@/lib/analytics/repository"));
 
     vi.mocked(repositoryMock.getAnalyticsSummary).mockResolvedValue({
+      widgetViewed: 30,
       quizStarted: 10,
       quizCompleted: 7,
       resultViewed: 6,
@@ -256,6 +257,7 @@ describe("getAnalyticsDashboardData — KPI math (§16/§18)", () => {
     const repositoryMock = vi.mocked(await import("@/lib/analytics/repository"));
 
     vi.mocked(repositoryMock.getAnalyticsSummary).mockResolvedValue({
+      widgetViewed: 0,
       quizStarted: 0,
       quizCompleted: 0,
       resultViewed: 0,

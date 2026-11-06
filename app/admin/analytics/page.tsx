@@ -125,6 +125,8 @@ export default async function AdminAnalyticsPage({ searchParams }: AdminAnalytic
         <>
           {/* --- KPI cards --- */}
           <section aria-label="شاخص‌های کلیدی" className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {/* Funnel step 0: how many shoppers saw the widget at all. */}
+            <KpiCard label="بازدید ویجت" value={data.summary.widgetViewed} />
             <KpiCard label="شروع آزمون" value={data.summary.quizStarted} />
             <KpiCard label="تکمیل آزمون" value={data.summary.quizCompleted} />
             <KpiCard label="مشاهده نتایج" value={data.summary.resultViewed} />

@@ -44,6 +44,8 @@ export interface AnalyticsDateRange {
 }
 
 export interface AnalyticsSummary {
+  /** Funnel step 0: the widget was rendered for a shopper (widget traffic). */
+  widgetViewed: number;
   quizStarted: number;
   quizCompleted: number;
   resultViewed: number;
@@ -69,6 +71,7 @@ export async function getAnalyticsSummary(
   const counts = new Map(grouped.map((entry) => [entry.eventType, entry._count._all]));
 
   return {
+    widgetViewed: counts.get("WIDGET_VIEWED") ?? 0,
     quizStarted: counts.get("QUIZ_STARTED") ?? 0,
     quizCompleted: counts.get("QUIZ_COMPLETED") ?? 0,
     resultViewed: counts.get("RESULT_VIEWED") ?? 0,

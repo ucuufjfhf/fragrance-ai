@@ -17,13 +17,16 @@ const VALID = {
 };
 
 describe("validateAnalyticsEvent — contract membership (§5)", () => {
-  it("exposes exactly the five canonical event types", () => {
+  it("exposes exactly the six canonical event types", () => {
+    // WIDGET_VIEWED is the funnel's first step (a widget was rendered); it is
+    // added here and nowhere else, because this list is the contract.
     expect([...ANALYTICS_EVENT_TYPES]).toEqual([
       "QUIZ_STARTED",
       "QUIZ_COMPLETED",
       "RESULT_VIEWED",
       "RECOMMENDATIONS_SHOWN",
       "PERFUME_CLICKED",
+      "WIDGET_VIEWED",
     ]);
   });
 

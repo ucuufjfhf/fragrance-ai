@@ -95,3 +95,30 @@ export function trackQuizCompleted(storeId?: string): void {
 export function trackResultViewed(storeId?: string): void {
   fireOnce("RESULT_VIEWED", { storeId, sessionId: getSessionToken() });
 }
+
+/**
+ * The attempt token if one already exists — never mints one.
+ *
+ * WIDGET_VIEWED happens BEFORE any quiz attempt, so minting a token here would
+ * create an identity for a visit that never becomes an attempt. It rides along
+ * with the token only when the shopper already has one.
+ */
+function peekSessionToken(): string | undefined {
+  try {
+    return window.sessionStorage.getItem(SESSION_STORAGE_KEY) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * WIDGET_VIEWED — the widget was actually put in front of a shopper (the store
+ * config resolved). The funnel's first step: it is fired once per widget mount,
+ * before the shopper does anything, and carries the store id so a merchant can
+ * compare widget impressions with quiz starts.
+ *
+ * Never fired by the main quiz — that route has no embed to view.
+ */
+export function trackWidgetViewed(storeId?: string): void {
+  fireOnce("WIDGET_VIEWED", { storeId, sessionId: peekSessionToken() });
+}

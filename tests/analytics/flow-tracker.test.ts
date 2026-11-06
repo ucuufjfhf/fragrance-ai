@@ -149,3 +149,46 @@ describe("flow-tracker — payload hygiene (§7/§25)", () => {
     expect(token).toMatch(/^[a-zA-Z0-9-]{10,64}$/);
   });
 });
+
+describe("flow-tracker — WIDGET_VIEWED (the funnel's first step)", () => {
+  it("fires once per widget mount, not once per render", async () => {
+    const tracker = await loadTracker();
+
+    tracker.trackWidgetViewed("store-1");
+    tracker.trackWidgetViewed("store-1");
+
+    const viewed = trackEventMock.mock.calls.filter(
+      ([payload]) => payload.eventType === "WIDGET_VIEWED",
+    );
+
+    expect(viewed).toHaveLength(1);
+    expect(viewed[0][0].storeId).toBe("store-1");
+  });
+
+  it("reuses the existing attempt token instead of minting one", async () => {
+    const tracker = await loadTracker();
+
+    tracker.trackQuizStarted("store-1");
+    tracker.trackWidgetViewed("store-1");
+
+    const startedToken = trackEventMock.mock.calls[0][0].sessionId;
+    const viewed = trackEventMock.mock.calls.find(
+      ([payload]) => payload.eventType === "WIDGET_VIEWED",
+    );
+
+    expect(startedToken).toBeTruthy();
+    expect(viewed?.[0].sessionId).toBe(startedToken);
+  });
+
+  it("fires without a token when the visitor has not started an attempt", async () => {
+    const tracker = await loadTracker();
+
+    tracker.trackWidgetViewed("store-1");
+
+    const payload = trackEventMock.mock.calls[0][0];
+
+    expect(payload.eventType).toBe("WIDGET_VIEWED");
+    // No identity is created for a visit that never becomes an attempt.
+    expect(payload.sessionId).toBeUndefined();
+  });
+});

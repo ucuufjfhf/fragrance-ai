@@ -36,6 +36,7 @@ beforeEach(() => {
 describe("getAnalyticsSummary — grouped counting (§20)", () => {
   it("maps the groupBy rows onto the typed summary", async () => {
     mocks.groupBy.mockResolvedValue([
+      { eventType: "WIDGET_VIEWED", _count: { _all: 40 } },
       { eventType: "QUIZ_STARTED", _count: { _all: 12 } },
       { eventType: "QUIZ_COMPLETED", _count: { _all: 8 } },
       { eventType: "RESULT_VIEWED", _count: { _all: 6 } },
@@ -46,6 +47,7 @@ describe("getAnalyticsSummary — grouped counting (§20)", () => {
     const summary = await getAnalyticsSummary("store-1", RANGE);
 
     expect(summary).toEqual({
+      widgetViewed: 40,
       quizStarted: 12,
       quizCompleted: 8,
       resultViewed: 6,
@@ -67,6 +69,7 @@ describe("getAnalyticsSummary — grouped counting (§20)", () => {
 
     expect(summary.quizCompleted).toBe(0);
     expect(summary.perfumeClicked).toBe(0);
+    expect(summary.widgetViewed).toBe(0);
   });
 });
 

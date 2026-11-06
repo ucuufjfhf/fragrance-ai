@@ -16,6 +16,7 @@ import {
   resetAnalyticsFlow,
   trackQuizCompleted,
   trackQuizStarted,
+  trackWidgetViewed,
 } from "@/lib/analytics/flow-tracker";
 import { QUESTION_HIGHLIGHTS, splitHighlighted } from "@/lib/personality/question-highlights";
 import { QUIZ_QUESTIONS } from "@/lib/personality/questions";
@@ -142,6 +143,19 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
       cancelled = true;
     };
   }, [state.phase, storeId]);
+
+  // WIDGET_VIEWED: the funnel's first step — the widget was actually shown to a
+  // shopper, so it fires as soon as the store config resolves and never before
+  // (an unavailable/failed store renders no widget to view and fires nothing).
+  // The once-guard in the tracker makes re-renders a no-op, so this is one event
+  // per widget mount; a restart does not re-fire it.
+  useEffect(() => {
+    if (state.store === null) {
+      return;
+    }
+
+    trackWidgetViewed(storeId);
+  }, [state.store, storeId]);
 
   const handleStart = useCallback(() => {
     // Explicit user action → QUIZ_STARTED with the widget's store context.

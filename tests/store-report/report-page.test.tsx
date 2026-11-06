@@ -41,6 +41,7 @@ vi.mock("@/lib/analytics/service", async (importOriginal) => {
 const DATA: AnalyticsDashboardData = {
   range: "7d",
   summary: {
+    widgetViewed: 40,
     quizStarted: 12,
     quizCompleted: 8,
     resultViewed: 6,
@@ -104,6 +105,15 @@ describe("store report page — «most recommended» from impressions", () => {
     expect(html).toContain(toPersianDigits(13)); // clicks
     // 13 / 37 ≈ 35% — the rate divides by the shown count, not the list count.
     expect(html).toContain(formatPersianPercent(35));
+  });
+
+  it("shows the widget-impression KPI as the funnel's first step", async () => {
+    const html = await renderReport();
+
+    expect(html).toContain("بازدید ویجت");
+    expect(html).toContain(toPersianDigits(40));
+    // Before «شروع آزمون», because a widget view happens before a quiz start.
+    expect(html.indexOf("بازدید ویجت")).toBeLessThan(html.indexOf("شروع آزمون"));
   });
 
   it("renders a dash for a perfume that was only ever clicked", async () => {
