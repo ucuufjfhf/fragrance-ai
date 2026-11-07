@@ -44,8 +44,12 @@ export default function Home() {
         <section className="relative">
           <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-5 pb-14 pt-12 sm:px-8 lg:grid-cols-[1fr_0.92fr] lg:gap-16 lg:pb-24 lg:pt-20">
             <div className="flex flex-col items-start gap-6">
+              {/* Two fixed lines: «کنید» can never be orphaned at the end of a
+                  line, at any width. The text is unchanged, split at the
+                  natural clause break. */}
               <h1 className="font-heading text-4xl font-bold leading-[1.3] text-foreground sm:text-5xl lg:text-6xl">
-                عطر خودتون رو پیدا کنید
+                <span className="block">عطر خودتون رو</span>{" "}
+                <span className="block">پیدا کنید</span>
               </h1>
               <p className="max-w-xl text-lg leading-loose text-muted">
                 فقط ۱۰ سوال کوتاه؛ بعدش می‌فهمید کدوم رایحه واقعاً به سلیقه و شخصیتتون می‌خوره —
@@ -113,6 +117,14 @@ export default function Home() {
           <p className="font-heading text-xl font-semibold leading-loose text-foreground sm:text-2xl">
             بدون حدس و گمان؛ انتخاب بر اساس پروفایل دقیق شما
           </p>
+          {/* The page used to end on the trust line with nowhere to go; the
+              hero's primary action closes it. */}
+          <Link
+            href="/quiz"
+            className="btn-primary mx-auto mt-8 flex w-fit min-h-14 items-center justify-center px-9 text-lg font-medium text-background"
+          >
+            شروع آزمون
+          </Link>
         </section>
       </main>
 
