@@ -157,7 +157,7 @@ export default function AnalysisInterstitial({
   }, [artworkKey]);
 
   return (
-    <section className="quiz-rise relative flex flex-col items-center gap-6 overflow-hidden py-10 text-center sm:py-14">
+    <section className="quiz-rise relative flex flex-col items-center gap-5 overflow-hidden py-8 text-center sm:gap-6 sm:py-10">
       <span
         id="analysis-percent"
         className="tnum font-display text-7xl font-semibold leading-none tracking-[-0.01em] text-foreground sm:text-8xl"
@@ -190,7 +190,7 @@ export default function AnalysisInterstitial({
           it reads edge to edge at both heights. */}
       <div
         aria-hidden="true"
-        className="relative h-24 w-full overflow-hidden rounded-2xl sm:h-28"
+        className="relative h-20 w-full overflow-hidden rounded-2xl sm:h-24"
       >
         <Image
           src="/quiz/motif-ink-hero.webp"
@@ -225,7 +225,7 @@ export default function AnalysisInterstitial({
                   aria-hidden="true"
                   decoding="async"
                   draggable={false}
-                  className="h-28 w-44 rounded-2xl object-cover"
+                  className="h-24 w-40 rounded-2xl object-cover sm:h-28 sm:w-44"
                 />
                 <figcaption>
                   <span className="block font-medium leading-7 text-foreground">{match.name}</span>
