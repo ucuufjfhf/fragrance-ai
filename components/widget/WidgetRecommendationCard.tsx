@@ -66,7 +66,7 @@ export default function WidgetRecommendationCard({
   return (
     <article className="quiz-rise relative flex flex-col overflow-hidden rounded-[1.5rem] border border-border-soft bg-surface shadow-[var(--shadow-card)]">
       {/* --- artwork panel: fixed 3:4 box, so no card changes height --- */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-surface-2">
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface-2">
         {imageUrl ? (
           // Merchant-provided absolute URL; plain <img> keeps it working
           // without a configured image domain.
