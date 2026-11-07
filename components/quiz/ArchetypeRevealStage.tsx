@@ -174,7 +174,7 @@ export default function ArchetypeRevealStage({
           element, so the two never fight over `transform`. */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[30rem] w-[30rem] -translate-x-1/2 -translate-y-1/2"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[30rem] w-[30rem] -translate-x-1/2 -translate-y-1/2 lg:h-[36rem] lg:w-[36rem]"
       >
         <span
           className="archetype-focus-glow block h-full w-full rounded-full blur-3xl"
@@ -196,7 +196,7 @@ export default function ArchetypeRevealStage({
       <span
         role="img"
         aria-label={label}
-        className="relative flex h-72 w-72 items-center justify-center rounded-full border border-accent/30 bg-surface-2 shadow-[var(--shadow-soft)] sm:h-80 sm:w-80"
+        className="relative flex h-72 w-72 items-center justify-center rounded-full border border-accent/30 bg-surface-2 shadow-[var(--shadow-soft)] sm:h-80 sm:w-80 lg:h-96 lg:w-96"
       >
         <span
           aria-hidden="true"
@@ -248,14 +248,14 @@ export default function ArchetypeRevealStage({
 
       <h1
         id={headingId}
-        className="archetype-focus-line max-w-md font-heading text-3xl font-bold leading-tight text-foreground sm:text-4xl"
+        className="archetype-focus-line max-w-md font-heading text-3xl font-bold leading-tight text-foreground sm:text-4xl lg:text-5xl"
         style={{ animationDelay: NAME_DELAY_MS }}
       >
         {label}
       </h1>
 
       <p
-        className="archetype-focus-line max-w-md text-xs leading-7 text-muted"
+        className="archetype-focus-line max-w-md text-xs leading-7 text-muted lg:max-w-lg"
         style={{ animationDelay: EXPLAINER_DELAY_MS }}
       >
         {selectionBasis}
