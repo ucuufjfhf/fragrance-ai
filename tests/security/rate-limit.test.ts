@@ -147,7 +147,8 @@ describe("requesterIdentity", () => {
       eventsRequester: { limit: 120, windowMs: 60_000 },
       // The two brakes added for buyer audit round 6.
       eventsStore: { limit: 600, windowMs: 60_000 },
-      configRequester: { limit: 60, windowMs: 60_000 },
+      // Recalibrated in batch 16: CGNAT puts hundreds of shoppers on one IP.
+      configRequester: { limit: 300, windowMs: 60_000 },
       quizRequester: { limit: 30, windowMs: 60_000 },
       adminUnlock: { limit: 5, windowMs: 900_000 },
     });

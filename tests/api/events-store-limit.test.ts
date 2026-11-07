@@ -85,8 +85,39 @@ describe("POST /api/events store cap", () => {
   it("does not mint a store key from a malformed store id", async () => {
     const response = await POST(event("not a valid id!", "203.0.113.1"));
 
-    // With the writer mocked here, the assertion is key hygiene: a malformed id must never become a limiter key.
-    expect(response.status).toBe(202);
+    // Reordered deliberately: shape is validated before any store counter, so a
+    // malformed id is now rejected as an invalid event rather than waved through
+    // to the (here mocked) writer. Key hygiene is unchanged — and now cheaper.
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ ok: false, error: "INVALID_EVENT" });
+    expect(mocks.record).not.toHaveBeenCalled();
     expect([...dbMocks.counts.keys()].some((key) => key.startsWith("events:store:"))).toBe(false);
+  });
+
+  it("rejects an invalid payload before it can spend the store's budget", async () => {
+    const response = await POST(
+      new Request("https://app.test/api/events", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-forwarded-for": "203.0.113.9" },
+        body: JSON.stringify({ eventType: "NOT_A_REAL_EVENT", storeId: "store-A" }),
+      }),
+    );
+
+    // The response the writer's INVALID_EVENT mapping always produced.
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ ok: false, error: "INVALID_EVENT" });
+    expect(mocks.record).not.toHaveBeenCalled();
+    expect([...dbMocks.counts.keys()].some((key) => key.startsWith("events:store:"))).toBe(false);
+
+    // store-A's whole budget is still there: both real events land.
+    expect((await POST(event("store-A", "203.0.113.10"))).status).toBe(202);
+    expect((await POST(event("store-A", "203.0.113.11"))).status).toBe(202);
+    expect(dbMocks.counts.get("events:store:store-A")).toBe(2);
+  });
+
+  it("spends the store budget exactly once per valid event", async () => {
+    expect((await POST(event("store-A", "203.0.113.1"))).status).toBe(202);
+
+    expect(dbMocks.counts.get("events:store:store-A")).toBe(1);
   });
 });

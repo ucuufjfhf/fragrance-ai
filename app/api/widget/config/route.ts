@@ -27,8 +27,10 @@ import {
  *
  * Rate limit: one per requester, BEFORE the store lookup — this endpoint used
  * to be the only public one that could be turned into unbounded Prisma reads.
- * 60/min is ~6× the widget's own 10/min recommend cap and a real embed fetches
- * config once, so it costs genuine merchants nothing.
+ * 300/min is far above what a busy merchant page generates — a real embed
+ * fetches config once, and carrier-grade NAT can put hundreds of unrelated
+ * shoppers behind one edge IP, so this cap blunts a single source rather
+ * than rationing them.
  */
 
 export async function GET(request: Request): Promise<Response> {

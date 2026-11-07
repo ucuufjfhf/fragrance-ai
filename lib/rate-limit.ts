@@ -70,7 +70,11 @@ export const PUBLIC_RATE_LIMITS = {
   eventsRequester: { limit: 120, windowMs: 60_000 },
   // ~5x one requester's cap: a real store's traffic (~6 events per quiz) stays far below it.
   eventsStore: { limit: 600, windowMs: 60_000 },
-  configRequester: { limit: 60, windowMs: 60_000 },
+  // Same key and route; only the budget moved. Behind carrier-grade NAT one
+  // edge IP can be hundreds of unrelated shoppers, and this cap protects a
+  // cheap store lookup — its job is blunting a single-source hammer, not
+  // rationing shoppers.
+  configRequester: { limit: 300, windowMs: 60_000 },
   quizRequester: { limit: 30, windowMs: 60_000 },
   adminUnlock: { limit: 5, windowMs: 900_000 },
 } as const satisfies Record<string, RateLimitPolicy>;

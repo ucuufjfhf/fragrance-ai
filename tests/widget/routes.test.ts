@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const rateCounts = new Map<string, number>();
 vi.mock("@/lib/rate-limit", () => ({
-  PUBLIC_RATE_LIMITS: { widgetRequester: { limit: 10, windowMs: 60_000 }, widgetStore: { limit: 30, windowMs: 60_000 }, eventsRequester: { limit: 120, windowMs: 60_000 }, eventsStore: { limit: 600, windowMs: 60_000 }, configRequester: { limit: 60, windowMs: 60_000 }, quizRequester: { limit: 30, windowMs: 60_000 }, adminUnlock: { limit: 5, windowMs: 900_000 } },
+  PUBLIC_RATE_LIMITS: { widgetRequester: { limit: 10, windowMs: 60_000 }, widgetStore: { limit: 30, windowMs: 60_000 }, eventsRequester: { limit: 120, windowMs: 60_000 }, eventsStore: { limit: 600, windowMs: 60_000 }, configRequester: { limit: 300, windowMs: 60_000 }, quizRequester: { limit: 30, windowMs: 60_000 }, adminUnlock: { limit: 5, windowMs: 900_000 } },
   checkRateLimit: vi.fn(async (key: string, policy: { limit: number }) => { const n = (rateCounts.get(key) ?? 0) + 1; rateCounts.set(key, n); return { allowed: n <= policy.limit, retryAfterSeconds: 1 }; }),
   rateLimitResponse: vi.fn((retryAfterSeconds: number, body: unknown, headers: Record<string, string> = {}) => Response.json(body, { status: 429, headers: { ...headers, "Retry-After": String(retryAfterSeconds) } })),
   requesterIdentity: vi.fn(() => "test-requester"),
@@ -212,7 +212,7 @@ describe("GET /api/widget/config — store validation (§11)", () => {
   it("applies a per-requester limit before the store lookup", async () => {
     const config = () => configGet(new Request("https://app.test/api/widget/config?storeId=store-A"));
 
-    for (let index = 0; index < 60; index += 1) {
+    for (let index = 0; index < 300; index += 1) {
       expect((await config()).status).toBe(200);
     }
 
@@ -224,7 +224,7 @@ describe("GET /api/widget/config — store validation (§11)", () => {
     expect(limited.headers.get("Access-Control-Allow-Methods")).toBe("GET, POST, OPTIONS");
     expect(await limited.json()).toEqual({ ok: false, reason: "RATE_LIMITED" });
     // The whole point of the brake: the over-limit request never reaches Prisma.
-    expect(mocks.storeFindFirst).toHaveBeenCalledTimes(60);
+    expect(mocks.storeFindFirst).toHaveBeenCalledTimes(300);
   });
 });
 
