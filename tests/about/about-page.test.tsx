@@ -55,6 +55,9 @@ describe("site footer trust links", () => {
     // The data page is linked from the same row (it exists, so link it).
     expect(html).toContain('href="/data-policy"');
     expect(html).toContain("حریم خصوصی و داده‌ها");
+    // Merchant landing page, added alongside it (batch 10).
+    expect(html).toContain('href="/for-stores"');
+    expect(html).toContain("برای فروشگاه‌ها");
     // Existing links and the protected tagline are untouched.
     expect(html).toContain("آزمون سلیقه");
     expect(html).toContain("چطور کار می‌کند");

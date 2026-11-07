@@ -46,6 +46,9 @@ export default function SiteFooter() {
           <Link href="/data-policy" className="transition-colors hover:text-foreground">
             حریم خصوصی و داده‌ها
           </Link>
+          <Link href="/for-stores" className="transition-colors hover:text-foreground">
+            برای فروشگاه‌ها
+          </Link>
           <a
             href="mailto:majidemoon0@gmail.com"
             className="transition-colors hover:text-foreground"

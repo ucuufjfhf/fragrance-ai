@@ -13,5 +13,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: "https://fiage.ir/quiz" },
     { url: "https://fiage.ir/about" },
     { url: "https://fiage.ir/data-policy" },
+    { url: "https://fiage.ir/for-stores" },
   ];
 }
