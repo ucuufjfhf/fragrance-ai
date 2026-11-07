@@ -64,5 +64,14 @@ export function requesterIdentity(request: Request): string {
   return sanitizeIdentity(netlifyClientIp) ?? sanitizeIdentity(nearestForwarded) ?? sanitizeIdentity(realIp) ?? "unknown";
 }
 export function rateLimitResponse(retryAfterSeconds: number, body: unknown, extraHeaders: Record<string, string> = {}): Response { return Response.json(body, { status: 429, headers: { ...extraHeaders, "Retry-After": String(Math.max(1, retryAfterSeconds)) } }); }
-export const PUBLIC_RATE_LIMITS = { widgetStore: { limit: 30, windowMs: 60_000 }, widgetRequester: { limit: 10, windowMs: 60_000 }, eventsRequester: { limit: 120, windowMs: 60_000 }, quizRequester: { limit: 30, windowMs: 60_000 }, adminUnlock: { limit: 5, windowMs: 900_000 } } as const satisfies Record<string, RateLimitPolicy>;
+export const PUBLIC_RATE_LIMITS = {
+  widgetStore: { limit: 30, windowMs: 60_000 },
+  widgetRequester: { limit: 10, windowMs: 60_000 },
+  eventsRequester: { limit: 120, windowMs: 60_000 },
+  // ~5x one requester's cap: a real store's traffic (~6 events per quiz) stays far below it.
+  eventsStore: { limit: 600, windowMs: 60_000 },
+  configRequester: { limit: 60, windowMs: 60_000 },
+  quizRequester: { limit: 30, windowMs: 60_000 },
+  adminUnlock: { limit: 5, windowMs: 900_000 },
+} as const satisfies Record<string, RateLimitPolicy>;
 export const ADMIN_UNLOCK_REDIRECT_ERROR = "rate_limited" as const;

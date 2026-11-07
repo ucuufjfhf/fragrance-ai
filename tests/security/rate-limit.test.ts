@@ -145,6 +145,9 @@ describe("requesterIdentity", () => {
       widgetRequester: { limit: 10, windowMs: 60_000 },
       widgetStore: { limit: 30, windowMs: 60_000 },
       eventsRequester: { limit: 120, windowMs: 60_000 },
+      // The two brakes added for buyer audit round 6.
+      eventsStore: { limit: 600, windowMs: 60_000 },
+      configRequester: { limit: 60, windowMs: 60_000 },
       quizRequester: { limit: 30, windowMs: 60_000 },
       adminUnlock: { limit: 5, windowMs: 900_000 },
     });
