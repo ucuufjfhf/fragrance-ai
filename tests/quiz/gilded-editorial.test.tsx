@@ -299,11 +299,17 @@ describe("desktop question column width", () => {
     expect(main).not.toContain("text-center");
   });
 
-  it("leaves the /result column at its historical width", () => {
+  it("opens the /result column on desktop and keeps the fallback narrow", () => {
     const resultPage = readFileSync(
       new URL("../../app/result/page.tsx", import.meta.url),
       "utf8",
     );
-    expect(resultPage).not.toContain("lg:max-w-");
+    // The results wrapper now opens to max-w-6xl from lg so the three cards can
+    // sit side by side; below lg it stays the historical max-w-xl. Exactly one
+    // wrapper carries the desktop width — the malformed-URL fallback keeps the
+    // old column, which is why this is not a blanket lg:max-w- check.
+    expect(resultPage).toContain("max-w-xl");
+    expect(resultPage).toContain("lg:max-w-6xl");
+    expect((resultPage.match(/lg:max-w-6xl/g) ?? []).length).toBe(1);
   });
 });

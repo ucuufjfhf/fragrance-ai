@@ -39,7 +39,7 @@ export default function RecommendationCard({
   const artwork = imageUrl ? null : artworkForPerfume(perfumeId);
 
   return (
-    <article className="quiz-rise relative flex flex-col overflow-hidden rounded-3xl border border-border-soft bg-surface shadow-[var(--shadow-card)]">
+    <article className="quiz-rise relative flex h-full flex-col overflow-hidden rounded-3xl border border-border-soft bg-surface shadow-[var(--shadow-card)]">
       {/* --- artwork panel --- */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface-2">
         {imageUrl ? (

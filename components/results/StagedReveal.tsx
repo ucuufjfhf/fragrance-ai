@@ -17,6 +17,14 @@ interface StagedRevealProps {
    * everything statically, with no staged timing at all.
    */
   reducedMotionOverride?: boolean;
+  /**
+   * Layout for the list itself, appended verbatim to its classes. OPT-IN per
+   * consumer on purpose: the widget renders in a wide standalone viewport, so
+   * a viewport-keyed desktop grid inside this component would fire there too.
+   * Omitted (the default, and every existing caller) → today's class string,
+   * byte for byte.
+   */
+  listClassName?: string;
 }
 
 /**
@@ -35,6 +43,7 @@ interface StagedRevealProps {
 export default function StagedReveal({
   children,
   reducedMotionOverride,
+  listClassName,
 }: StagedRevealProps) {
   const items = Children.toArray(children);
   const [motionOK] = useState<boolean>(() => {
@@ -91,7 +100,7 @@ export default function StagedReveal({
 
   return (
     <ol
-      className="staged-reveal flex list-none flex-col gap-4"
+      className={`staged-reveal flex list-none flex-col gap-4${listClassName ? ` ${listClassName}` : ""}`}
       data-shown={Math.min(shown, items.length)}
       onPointerDown={skip}
       onKeyDown={skip}

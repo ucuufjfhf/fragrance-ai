@@ -165,57 +165,67 @@ export default function ResultsView({
         </div>
       </section>
 
-      <section className="flex flex-col items-center gap-3 rounded-3xl border border-border-soft bg-surface p-6 text-center">
+      <section className="flex w-full flex-col items-center gap-3 rounded-3xl border border-border-soft bg-surface p-6 text-center lg:mx-auto lg:max-w-2xl">
         <SectionHeadline>رایحه‌ای که بهتون میاد</SectionHeadline>
         <span aria-hidden="true" className="h-px w-10 bg-border-soft" />
         <p className="text-sm leading-8 text-muted">{archetype.fragranceHint}</p>
       </section>
 
       {/* --- top traits: the pronounced dimensions, engine values only --- */}
-      <TraitBars vector={vector} />
+      <div className="w-full lg:mx-auto lg:max-w-2xl">
+        <TraitBars vector={vector} />
+      </div>
 
       {/* --- recommendations: a travel note in three stops (Memo lineage) --- */}
       <section className="relative flex flex-col gap-4" aria-live="polite">
-        {/* The travel note's own postage stamp, tucked into the section's top
-            corner. Ink motif, decorative only — no meaning, no state. */}
-        <Image
-          src="/quiz/motif-ink-stamp.webp"
-          alt=""
-          aria-hidden="true"
-          width={72}
-          height={72}
-          className="pointer-events-none absolute -top-2 end-0 h-auto w-[72px] -rotate-6 select-none"
-        />
-        <div className="relative flex flex-col gap-2 pe-24 sm:pe-28">
-          <span aria-hidden="true" className="h-px w-12 bg-accent/50" />
-          <p className="text-sm font-medium text-muted">عطرهایی که بهتون میاد</p>
-          <h2 className="font-display text-3xl font-semibold leading-[1.1] tracking-[-0.01em] text-foreground sm:text-4xl">
-            {travelHighlight ? (
-              <>
-                {travelHighlight[0]}
-                <MarkerWipe replayKey="travel-note">{travelHighlight[1]}</MarkerWipe>
-                {travelHighlight[2]}
-              </>
-            ) : (
-              TRAVEL_NOTE_HEADLINE
-            )}
-          </h2>
-          <p className="font-editorial text-sm leading-7 text-muted">
-            سه ایستگاه در سفر عطری شما؛ هر عطر، یک مقصد.
-          </p>
-        </div>
-
-        {/* Ink motif: the inked rule that closes the travel note and opens the
-            three stops. Decorative only. */}
-        <div aria-hidden="true" className="flex justify-center py-1">
+        {/* Header area of the note — stamp, kicker, headline, subtitle — and the
+            ink rule that opens the stops. On desktop this block is capped at a
+            readable measure and centred while the stops below go full width;
+            the stamp is absolute against THIS block, so it keeps tucking into
+            the header's end side exactly as it does against the section on
+            narrow screens. */}
+        <div className="relative flex w-full flex-col gap-4 lg:mx-auto lg:max-w-2xl">
+          {/* The travel note's own postage stamp. Ink motif, decorative only —
+              no meaning, no state. */}
           <Image
-            src="/quiz/motif-ink-divider.webp"
+            src="/quiz/motif-ink-stamp.webp"
             alt=""
             aria-hidden="true"
-            width={1301}
-            height={154}
-            className="h-8 w-auto object-contain"
+            width={72}
+            height={72}
+            className="pointer-events-none absolute -top-2 end-0 h-auto w-[72px] -rotate-6 select-none"
           />
+          <div className="relative flex flex-col gap-2 pe-24 sm:pe-28">
+            <span aria-hidden="true" className="h-px w-12 bg-accent/50" />
+            <p className="text-sm font-medium text-muted">عطرهایی که بهتون میاد</p>
+            <h2 className="font-display text-3xl font-semibold leading-[1.1] tracking-[-0.01em] text-foreground sm:text-4xl">
+              {travelHighlight ? (
+                <>
+                  {travelHighlight[0]}
+                  <MarkerWipe replayKey="travel-note">{travelHighlight[1]}</MarkerWipe>
+                  {travelHighlight[2]}
+                </>
+              ) : (
+                TRAVEL_NOTE_HEADLINE
+              )}
+            </h2>
+            <p className="font-editorial text-sm leading-7 text-muted">
+              سه ایستگاه در سفر عطری شما؛ هر عطر، یک مقصد.
+            </p>
+          </div>
+
+          {/* Ink motif: the inked rule that closes the travel note and opens the
+              three stops. Decorative only. */}
+          <div aria-hidden="true" className="flex justify-center py-1">
+            <Image
+              src="/quiz/motif-ink-divider.webp"
+              alt=""
+              aria-hidden="true"
+              width={1301}
+              height={154}
+              className="h-8 w-auto object-contain"
+            />
+          </div>
         </div>
 
         {isEmpty ? (
@@ -259,9 +269,15 @@ export default function ResultsView({
             )}
           </div>
         ) : (
-          <StagedReveal>
+          <StagedReveal listClassName="lg:grid lg:grid-cols-3 lg:items-stretch lg:gap-6">
             {recommendations.map((recommendation, index) => (
-              <li key={recommendation.perfumeId} className="quiz-rise">
+              // Desktop: one grid cell per stop, equal heights. The two-row grid
+              // gives the card's h-full an exact cell below the stop label
+              // instead of letting it overflow by that label's height.
+              <li
+                key={recommendation.perfumeId}
+                className="quiz-rise h-full lg:grid lg:grid-rows-[auto_1fr]"
+              >
                 <p className="mb-2 text-xs font-medium tracking-wide text-muted">
                   ایستگاه {JOURNEY_STOPS[index] ?? toPersianDigits(index + 1)}
                 </p>
@@ -276,13 +292,15 @@ export default function ResultsView({
       </section>
 
       {/* --- how did I get here: the shopper's own answers, decoded --- */}
-      <AnswerDecode items={decoded} />
+      <div className="w-full lg:mx-auto lg:max-w-2xl">
+        <AnswerDecode items={decoded} />
+      </div>
 
-      <p className="text-xs leading-7 text-muted">
+      <p className="w-full text-xs leading-7 text-muted lg:mx-auto lg:max-w-2xl">
         این نتیجه یک تحلیل سلیقه‌ای برای انتخاب عطر است، نه یک تست روانشناسی.
       </p>
 
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex w-full flex-col gap-3 sm:flex-row lg:mx-auto lg:max-w-2xl">
         <ShareResultButton />
         <Link
           href="/quiz"
