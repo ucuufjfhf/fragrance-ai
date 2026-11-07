@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 
 import WidgetApp from "@/components/widget/WidgetApp";
+import {
+  WidgetChromeFooter,
+  WidgetChromeHeader,
+} from "@/components/widget/WidgetChrome";
 
 /**
  * GET /widget — the iframe document served on the app's own origin (Phase 8).
@@ -47,9 +51,16 @@ export default async function WidgetPage({ searchParams }: WidgetPageProps) {
           behind the column (see the widget block in app/globals.css). */}
       <div aria-hidden="true" className="widget-ambience pointer-events-none absolute inset-0 -z-10" />
 
+      {/* FIAGE chrome, top-level only: both pieces decide at mount from
+          `isEmbeddedWidget`, so inside a merchant's iframe they render nothing
+          at all — zero DOM, zero height (see components/widget/WidgetChrome). */}
+      <WidgetChromeHeader />
+
       <div className="mx-auto flex w-full max-w-md flex-col">
         <WidgetApp storeId={storeId} />
       </div>
+
+      <WidgetChromeFooter />
 
       <WidgetResizeBridge />
     </main>
