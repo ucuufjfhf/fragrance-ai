@@ -7,7 +7,12 @@ import {
 import { PERSONALITY_LABELS } from "@/lib/personality/labels";
 import { QUIZ_QUESTIONS, getOptionById } from "@/lib/personality/questions";
 import { scoreQuiz } from "@/lib/personality/scoring";
-import type { QuizAnswer } from "@/types/personality";
+import {
+  PERSONALITY_DIMENSIONS,
+  type PersonalityDimension,
+  type PersonalityVector,
+  type QuizAnswer,
+} from "@/types/personality";
 
 /** A complete real sheet: first option everywhere. */
 const realSheet = (): QuizAnswer[] =>
@@ -85,5 +90,75 @@ describe("decodeAnswers", () => {
     expect(decodeAnswers(answers, vector)).toEqual(
       decodeAnswers([...answers].reverse(), vector),
     );
+  });
+
+  it("cannot claim ۱۰۰٪ of an axis it only partly supplied", () => {
+    // The old denominator dropped every answer already decoded for an earlier
+    // axis, so the SECOND item could round to ۱۰۰٪ even though another answer
+    // had pushed the same axis. Build exactly that case from real bank data:
+    // answer A pushes axis x (decoded first) and also axis y; answer B pushes y.
+    type Candidate = { answer: QuizAnswer; x: number; y: number };
+    let found:
+      | { a: Candidate; b: Candidate; x: PersonalityDimension; y: PersonalityDimension }
+      | null = null;
+
+    for (const x of PERSONALITY_DIMENSIONS) {
+      for (const y of PERSONALITY_DIMENSIONS) {
+        if (x === y) continue;
+
+        for (const questionA of QUIZ_QUESTIONS) {
+          for (const optionA of questionA.options) {
+            const ax = optionA.vector[x] ?? 0;
+            const ay = optionA.vector[y] ?? 0;
+            if (ax <= 0 || ay <= 0) continue;
+
+            for (const questionB of QUIZ_QUESTIONS) {
+              if (questionB.id === questionA.id) continue;
+
+              for (const optionB of questionB.options) {
+                const by = optionB.vector[y] ?? 0;
+                // B must push y, A must win x outright (so x decodes first),
+                // and B's share of y must stay clearly below 100٪ so the
+                // assertion does not ride on rounding.
+                if (by <= 0 || (optionB.vector[x] ?? 0) >= ax) continue;
+                if (by * 10 > ay * 9 + by) continue;
+
+                found = {
+                  a: { answer: { questionId: questionA.id, optionId: optionA.id }, x: ax, y: ay },
+                  b: { answer: { questionId: questionB.id, optionId: optionB.id }, x: 0, y: by },
+                  x,
+                  y,
+                };
+                break;
+              }
+              if (found) break;
+            }
+            if (found) break;
+          }
+          if (found) break;
+        }
+        if (found) break;
+      }
+      if (found) break;
+    }
+
+    expect(found).not.toBeNull();
+    const { a, b, x, y } = found!;
+
+    const vector = Object.fromEntries(
+      PERSONALITY_DIMENSIONS.map((dimension) => [dimension, 0]),
+    ) as PersonalityVector;
+    vector[x] = 100;
+    vector[y] = 90;
+
+    const decoded = decodeAnswers([a.answer, b.answer], vector, QUIZ_QUESTIONS, 2);
+
+    expect(decoded.map((item) => item.dimension)).toEqual([x, y]);
+    expect(decoded[0].questionId).toBe(a.answer.questionId);
+
+    // Honest denominator: the axis's push across BOTH answers. The old code
+    // divided by b.y alone and showed ۱۰۰٪ here.
+    expect(decoded[1].share).toBeCloseTo(b.y / (a.y + b.y), 2);
+    expect(decoded[1].share).toBeLessThan(1);
   });
 });

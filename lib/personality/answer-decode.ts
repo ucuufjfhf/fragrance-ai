@@ -24,7 +24,10 @@ import {
  *  - an answer with no positive push on an axis (delta ≤ 0) can never appear
  *    for that axis: if nothing moved the needle, nothing is shown;
  *  - the share is arithmetic: the answer's delta over the sheet's total
- *    positive push on that axis — a computed number, never a narrative.
+ *    positive push on that axis across EVERY scored answer — including
+ *    answers already decoded for another axis — so an item can never read
+ *    100٪ of an axis that other answers also pushed; a computed number,
+ *    never a narrative.
  */
 
 /** One decoded answer→trait link, ready to render. */
@@ -39,8 +42,9 @@ export interface DecodedAnswer {
   /** The profile trait this answer pushed hardest on. */
   traitLabel: string;
   /**
-   * 0–1 share of the sheet's total positive push on that trait. Rounded to
-   * two decimals for display; never fabricated, always derived.
+   * 0–1 share of the sheet's total positive push on that trait, over ALL
+   * scored answers (not only the ones not yet decoded). Rounded to two
+   * decimals for display; never fabricated, always derived.
    */
   share: number;
 }
@@ -152,10 +156,11 @@ export function decodeAnswers(
       continue;
     }
 
+    // Denominator: the axis's WHOLE positive push across every scored answer.
+    // Dropping answers already decoded for an earlier axis shrank this total as
+    // the list grew, so a later item could display ۱۰۰٪ while supplying only
+    // part of that axis's push. Numerator and item selection are unchanged.
     const total = sheet.reduce((sum, entry) => {
-      if (used.has(entry.question.id)) {
-        return sum;
-      }
       const option = getOptionById(entry.question, entry.optionId);
       return sum + Math.max(0, option?.vector[dimension] ?? 0);
     }, 0);
