@@ -63,7 +63,17 @@ export async function unlockAdminAccessAction(formData: FormData): Promise<void>
 
   // Only failed attempts consume quota. Locked and unlocked states use the
   // same generic outcome so this gate reveals nothing about the configured value.
-  const attemptLimit = await checkRateLimit(unlockKey, PUBLIC_RATE_LIMITS.adminUnlock);
+  //
+  // Fail CLOSED: if the counter table is unreachable we cannot know how many
+  // attempts this requester has already made, so the unlock is refused with the
+  // ordinary generic lockout — never granted unthrottled. Public endpoints keep
+  // the limiter's default fail-open behaviour.
+  const attemptLimit = await checkRateLimit(
+    unlockKey,
+    PUBLIC_RATE_LIMITS.adminUnlock,
+    Date.now(),
+    { failClosed: true },
+  );
   if (!attemptLimit.allowed) {
     gateRedirect(nextPath, ADMIN_UNLOCK_REDIRECT_ERROR);
   }

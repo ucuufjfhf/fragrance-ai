@@ -1,7 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const rateCounts = new Map<string, number>();
-vi.mock("@/lib/db", () => ({ getPrisma: () => ({ $queryRaw: async (_s: TemplateStringsArray, ...v: unknown[]) => { const n = (rateCounts.get(String(v[0])) ?? 0) + 1; rateCounts.set(String(v[0]), n); return [{ count: n }]; }, rateLimitCounter: { deleteMany: vi.fn(async ({ where }: { where: { key?: string } }) => { if (where.key) for (const k of rateCounts.keys()) if (k === where.key || k.startsWith(`${where.key}:`)) rateCounts.delete(k); return { count: 0 }; }) } }) }));
+const dbMocks = vi.hoisted(() => ({ counts: new Map<string, number>(), fail: false }));
+vi.mock("@/lib/db", () => ({ getPrisma: () => ({
+  $queryRaw: async (_s: TemplateStringsArray, ...v: unknown[]) => {
+    if (dbMocks.fail) throw new Error("database unavailable");
+    const n = (dbMocks.counts.get(String(v[0])) ?? 0) + 1;
+    dbMocks.counts.set(String(v[0]), n);
+    return [{ count: n }];
+  },
+  rateLimitCounter: { deleteMany: vi.fn(async ({ where }: { where: { key?: string } }) => { if (where.key) for (const k of dbMocks.counts.keys()) if (k === where.key || k.startsWith(`${where.key}:`)) dbMocks.counts.delete(k); return { count: 0 }; }) },
+}) }));
 const mocks = vi.hoisted(() => ({
   redirect: vi.fn((path: string) => {
     const error = new Error(path) as Error & { digest: string };
@@ -40,7 +48,8 @@ const form = (secret: string): FormData => {
 };
 
 beforeEach(() => {
-  rateCounts.clear();
+  dbMocks.counts.clear();
+  dbMocks.fail = false;
   vi.clearAllMocks();
   resetRateLimitsForTests();
   vi.stubEnv("ADMIN_ACCESS_SECRET", SECRET);
@@ -62,6 +71,15 @@ describe("admin unlock throttling", () => {
 
     vi.clearAllMocks();
     expect(await redirectPath(form("wrong"))).toContain("error=wrong");
+  });
+
+  it("fails closed when the rate-limit database is unavailable", async () => {
+    // Fail CLOSED is the point: an uncountable attempt is refused, and even the
+    // correct secret cannot obtain a cookie while the limiter is blind.
+    dbMocks.fail = true;
+
+    expect(await redirectPath(form(SECRET))).toContain("error=rate_limited");
+    expect(mocks.setCookie).not.toHaveBeenCalled();
   });
 
   it("invalidates the admin cookie on logout", async () => {
