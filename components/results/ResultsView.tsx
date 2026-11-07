@@ -212,8 +212,8 @@ export default function ResultsView({
             src="/quiz/motif-ink-divider.webp"
             alt=""
             aria-hidden="true"
-            width={1600}
-            height={686}
+            width={1301}
+            height={154}
             className="h-8 w-auto object-contain"
           />
         </div>
