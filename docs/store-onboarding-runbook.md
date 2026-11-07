@@ -224,7 +224,9 @@ mistake.
 - [ ] Report link: empty before the first visitor, then populated after one real
       journey (widget view → quiz start → result → recommendation impressions).
 - [ ] UTM attribution arrives on the merchant's site:
-      `utm_source=fiage_widget&utm_medium=quiz&utm_campaign=<store-id>`.
+      `utm_source=fiage_widget&utm_medium=quiz&utm_campaign=<store-slug>`
+      (the store's slug — the readable name the merchant recognises; only a store
+      with no slug falls back to its id).
 - [ ] `/data-policy` opens from the widget footer.
 
 ---

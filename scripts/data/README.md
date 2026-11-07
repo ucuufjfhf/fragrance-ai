@@ -1,8 +1,11 @@
 # Famous-perfume demo dataset
 
-`famous-perfumes-100.csv` — 100 globally known perfumes for the demo store
+`famous-perfumes-100.csv` — 89 globally known perfumes for the demo store
 `store-demo-perfume-shop`, imported through the existing admin CSV import
-(`lib/admin/csv/*`), not through ad-hoc SQL.
+(`lib/admin/csv/*`), not through ad-hoc SQL. The filename keeps the original
+100-row scope: 11 of those 100 duplicated perfumes already in the demo store and
+were removed, since the insert-only import refuses any `(name, brand)` or slug
+that already exists.
 
 ## Where the facts come from
 

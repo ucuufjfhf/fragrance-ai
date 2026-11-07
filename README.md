@@ -12,9 +12,9 @@ merchant's real inventory, with a short Persian «چرا این عطر؟» expla
 
 ---
 
-## Status: **LIVE in production** · Phases 0–11 + 12.1–12.6-A/B/C + hardening/deployment (16A/16B) implemented · Current working tree requires a fresh deployment check
+## Status: **LIVE in production** · Phases 0–11 + 12.1–12.5 + hardening/deployment (16A/16B) implemented and deployed
 
-**Production: <https://fiage.netlify.app>** — deployed 2026-09-24 and fully smoke-tested (public quiz, results, widget, admin gate, APIs, security scans all PASS).
+**Production: <https://fiage.ir>** (Netlify; `www.fiage.ir` redirects to the apex). The deployed build is the one on `master`: the public quiz, results, widget, admin gate and APIs all serve from there.
 
 | Phase | Scope | State |
 | --- | --- | --- |
@@ -35,6 +35,7 @@ merchant's real inventory, with a short Persian «چرا این عطر؟» expla
 | 12.2 | Bulk AI profiling: `BulkProfileJob` / `BulkProfileItem` schema + migration | ✅ done |
 | 12.3 | Bulk AI profiling: bulk job service (atomic claiming, heartbeats, stale reclaim, exactly-once counters, store isolation) | ✅ done |
 | 12.4 | Bulk AI profiling: AI execution / processing / retry handling | ✅ done |
+| 12.5 | Bulk AI profiling: server integration + admin UI | ✅ done |
 | 16A | Hardening: operator store provisioning + fail-closed admin access gate | ✅ done |
 | 16B | Production deployment to Netlify + full smoke testing | ✅ done |
 | 10 | First real customer | planned |
@@ -90,7 +91,7 @@ browser.
 | `lib/results/params.ts` | pure URL contract: `serializeResultsParams` / `parseResultsParams` (strict 0–100 integer validation, known archetype, store default) |
 | `lib/results/service.ts` | server-only orchestration: `getResultsViewData` = engine → optional explanations; never re-scores or re-orders |
 | `app/result/page.tsx` | the route; malformed params render a back-to-quiz state |
-| `app/result/loading.tsx` | «در حال پیدا کردن عطر مناسب برای تو...» |
+| `app/result/loading.tsx` | «در حال پیدا کردن عطر مناسب برای شما...» |
 | `app/result/error.tsx` | error boundary: «مشکلی پیش اومد» + retry/restart |
 | `components/results/ResultsView.tsx` | profile header, traits, ranked list, empty state, AI-unavailable notice |
 | `components/results/RecommendationCard.tsx` | rank, name, brand, image, presentation score, optional explanation, CTA |
@@ -522,7 +523,7 @@ renders no CTA and invents no URL). This closes Phase 7's null-storeId limitatio
 widget traffic. No new event types; no PII.
 
 **Persian states** — «عطر خودتو پیدا کن ✨» CTA · loading «در حال پیدا کردن عطر مناسب
-تو...» · unavailable «این فروشگاه در حال حاضر در دسترس نیست.» · failure «فعلاً
+شما...» · unavailable «این فروشگاه در حال حاضر در دسترس نیست.» · failure «فعلاً
 نتونستیم پیشنهادها رو آماده کنیم. لطفاً دوباره تلاش کن.» · empty inventory «فعلاً عطری
 برای پیشنهاد در این فروشگاه ثبت نشده.»
 
@@ -621,7 +622,7 @@ deterministic repeats, topN behavior, clean empty-inventory handling.
 
 ---
 
-## Phase 12 — bulk AI profiling and Phase 12.6 controls (checkpoints 12.1–12.6-C implemented)
+## Phase 12 — bulk AI profiling (checkpoints 12.1–12.5 implemented)
 
 Bulk AI profiling applies the existing Phase 4 enrichment across many perfumes in one run,
 with progress that survives a browser refresh or a server restart. It is built in gated
@@ -711,9 +712,8 @@ Store website → Persian RTL widget → 10-question quiz → personality vector
 
 ## Deployment
 
-**The app is LIVE in production: <https://fiage.netlify.app>** (Netlify,
-project `fiage`; deployed 2026-09-24, deploy `6ab4b1e7eff8ea05cf01667a`, full
-smoke-test suite passed). Redeploys run from the project root:
+**The app is LIVE in production: <https://fiage.ir>** (Netlify, project
+`fiage`; `www.fiage.ir` redirects to the apex). Redeploys run from the project root:
 
 ```bash
 npx netlify deploy --build --prod
