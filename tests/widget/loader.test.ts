@@ -52,6 +52,34 @@ describe("public/widget.js — shipped loader safety structure", () => {
     expect(LOADER).toContain("event.origin !== baseUrl");
   });
 
+  it("trusts the origin only together with this loader's own iframe (§8)", () => {
+    // Origin + message type are public; frame identity is not forgeable from
+    // another same-origin iframe on the same merchant page.
+    expect(LOADER).toContain("event.source !== iframe.contentWindow");
+  });
+
+  it("ignores, rather than clamps, resize heights outside [200, 5000]", () => {
+    expect(LOADER).toContain("var MIN_HEIGHT = 200;");
+    expect(LOADER).toContain("var MAX_HEIGHT = 5000;");
+    expect(LOADER).toContain("height < MIN_HEIGHT || height > MAX_HEIGHT");
+    expect(LOADER).not.toContain("Math.min(");
+  });
+
+  it("replaces a frame that never loads with a loader-rendered down state", () => {
+    expect(LOADER).toContain("var LOAD_TIMEOUT_MS = 12000;");
+    expect(LOADER).toContain("setTimeout(showFallback, LOAD_TIMEOUT_MS)");
+    expect(LOADER).toContain("آزمون عطر فیاژ در دسترس نیست");
+    expect(LOADER).toContain("تلاش دوباره");
+    expect(LOADER).toContain("retry.href = widgetUrl;");
+    expect(LOADER).toContain('retry.target = "_blank";');
+    expect(LOADER).toContain('retry.rel = "noopener";');
+    // Inline styles only: nothing the host page's CSS can override.
+    expect(LOADER).toContain('fallback.style.fontFamily = "sans-serif";');
+    expect(LOADER).not.toContain("classList");
+    // The first successful load cancels the watchdog for good.
+    expect(LOADER).toContain("clearWatchdog();\n    loaded = true;");
+  });
+
   it("fails gracefully (console.warn, no throw) on bad configuration", () => {
     expect(LOADER).toContain("console.warn");
     expect(LOADER).toContain("function fail(");

@@ -12,7 +12,9 @@
  *   3. guards against duplicate initialization (extra copies are no-ops);
  *   4. creates a mount point and an iframe pointed at this deployment's
  *      /widget?store=… route (same origin as this script file);
- *   5. sizes the iframe from postMessage resize events emitted by the page;
+ *   5. sizes the iframe from postMessage resize events emitted by its own
+ *      iframe, within sane bounds — and replaces the frame with a small
+ *      fallback if that frame never loads at all;
  *   6. tells the widget when the mount is actually visible (WIDGET_VIEWED),
  *      so an impression is a view and not merely a page load.
  *
@@ -29,6 +31,14 @@
   var WIDGET_ID = "fragrance-ai-widget";
   var IFRAME_ID = WIDGET_ID + "-frame";
   var ORIGIN_MARKER = WIDGET_ID + ":loaded";
+
+  // Resize bounds: a postMessage height is a hint from another document, never
+  // an instruction. Values outside this range are ignored, not clamped.
+  var MIN_HEIGHT = 200;
+  var MAX_HEIGHT = 5000;
+
+  // How long the iframe may stay silent before the loader replaces it.
+  var LOAD_TIMEOUT_MS = 12000;
 
   // --- duplicate-initialization guard (§23) ---
   if (window[ORIGIN_MARKER]) {
@@ -96,7 +106,9 @@
   var iframe = document.createElement("iframe");
 
   iframe.id = IFRAME_ID;
-  iframe.src = baseUrl + "/widget?store=" + encodeURIComponent(storeId);
+  var widgetUrl = baseUrl + "/widget?store=" + encodeURIComponent(storeId);
+
+  iframe.src = widgetUrl;
   iframe.title = "عطر خودتون رو پیدا کنید";
   iframe.setAttribute("allow", "clipboard-write");
   iframe.style.border = "0";
@@ -142,7 +154,69 @@
     }
   }
 
+  // --- down-state watchdog ---
+  // If the app deployment is unreachable, the iframe is a fixed-height hole on
+  // the merchant's page showing the browser's own error page — which reads as
+  // the merchant's breakage, not ours. So if no load event arrives within
+  // LOAD_TIMEOUT_MS, the loader replaces the mount's content with a small
+  // fallback it renders itself: inline styles only, so it neither depends on
+  // nor leaks into the host page's CSS. The first load cancels it permanently.
+  var watchdog = null;
+
+  function clearWatchdog() {
+    if (watchdog !== null) {
+      clearTimeout(watchdog);
+      watchdog = null;
+    }
+  }
+
+  function showFallback() {
+    if (loaded) {
+      return;
+    }
+
+    var fallback = document.createElement("div");
+
+    fallback.dir = "rtl";
+    fallback.style.boxSizing = "border-box";
+    fallback.style.maxWidth = "480px";
+    fallback.style.padding = "24px 16px";
+    fallback.style.border = "1px solid #e5e7eb";
+    fallback.style.borderRadius = "16px";
+    fallback.style.background = "#ffffff";
+    fallback.style.color = "#4b5563";
+    fallback.style.fontFamily = "sans-serif";
+    fallback.style.fontSize = "14px";
+    fallback.style.lineHeight = "2";
+    fallback.style.textAlign = "center";
+
+    var message = document.createElement("p");
+
+    message.style.margin = "0 0 8px";
+    message.textContent = "آزمون عطر فیاژ در دسترس نیست";
+
+    var retry = document.createElement("a");
+
+    retry.href = widgetUrl;
+    retry.target = "_blank";
+    retry.rel = "noopener";
+    retry.textContent = "تلاش دوباره";
+    retry.style.color = "#7c3aed";
+    retry.style.textDecoration = "underline";
+
+    fallback.appendChild(message);
+    fallback.appendChild(retry);
+
+    mount.textContent = "";
+    mount.appendChild(fallback);
+  }
+
+  if (typeof setTimeout === "function") {
+    watchdog = setTimeout(showFallback, LOAD_TIMEOUT_MS);
+  }
+
   iframe.addEventListener("load", function () {
+    clearWatchdog();
     loaded = true;
     deliverVisible();
   });
@@ -170,15 +244,26 @@
   }
 
   // --- auto-resize from the widget page's postMessage bridge (§8) ---
+  // The origin and the message type are public knowledge, so another fiage.ir
+  // frame on the same merchant page could otherwise resize this mount to 1px
+  // (or 100000px). Identity is the one thing it cannot fake: only THIS
+  // loader's own iframe may move this loader's frame.
   window.addEventListener("message", function (event) {
-    if (event.origin !== baseUrl || !event.data || event.data.type !== "fragrance-ai:resize") {
+    if (
+      event.origin !== baseUrl ||
+      event.source !== iframe.contentWindow ||
+      !event.data ||
+      event.data.type !== "fragrance-ai:resize"
+    ) {
       return;
     }
 
     var height = Number(event.data.height);
 
-    if (Number.isFinite(height) && height > 0) {
-      iframe.style.height = Math.ceil(height) + "px";
+    if (!Number.isFinite(height) || height < MIN_HEIGHT || height > MAX_HEIGHT) {
+      return;
     }
+
+    iframe.style.height = Math.ceil(height) + "px";
   });
 })();
