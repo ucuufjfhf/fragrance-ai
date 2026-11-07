@@ -58,14 +58,19 @@ export const metadata: Metadata = {
     images: ["/brand/og-card.png"],
   },
   /**
-   * The FIAGE mark is the tab icon and the iOS home-screen icon: one bundled
-   * PNG serves both, so there is no .ico copy to keep in sync with the brand.
+   * Two icons, two jobs:
+   *  - the FIAGE mark is the tab icon, at its native size;
+   *  - the iOS home-screen icon is a dedicated 180×180 rendition served from
+   *    the conventional root path, `/apple-touch-icon.png`. Apple touch icons
+   *    are 180×180, and clients that probe that path instead of parsing this
+   *    tag (older Safari, some crawlers and readers) only find it there.
+   * Neither is an .ico, so there is no copy to keep in sync with the brand.
    * (`app/favicon.ico` — the untouched framework default — was removed for the
    * same reason: it would have advertised a second, unrelated icon.)
    */
   icons: {
     icon: [{ url: "/brand/fiage-mark.png", type: "image/png", sizes: "560x560" }],
-    apple: [{ url: "/brand/fiage-mark.png", type: "image/png", sizes: "560x560" }],
+    apple: [{ url: "/apple-touch-icon.png", type: "image/png", sizes: "180x180" }],
   },
 };
 
