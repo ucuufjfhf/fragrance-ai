@@ -18,6 +18,14 @@ import type { AnalyticsEventType } from "@/lib/analytics/types";
  * is actually recorded.
  */
 
+/**
+ * The Persian date the page's copy was last reviewed.
+ *
+ * A literal, not a computed date: the page tells the reader when its words were
+ * written, so this only moves when the copy actually does.
+ */
+export const LAST_UPDATED_FA = "۱۶ آبان ۱۴۰۵";
+
 /** What the widget actually records — one entry per real data category. */
 export const COLLECTED_DATA = [
   {

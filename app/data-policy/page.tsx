@@ -7,6 +7,7 @@ import {
   COLLECTED_DATA,
   CONTACT_EMAIL,
   EVENT_LABELS,
+  LAST_UPDATED_FA,
   NOT_COLLECTED,
 } from "@/lib/data-policy/content";
 
@@ -53,6 +54,11 @@ export default function DataPolicyPage() {
             فیاژ بدون ثبت‌نام کار می‌کند. این صفحه دقیقاً می‌گوید چه چیزی ذخیره
             می‌شود، چه چیزی هرگز پرسیده نمی‌شود، و هر فروشگاه چه چیزی می‌بیند —
             همان چیزی که در کد همین سرویس انجام می‌شود.
+          </p>
+          {/* Quiet, but stated: a data page without a date is a page nobody
+              can judge the freshness of. */}
+          <p className="mt-3 text-sm text-muted">
+            آخرین به‌روزرسانی: {LAST_UPDATED_FA}
           </p>
         </section>
 
@@ -106,11 +112,19 @@ export default function DataPolicyPage() {
             >
               چه چیزی هرگز پرسیده نمی‌شود؟
             </h2>
-            <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+            {/* Two equal tracks of identical cells, centred in the card: the
+                list reads as one block instead of a ragged, off-centre column. */}
+            <ul className="mx-auto mt-6 grid w-full max-w-2xl gap-3 sm:grid-cols-2">
               {NOT_COLLECTED.map((item) => (
-                <li key={item} className="flex items-center gap-2 text-sm text-foreground/90">
-                  <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-accent" />
-                  {item}
+                <li
+                  key={item}
+                  className="flex min-h-12 items-center gap-3 rounded-xl border border-border-soft bg-background px-4 py-3 text-sm text-foreground/90"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent"
+                  />
+                  <span>{item}</span>
                 </li>
               ))}
             </ul>
