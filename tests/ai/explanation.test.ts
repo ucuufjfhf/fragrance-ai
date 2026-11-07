@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import {
   EXPLANATION_MAX_CHARS,
+  EXPLANATION_SYSTEM_PROMPT,
   buildExplanationUserPrompt,
   describeTraitLevel,
   generateExplanation,
@@ -29,6 +30,16 @@ const explanationProvider = (
     throw new Error("not used");
   },
   generateRecommendationExplanation: generate,
+});
+
+describe("EXPLANATION_SYSTEM_PROMPT", () => {
+  it("asks for the polite plural «شما» register the UI uses", () => {
+    // Regression guard: the prompt used to request the informal singular (تو)
+    // while the card heading above every explanation reads «چرا بهتون میاد؟».
+    expect(EXPLANATION_SYSTEM_PROMPT).toContain("شما");
+    expect(EXPLANATION_SYSTEM_PROMPT).toContain("می‌کنید");
+    expect(EXPLANATION_SYSTEM_PROMPT).not.toContain("(تو)");
+  });
 });
 
 describe("describeTraitLevel", () => {

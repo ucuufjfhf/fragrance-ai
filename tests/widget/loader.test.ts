@@ -100,7 +100,8 @@ describe("GET /widget — iframe document (§8/§31)", () => {
     expect(html).toContain('dir="rtl"');
     // SSR renders the validating state (the store check is a client-side
     // fetch after hydration); the intro appears once validation passes.
-    expect(html).toContain("در حال پیدا کردن عطر مناسب شما...");
+    // Neutral config-load copy: no quiz exists yet at this phase.
+    expect(html).toContain("در حال بارگذاری…");
     // The resize bridge posts to the parent for loader sizing.
     expect(html).toContain("fragrance-ai:resize");
   });

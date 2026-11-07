@@ -2,7 +2,7 @@
 
 import { BottleMark } from "@/components/ui-icons";
 import { trackEvent } from "@/lib/analytics/client";
-import { formatPersianScore } from "@/lib/persian";
+import { formatPersianScore, toPersianDigits } from "@/lib/persian";
 import { formatTomanPrice } from "@/lib/pricing/currency";
 import { withWidgetAttribution } from "@/lib/widget/attribution";
 import type { WidgetRecommendation } from "@/lib/widget/contract";
@@ -16,7 +16,8 @@ import type { WidgetRecommendation } from "@/lib/widget/contract";
  * is preserved byte-for-byte in intent:
  *
  *  - only customer-safe fields from the widget API (§12);
- *  - the rank badge stays a real `aria-label`'d chip;
+ *  - the rank chip shows the same Persian digit as the rest of the card and
+ *    carries no accessible name (a plain span cannot have one);
  *  - `matchPercent` is displayed as-is (the engine rounds once) and the bar
  *    keeps its accessible progressbar contract;
  *  - the explanation renders only when the AI answered;
@@ -85,11 +86,8 @@ export default function WidgetRecommendationCard({
           </span>
         )}
 
-        <span
-          aria-label={`رتبه ${rank}`}
-          className="rank-chip tnum absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-accent/40 bg-background/85 text-sm font-bold text-accent shadow-[var(--shadow-card)]"
-        >
-          {rank}
+        <span className="rank-chip tnum absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-accent/40 bg-background/85 text-sm font-bold text-accent shadow-[var(--shadow-card)]">
+          {toPersianDigits(rank)}
         </span>
       </div>
 

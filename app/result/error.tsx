@@ -34,8 +34,8 @@ export default function ResultError({
           مشکلی پیش اومد
         </h1>
         <p className="text-sm leading-8 text-muted">
-          در آماده‌سازی نتیجه خطایی رخ داد. می‌تونی دوباره تلاش کنی یا آزمون رو از
-          اول شروع کنی.
+          در آماده‌سازی نتیجه خطایی رخ داد. می‌تونید دوباره تلاش کنید یا آزمون رو از
+          اول شروع کنید.
         </p>
         <div className="flex flex-col items-center gap-3">
           <button

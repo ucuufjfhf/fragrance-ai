@@ -58,6 +58,14 @@ describe("results view rendering", () => {
     expect(html).toContain(`aria-valuenow="${Math.round(recommendation.presentationScore)}"`);
   });
 
+  it("renders the rank as a Persian digit, with no accessible name on the span", () => {
+    const recommendation = { ...engineResult.recommendations[0], rank: 2 };
+    const html = render(<RecommendationCard recommendation={recommendation} />);
+
+    expect(html).toContain(">۲<");
+    expect(html).not.toContain('aria-label="رتبه');
+  });
+
   it("shows the AI explanation when one exists for the perfume", () => {
     const recommendation = engineResult.recommendations[0];
     const explanation = "این عطر با سلیقه گرم و مرموز تو هماهنگه.";

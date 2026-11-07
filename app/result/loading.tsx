@@ -17,7 +17,7 @@ export default function ResultLoading() {
           className="h-10 w-10 animate-spin rounded-full border-2 border-border-soft border-t-accent"
         />
         <p className="text-sm leading-8 text-muted" role="status">
-          در حال پیدا کردن عطر مناسب برای تو...
+          در حال پیدا کردن عطر مناسب برای شما...
         </p>
       </section>
     </main>

@@ -2,7 +2,7 @@
 
 import { artworkForPerfume } from "@/lib/perfumes/artwork";
 import { trackEvent } from "@/lib/analytics/client";
-import { formatPersianScore } from "@/lib/persian";
+import { formatPersianScore, toPersianDigits } from "@/lib/persian";
 import type { MatchedPerfume } from "@/types/recommendation";
 
 interface RecommendationCardProps {
@@ -74,11 +74,11 @@ export default function RecommendationCard({
           className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-white/15"
         />
 
-        <span
-          aria-label={`رتبه ${rank}`}
-          className="rank-chip tnum absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/45 bg-background/85 text-sm font-bold text-accent shadow-[var(--shadow-card)]"
-        >
-          {rank}
+        {/* Rank chip: the visible Persian digit IS the content, so it needs no
+            accessible name (prohibited on a plain span) and no Latin digit
+            beside the Persian numbers everywhere else on the card. */}
+        <span className="rank-chip tnum absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/45 bg-background/85 text-sm font-bold text-accent shadow-[var(--shadow-card)]">
+          {toPersianDigits(rank)}
         </span>
 
         <div className="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 p-4">

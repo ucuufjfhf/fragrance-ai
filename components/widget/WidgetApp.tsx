@@ -91,7 +91,10 @@ interface WidgetState {
 const STORE_UNAVAILABLE = "این فروشگاه در حال حاضر در دسترس نیست.";
 const RECOMMENDATION_ERROR = "فعلاً نتونستیم پیشنهادها رو آماده کنیم. لطفاً دوباره تلاش کنید.";
 const EMPTY_INVENTORY = "فعلاً عطری برای پیشنهاد در این فروشگاه ثبت نشده است.";
-const LOADING = "در حال پیدا کردن عطر مناسب شما...";
+// Neutral on purpose: this is the store-config fetch, before any quiz exists.
+// The results-flavoured «در حال پیدا کردن عطر…» was describing a search that
+// had not started (the quiz's own analysis phase has its own copy).
+const LOADING = "در حال بارگذاری…";
 
 /** The widget intro headline — the quiz's approved copy, byte-identical. */
 const INTRO_HEADLINE = "عطر مناسب خودتون رو پیدا کنید";

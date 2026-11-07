@@ -21,7 +21,7 @@ export default function AdminPerfumesError({
         <WarningMark className="mx-auto h-8 w-8 text-accent" />
         <h1 className="text-lg font-semibold">خطا در بارگذاری مدیریت عطرها</h1>
         <p className="text-sm leading-8 text-muted">
-          مشکلی پیش اومد؛ می‌تونی دوباره تلاش کنی.
+          مشکلی پیش اومد؛ می‌تونید دوباره تلاش کنید.
         </p>
         <button
           type="button"

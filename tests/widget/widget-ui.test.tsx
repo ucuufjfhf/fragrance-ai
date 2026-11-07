@@ -95,7 +95,9 @@ describe("WidgetRecommendationCard — data contracts", () => {
       <WidgetRecommendationCard recommendation={MATCHES[1]} storeId="store-A" />,
     );
 
-    expect(html).toContain('aria-label="رتبه 2"');
+    // Rank is the visible Persian digit; a plain span carries no accessible name.
+    expect(html).toContain(">۲<");
+    expect(html).not.toContain('aria-label="رتبه');
     expect(html).toContain('role="progressbar"');
     expect(html).toContain('aria-valuenow="78"');
     expect(html).toContain("تطابق");
