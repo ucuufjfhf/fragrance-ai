@@ -10,7 +10,7 @@ import type { WidgetRecommendation } from "@/lib/widget/contract";
 /**
  * One recommendation inside the widget (Phase 8).
  *
- * Restyled to the main site's card language: a 16:10 artwork panel, the rank
+ * Restyled to the main site's card language: a 3:4 portrait artwork panel, the rank
  * chip, a match bar with the «تطابق» label, the explanation block and a button
  * in the shared `.btn-secondary` tier. Every data behaviour of the Phase-8 card
  * is preserved byte-for-byte in intent:
@@ -65,7 +65,7 @@ export default function WidgetRecommendationCard({
 
   return (
     <article className="quiz-rise relative flex flex-col overflow-hidden rounded-[1.5rem] border border-border-soft bg-surface shadow-[var(--shadow-card)]">
-      {/* --- artwork panel: fixed 16:10 box, so no card changes height --- */}
+      {/* --- artwork panel: fixed 3:4 box, so no card changes height --- */}
       <div className="relative aspect-[16/10] w-full overflow-hidden bg-surface-2">
         {imageUrl ? (
           // Merchant-provided absolute URL; plain <img> keeps it working

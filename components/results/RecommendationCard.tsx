@@ -19,7 +19,7 @@ interface RecommendationCardProps {
  * presentation score is displayed as-is; the AI explanation, when present, is
  * decoration on top and its absence never blocks or alters the card.
  *
- * Phase D: each card leads with a 16:10 artwork panel. The merchant's own
+ * Phase D: each card leads with a 3:4 portrait artwork panel. The merchant's own
  * `imageUrl` keeps absolute precedence; when the engine returns none (every
  * demo/reference-catalog card), the bundled curated artwork for that perfume id
  * fills the panel instead of the bare bottle glyph. The mapping is pure and
@@ -41,7 +41,7 @@ export default function RecommendationCard({
   return (
     <article className="quiz-rise relative flex flex-col overflow-hidden rounded-3xl border border-border-soft bg-surface shadow-[var(--shadow-card)]">
       {/* --- artwork panel --- */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-surface-2">
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface-2">
         {imageUrl ? (
           // Plain <img> keeps merchant data working without a configured image
           // domain; the URL comes from the merchant inventory.
