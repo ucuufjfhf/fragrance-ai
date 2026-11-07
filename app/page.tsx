@@ -67,8 +67,8 @@ export default function Home() {
             <div className="relative mx-auto w-full max-w-[270px] sm:max-w-[300px] lg:max-w-[330px]">
               <div className="relative aspect-[293/669] w-full">
                 <Image
-                  src="/hero/sauvage-bottle.webp"
-                  alt="بطری استوانه‌ای عطر ساواج دیور با شیشه آبی سرمه‌ای تیره که در قسمت پایین به رنگ کهربایی می‌گراید"
+                  src="/hero/fiage-hero-bottle.webp"
+                  alt="بطری عطر شیشه‌ای فیاژ با گرادیان کهربایی تا سرمه‌ای، درِ مشکی و نشان FIAGE روی شیشه"
                   fill
                   priority
                   sizes="(min-width: 1024px) 42vw, (min-width: 640px) 448px, 90vw"
