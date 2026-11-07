@@ -8,7 +8,6 @@ import Question from "@/components/quiz/Question";
 import { QUIZ_QUESTIONS } from "@/lib/personality/questions";
 import {
   QUESTION_ILLUSTRATIONS,
-  QUESTION_ILLUSTRATION_FOCUS,
   questionIllustrationFor,
 } from "@/lib/quiz/question-illustrations";
 
@@ -23,9 +22,12 @@ const CSS = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf
 /** Assets must stay small enough for a mid-range phone on 4G. */
 const MAX_ILLUSTRATION_BYTES = 150 * 1024;
 
-/** The fixed stage height, identical on all ten questions per breakpoint. */
+/**
+ * The one stage contract: the artwork's own 3:2 aspect at full width, capped and
+ * centred on wide screens — identical on all ten questions.
+ */
 const STAGE_CLASSES =
-  "quiz-illustration relative h-[170px] w-full overflow-hidden rounded-2xl sm:h-[210px]";
+  "quiz-illustration relative aspect-[3/2] w-full overflow-hidden rounded-2xl sm:mx-auto sm:max-w-[640px]";
 
 describe("question illustrations", () => {
   it("covers every question in the bank, keyed by question id", () => {
@@ -64,7 +66,7 @@ describe("question illustrations", () => {
     expect(checked).toBe(10);
   });
 
-  it("renders one frameless fixed-height stage above the prompt", () => {
+  it("renders one frameless full-scene stage above the prompt", () => {
     const stages = new Set<string>();
 
     for (const question of QUIZ_QUESTIONS) {
@@ -85,16 +87,14 @@ describe("question illustrations", () => {
       expect(html).toContain("object-center");
       expect(html).not.toContain("object-contain");
 
-      // A scene whose subject is off-centre carries its focal position from the
-      // map; every other scene keeps the plain centred crop.
-      const focus = QUESTION_ILLUSTRATION_FOCUS[question.id];
-      if (focus) {
-        expect(html).toContain(`object-position:${focus}`);
-      } else {
-        expect(html).not.toContain("object-position");
-      }
+      // The stage takes the scene's own 3:2 aspect, so the whole approved
+      // artwork is shown: no fixed pixel band and no focus framing may creep
+      // back in, or the bottle would be cropped again.
+      expect(html).toContain("aspect-[3/2]");
+      expect(html).not.toMatch(/h-\[\d+px\]/);
+      expect(html).not.toContain("object-position");
 
-      // The stage is a clipped scene band at the site's small media radius:
+      // The stage is a clipped scene panel at the site's small media radius:
       // no background, border or shadow of its own.
       const stage = html.match(/<div[^>]*class="quiz-illustration[^"]*"[^>]*>/)?.[0];
       expect(stage, "missing illustration stage").toBeDefined();
@@ -119,8 +119,8 @@ describe("question illustrations", () => {
       }
     }
 
-    // One identical stage height across all ten questions, so the layout never
-    // jumps while navigating.
+    // One identical stage across all ten questions, so the layout never jumps
+    // while navigating.
     expect(stages.size).toBe(1);
   });
 

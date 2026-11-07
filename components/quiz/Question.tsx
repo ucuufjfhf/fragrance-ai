@@ -3,10 +3,7 @@ import Image from "next/image";
 import MarkerWipe from "@/components/quiz/MarkerWipe";
 import QuizOption from "@/components/quiz/QuizOption";
 import { toPersianDigits } from "@/lib/persian";
-import {
-  questionIllustrationFocusFor,
-  questionIllustrationFor,
-} from "@/lib/quiz/question-illustrations";
+import { questionIllustrationFor } from "@/lib/quiz/question-illustrations";
 import {
   HIGHLIGHTED_QUESTION_IDS,
   QUESTION_HIGHLIGHTS,
@@ -41,7 +38,6 @@ export default function Question({
     ? splitHighlighted(question.prompt, QUESTION_HIGHLIGHTS[question.id])
     : null;
   const illustration = questionIllustrationFor(question.id);
-  const focus = questionIllustrationFocusFor(question.id);
 
   return (
     <div className="flex flex-col gap-8 py-2 sm:gap-10 sm:py-4">
@@ -49,19 +45,20 @@ export default function Question({
       {/* Illustration stage: one full-scene editorial drawing per question
           screen, above the question text. Decorative (the prompt carries the
           meaning), so the img is alt="" and aria-hidden while the options
-          stay text rows. The stage height is fixed per breakpoint, so the
-          rendered height is identical on every question and the layout never
-          jumps. Each scene is opaque and carries its own background, so it is
-          cover-fitted into a full-width band with clipped overflow and the
-          site's small media radius — edge to edge, with no frame, border or
-          shadow. Where a centred crop would cut the subject, the focus map
-          nudges the cover crop (framing only). Keyed by question id so the
-          fade replays on each screen change. */}
+          stay text rows. The stage is sized by the artwork's own 3:2 ratio at
+          full column width — capped and centred on wide screens — so the whole
+          approved scene is shown, never cropped and never focus-framed. One
+          ratio for all ten scenes keeps the height identical on every
+          question, so the layout never jumps. Each scene is opaque and carries
+          its own background, so it fills the stage with clipped overflow and
+          the site's small media radius — edge to edge, with no frame, border or
+          shadow. Keyed by question id so the fade replays on each screen
+          change. */}
       {illustration ? (
         <div
           key={question.id}
           aria-hidden="true"
-          className="quiz-illustration relative h-[170px] w-full overflow-hidden rounded-2xl sm:h-[210px]"
+          className="quiz-illustration relative aspect-[3/2] w-full overflow-hidden rounded-2xl sm:mx-auto sm:max-w-[640px]"
         >
           <Image
             src={illustration}
@@ -70,7 +67,6 @@ export default function Question({
             fill
             sizes="(max-width: 1024px) 100vw, 1024px"
             className="object-cover object-center"
-            style={focus ? { objectPosition: focus } : undefined}
           />
         </div>
       ) : null}
