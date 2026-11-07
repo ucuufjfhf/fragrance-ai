@@ -98,6 +98,9 @@ describe("quiz UI rendering", () => {
     expect(html).toContain("سؤال ۳ از ۱۰");
     expect(html).toContain("۳۰٪");
     expect(html).toContain('role="progressbar"');
+    // Descriptive accessible name — the same contract the beats now follow.
+    expect(html).toContain('aria-label="پیشرفت آزمون"');
+    expect(html).not.toContain("aria-labelledby");
   });
 
   it("renders the profile card from a computed profile", () => {

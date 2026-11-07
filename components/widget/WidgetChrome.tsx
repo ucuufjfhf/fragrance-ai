@@ -97,13 +97,13 @@ export function WidgetChromeFooter() {
         <span>این آزمون توسط FIAGE ارائه می‌شه</span>
         <a
           href="https://fiage.ir"
-          className="underline-offset-4 transition-colors hover:text-foreground hover:underline"
+          className="inline-flex min-h-10 items-center underline-offset-4 transition-colors hover:text-foreground hover:underline"
         >
           fiage.ir
         </a>
         <a
           href="https://fiage.ir/data-policy"
-          className="underline-offset-4 transition-colors hover:text-foreground hover:underline"
+          className="inline-flex min-h-10 items-center underline-offset-4 transition-colors hover:text-foreground hover:underline"
         >
           حریم داده‌ها
         </a>

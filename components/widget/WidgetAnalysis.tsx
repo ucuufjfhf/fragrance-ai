@@ -152,16 +152,14 @@ export default function WidgetAnalysis({
 
   return (
     <section className="quiz-rise flex flex-col items-center gap-6 overflow-hidden py-6 text-center">
-      <span
-        id="widget-analysis-percent"
-        className="tnum font-display text-6xl font-semibold leading-none tracking-[-0.01em] text-foreground"
-      >
+      <span className="tnum font-display text-6xl font-semibold leading-none tracking-[-0.01em] text-foreground">
         {formatPersianPercent(progress)}
       </span>
 
+      {/* Named by what it is doing, not by the percent it happens to show. */}
       <div
         role="progressbar"
-        aria-labelledby="widget-analysis-percent"
+        aria-label="در حال تحلیل پاسخ‌ها در ویجت"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={progress}

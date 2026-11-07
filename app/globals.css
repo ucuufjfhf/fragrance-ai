@@ -150,6 +150,14 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5em;
+  /* Touch target: «رد شدن», «شروع دوباره» and «قبلی» are the primary way out
+   * of the quiz on a phone, and every instance used to rely on its call site
+   * for size (some passed only `text-xs`, ~16–20px tall). The class now
+   * guarantees the floor itself — 44px, above the app's 40px minimum — so no
+   * call site can under-size it again. Horizontal padding widens the target
+   * without touching the underline. */
+  min-height: 44px;
+  padding-inline: 0.5rem;
   color: var(--muted);
   text-decoration: underline;
   text-decoration-thickness: 1px;

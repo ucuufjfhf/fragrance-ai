@@ -198,8 +198,11 @@ function KpiCard({
 }) {
   return (
     <div className="rounded-2xl border border-border-soft bg-surface p-4">
+      {/* Label then value in DOM order — that is the whole accessible read.
+          The value used to carry aria-label={label}, which (where honoured)
+          replaced the number with the label a second time. */}
       <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 text-xl font-bold tnum" aria-label={label}>
+      <p className="mt-1 text-xl font-bold tnum">
         {value === null ? "—" : isPercent ? formatPersianPercent(value) : toPersianDigits(value)}
       </p>
     </div>

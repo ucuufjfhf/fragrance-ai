@@ -34,24 +34,24 @@ export default function SiteFooter() {
 
         <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted">
           {/* Root-absolute so the anchor also works from /about and /result. */}
-          <Link href="/#how" className="transition-colors hover:text-foreground">
+          <Link href="/#how" className="inline-flex min-h-10 items-center transition-colors hover:text-foreground">
             چطور کار می‌کند
           </Link>
-          <Link href="/quiz" className="transition-colors hover:text-foreground">
+          <Link href="/quiz" className="inline-flex min-h-10 items-center transition-colors hover:text-foreground">
             آزمون سلیقه
           </Link>
-          <Link href="/about" className="transition-colors hover:text-foreground">
+          <Link href="/about" className="inline-flex min-h-10 items-center transition-colors hover:text-foreground">
             درباره‌ی فیاژ
           </Link>
-          <Link href="/data-policy" className="transition-colors hover:text-foreground">
+          <Link href="/data-policy" className="inline-flex min-h-10 items-center transition-colors hover:text-foreground">
             حریم خصوصی و داده‌ها
           </Link>
-          <Link href="/for-stores" className="transition-colors hover:text-foreground">
+          <Link href="/for-stores" className="inline-flex min-h-10 items-center transition-colors hover:text-foreground">
             برای فروشگاه‌ها
           </Link>
           <a
             href="mailto:majidemoon0@gmail.com"
-            className="transition-colors hover:text-foreground"
+            className="inline-flex min-h-10 items-center transition-colors hover:text-foreground"
           >
             تماس
           </a>

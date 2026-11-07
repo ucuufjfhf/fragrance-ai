@@ -158,21 +158,18 @@ export default function AnalysisInterstitial({
 
   return (
     <section className="quiz-rise relative flex flex-col items-center gap-5 overflow-hidden py-8 text-center sm:gap-6 sm:py-10">
-      <span
-        id="analysis-percent"
-        className="tnum font-display text-7xl font-semibold leading-none tracking-[-0.01em] text-foreground sm:text-8xl"
-      >
+      <span className="tnum font-display text-7xl font-semibold leading-none tracking-[-0.01em] text-foreground sm:text-8xl">
         {formatPersianPercent(progress)}
       </span>
 
       {/* Scentbird-style steady fill, synced to the interstitial duration.
-          The bar itself is the announcement contract (role + value); the big
-          number stays visual-only so screen readers are not spammed ten
-          times a second, while the rotating line below keeps a polite live
-          region. */}
+          The bar is named descriptively («در حال تحلیل پاسخها») — pointing
+          aria-labelledby at the percent span only ever named it «۹۲٪» — while
+          the live value stays on aria-valuenow. The big number is visual: the
+          rotating line below is the polite live region. */}
       <div
         role="progressbar"
-        aria-labelledby="analysis-percent"
+        aria-label="در حال تحلیل پاسخ‌ها"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={progress}

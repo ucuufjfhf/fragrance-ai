@@ -68,7 +68,8 @@ const primaryButton =
   "btn-primary flex min-h-12 flex-1 items-center justify-center gap-2 px-6 font-medium text-background disabled:cursor-not-allowed disabled:opacity-50";
 
 /** Back/skip/restart: text + underline (+ drawn caret), no box. */
-const tertiaryBackButton = "btn-tertiary btn-tertiary-back min-h-12 shrink-0 px-1 text-sm";
+// Height and horizontal padding come from `.btn-tertiary` itself now.
+const tertiaryBackButton = "btn-tertiary btn-tertiary-back shrink-0 text-sm";
 
 const OFFLINE_NOTICE =
   "ارتباط با سرور برقرار نشد؛ پروفایل با همون محاسبه قطعی و به‌صورت آفلاین ساخته شد.";

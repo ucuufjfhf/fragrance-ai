@@ -118,6 +118,43 @@ describe("filtering countdown rendering", () => {
 
     expect(html).toContain(`>${toPersianDigits(FILTERING_FINAL_COUNT)}<`);
   });
+
+  it("keeps the stepping digits out of the live region", () => {
+    const html = render(<FilteringCountdown catalogCount={59} onDone={noop} />);
+
+    // ONE polite region, and it is the stage sentence — not the number, which
+    // steps ~12 times in ~3s and is now hidden from assistive tech entirely.
+    expect((html.match(/aria-live="polite"/g) ?? []).length).toBe(1);
+    expect(html).toContain('<p aria-live="polite"');
+    expect(html).toContain('aria-hidden="true" class="tnum font-display text-7xl');
+  });
+});
+
+describe("analysis progressbar naming", () => {
+  it("names the bar by what it is doing, not by the percent it shows", () => {
+    const html = render(
+      <AnalysisInterstitial matches={previewMatches()} onDone={noop} onSkip={noop} />,
+    );
+
+    // A bar named «۹۲٪» told the user nothing; the live value stays on the
+    // progressbar's aria-valuenow.
+    expect(html).toContain('aria-label="در حال تحلیل پاسخ‌ها"');
+    expect(html).not.toContain("aria-labelledby");
+    expect(html).toContain('aria-valuenow="0"');
+  });
+});
+
+describe("tertiary button touch target", () => {
+  it("owns a 44px hit area from the class itself", () => {
+    const css = read("app/globals.css");
+    const start = css.indexOf(".btn-tertiary {");
+    const block = css.slice(start, css.indexOf("}", start));
+
+    expect(start).toBeGreaterThan(-1);
+    expect(block).toContain("display: inline-flex");
+    expect(block).toContain("min-height: 44px");
+    expect(block).toContain("padding-inline");
+  });
 });
 
 describe("analysis interstitial progress", () => {

@@ -61,6 +61,11 @@ interface FilteringCountdownProps {
  * Reduced motion resolves to the final state instantly (the media query is
  * read once, SSR-safe) and still advances, so keyboard and screen-reader flow
  * never stall behind a performance.
+ *
+ * Accessibility: the stepping number is `aria-hidden` — announcing it would
+ * fire a dozen times in ~3s — and the ONE polite live region is the visible
+ * stage sentence, exactly like the interstitial below it keeps its big number
+ * silent. Stage, never raw digits.
  */
 export default function FilteringCountdown({
   catalogCount,
@@ -102,12 +107,12 @@ export default function FilteringCountdown({
   return (
     <section className="quiz-rise flex flex-col items-center gap-5 py-10 text-center sm:py-14">
       <span
-        aria-live="polite"
+        aria-hidden="true"
         className="tnum font-display text-7xl font-semibold leading-none tracking-[-0.01em] text-foreground sm:text-8xl"
       >
         {toPersianDigits(steps[index])}
       </span>
-      <p className="font-editorial leading-8 text-muted">
+      <p aria-live="polite" className="font-editorial leading-8 text-muted">
         از بین {toPersianDigits(catalogCount)} عطر، {toPersianDigits(FILTERING_FINAL_COUNT)}{" "}
         عطر مناسب شما پیدا شد
       </p>

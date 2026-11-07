@@ -24,7 +24,7 @@ export default function SiteHeader() {
       <nav className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5 sm:px-8">
         <Link
           href="/"
-          className="flex items-center gap-2.5 text-foreground transition-opacity hover:opacity-80"
+          className="flex min-h-10 items-center gap-2.5 text-foreground transition-opacity hover:opacity-80"
         >
           {/* Bundled public/ asset, not merchant data: a plain <img> keeps the
               exact file and its ratio, with no loader in between. */}
@@ -45,7 +45,7 @@ export default function SiteHeader() {
         <div className="flex items-center gap-6 text-sm">
           <a
             href="#how"
-            className="hidden text-muted transition-colors hover:text-foreground sm:inline"
+            className="hidden min-h-10 items-center text-muted transition-colors hover:text-foreground sm:inline-flex"
           >
             چطور کار می‌کند
           </a>

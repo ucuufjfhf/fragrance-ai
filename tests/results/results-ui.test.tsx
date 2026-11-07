@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import RecommendationCard from "@/components/results/RecommendationCard";
+import ShareResultButton from "@/components/results/ShareResultButton";
 import ResultsView from "@/components/results/ResultsView";
 import { makeMatchResult, makeVector } from "@/tests/ai/fixtures";
 import type { ResultsViewData } from "@/lib/results/service";
@@ -162,6 +163,16 @@ describe("results view rendering", () => {
 
     expect(html).toContain("اشتراک‌گذاری نتیجه");
     expect(html).toContain("شروع دوباره");
+  });
+
+  it("announces the copy confirmation from a separate live region", () => {
+    const html = render(<ShareResultButton />);
+    const button = html.slice(html.indexOf("<button"), html.indexOf("</button>"));
+
+    expect(button).toContain("اشتراک‌گذاری نتیجه");
+    // A live region on the button itself is not reliably observed.
+    expect(button).not.toContain("aria-live");
+    expect(html).toContain('class="sr-only" aria-live="polite"');
   });
 });
 

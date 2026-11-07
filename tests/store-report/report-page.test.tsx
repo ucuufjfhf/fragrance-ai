@@ -116,6 +116,18 @@ describe("store report page — «most recommended» from impressions", () => {
     expect(html.indexOf("بازدید ویجت")).toBeLessThan(html.indexOf("شروع آزمون"));
   });
 
+  it("reads each KPI as label then value, with no aria-label on the number", async () => {
+    const html = await renderReport();
+
+    // aria-label on the value element replaced the number with the label again.
+    expect(html).not.toContain('aria-label="بازدید ویجت"');
+    const label = html.indexOf("بازدید ویجت");
+    const value = html.indexOf(toPersianDigits(DATA.summary.widgetViewed));
+
+    expect(label).toBeGreaterThan(-1);
+    expect(value).toBeGreaterThan(label);
+  });
+
   it("renders a dash for a perfume that was only ever clicked", async () => {
     const html = await renderReport();
 

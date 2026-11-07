@@ -8,9 +8,14 @@ import { useState } from "react";
  * The whole quiz outcome already lives in the URL (see
  * `lib/results/params.ts`), so the copied link reproduces this exact result
  * when opened. `navigator.clipboard` first with a textarea + `execCommand`
- * fallback for older browsers; a brief inline «لینک کپی شد» confirms success
- * (also announced via `aria-live`). No animation, no new motion language —
- * the same bordered action styling as the restart link beside it.
+ * fallback for older browsers; a brief inline «لینک کپی شد» confirms success.
+ * No animation, no new motion language — the same bordered action styling as
+ * the restart link beside it.
+ *
+ * The confirmation is announced from a separate visually-hidden polite region:
+ * a live region on the button itself is unreliable (AT may not observe it, and
+ * the button's own name changes under the user), so the button stays a plain
+ * button and the sr-only status line does the announcing.
  */
 export default function ShareResultButton() {
   const [copied, setCopied] = useState(false);
@@ -42,13 +47,17 @@ export default function ShareResultButton() {
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => void copyUrl()}
-      aria-live="polite"
-      className="btn-secondary flex min-h-12 flex-1 items-center justify-center px-5 text-sm text-muted hover:text-foreground"
-    >
-      {copied ? "لینک کپی شد" : "اشتراک‌گذاری نتیجه"}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => void copyUrl()}
+        className="btn-secondary flex min-h-12 flex-1 items-center justify-center px-5 text-sm text-muted hover:text-foreground"
+      >
+        {copied ? "لینک کپی شد" : "اشتراک‌گذاری نتیجه"}
+      </button>
+      <span className="sr-only" aria-live="polite" role="status">
+        {copied ? "لینک کپی شد" : ""}
+      </span>
+    </>
   );
 }

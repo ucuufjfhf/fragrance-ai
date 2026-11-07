@@ -141,7 +141,7 @@ export default function ContextStep({
         <button
           type="button"
           onClick={onBack}
-          className="btn-tertiary btn-tertiary-back min-h-12 shrink-0 px-1 text-sm"
+          className="btn-tertiary btn-tertiary-back shrink-0 text-sm"
         >
           قبلی
         </button>

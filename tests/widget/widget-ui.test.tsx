@@ -62,6 +62,9 @@ describe("WidgetAnalysis — performed analysis", () => {
 
     expect(html).toContain('role="progressbar"');
     expect(html).toContain('aria-valuenow="0"');
+    // Named by the stage, never by the percentage it happens to show.
+    expect(html).toContain('aria-label="در حال تحلیل پاسخ‌ها در ویجت"');
+    expect(html).not.toContain("aria-labelledby");
     expect(html).toContain(INTERSTITIAL_LINES[0]);
     expect(html).toContain("رد شدن");
     // Nothing is invented before the API response lands.
