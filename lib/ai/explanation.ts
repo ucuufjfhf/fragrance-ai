@@ -7,9 +7,9 @@ import type {
   AiExplanationResult,
   AiOutcome,
 } from "@/lib/ai/provider";
+import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
 import { PERSONALITY_LABELS } from "@/lib/personality/labels";
-import { PERSONALITY_DIMENSIONS } from "@/types/personality";
-import type { PersonalityDimension, PersonalityVector } from "@/types/personality";
+import type { PersonalityVector } from "@/types/personality";
 
 /**
  * Persian «چرا این عطر؟» explanations (Phase 4).
@@ -31,6 +31,7 @@ export const EXPLANATION_SYSTEM_PROMPT = [
   // («چرا بهتون میاد؟», «شروع کنید»), so the generated copy must match it.
   "Write natural, friendly Iranian Persian addressing the shopper with the polite plural «شما» — verb forms like «می‌کنید» and possessives like «سلیقه‌تان». Never slip into an informal singular register.",
   "Mention only the perfume you are given; never invent or name other products.",
+  "Base the explanation only on the scent traits listed and the perfume facts supplied; never attribute the match to another personality trait.",
   "Never use numbers, digits or percentages, and never claim scores or rankings.",
   "Never make medical or psychological claims; this is a taste-based suggestion,",
   "not a psychological diagnosis.",
@@ -41,7 +42,10 @@ export const EXPLANATION_SYSTEM_PROMPT = [
 export const EXPLANATION_MIN_CHARS = 40;
 export const EXPLANATION_MAX_CHARS = 400;
 
-/** How many traits are described to the model ("top" traits by value). */
+/**
+ * How many of the shopper's most pronounced SCENT traits reach the model: the
+ * top values among the five axes the matcher actually compares.
+ */
 export const DEFAULT_TRAIT_LIMIT = 4;
 
 const TRAIT_HIGH = 70;
@@ -57,16 +61,24 @@ export function describeTraitLevel(value: number): string {
 }
 
 /**
- * The user's most pronounced traits, in a stable order.
+ * The shopper's most pronounced SCENT traits, in a stable order.
  *
- * Sorted by value descending; ties keep the canonical dimension order (the sort
- * is stable), so the prompt is deterministic for identical vectors.
+ * Only the five axes the deterministic matcher actually compares are eligible
+ * (`MATCHING_DIMENSIONS`: fresh, warm, mysterious, elegant, bold). The other
+ * four personality axes — social, adventurous, expressive, experimental — never
+ * affect eligibility, distance, score or ranking, so sending them as the
+ * shopper's "prominent traits" would invite the model to credit a match to
+ * something that took no part in it.
+ *
+ * Sorted by value descending; ties keep the `MATCHING_DIMENSIONS` declaration
+ * order (fresh, warm, mysterious, elegant, bold — the sort is stable), so the
+ * prompt is deterministic for identical vectors.
  */
 export function selectUserTraits(
   vector: PersonalityVector,
   limit: number = DEFAULT_TRAIT_LIMIT,
 ): Array<{ label: string; value: number }> {
-  return PERSONALITY_DIMENSIONS.map((dimension: PersonalityDimension) => ({
+  return MATCHING_DIMENSIONS.map((dimension) => ({
     label: PERSONALITY_LABELS[dimension],
     value: vector[dimension],
   }))
@@ -84,7 +96,7 @@ export function buildExplanationUserPrompt(input: AiExplanationInput): string {
 
   return [
     `پروفایل عطری کاربر: «${input.archetypeLabel}»`,
-    `ویژگی‌های برجسته کاربر: ${traits || "(نامشخص)"}`,
+    `ویژگی‌های عطری برجسته کاربر: ${traits || "(نامشخص)"}`,
     `عطر پیشنهادی: ${input.perfume.name} از برند ${input.perfume.brand}`,
     `خانواده رایحه: ${(input.perfume.family ?? "").trim() || "(نامشخص)"}`,
     `نُت‌های رایحه: ${(input.perfume.notes ?? []).join("، ") || "(نامشخص)"}`,

@@ -17,8 +17,8 @@ import {
   type AiExplanationInput,
   type AIProvider,
 } from "@/lib/ai/provider";
+import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
 import { PERSONALITY_LABELS } from "@/lib/personality/labels";
-import { PERSONALITY_DIMENSIONS } from "@/types/personality";
 import { makeExplanationInput, makeVector } from "./fixtures";
 
 /** Valid Persian copy: no digits, 40–400 chars, no invented products. */
@@ -44,6 +44,15 @@ describe("EXPLANATION_SYSTEM_PROMPT", () => {
     expect(EXPLANATION_SYSTEM_PROMPT).toContain("شما");
     expect(EXPLANATION_SYSTEM_PROMPT).toContain("می‌کنید");
     expect(EXPLANATION_SYSTEM_PROMPT).not.toContain("(تو)");
+  });
+
+  it("grounds the match in the scent traits and the perfume facts only", () => {
+    // Regression guard: the prompt used to send the shopper's top four values
+    // across all nine axes, so a social/expressive vector could be credited for
+    // a match the matcher never used it for.
+    expect(EXPLANATION_SYSTEM_PROMPT).toContain(
+      "Base the explanation only on the scent traits listed and the perfume facts supplied; never attribute the match to another personality trait.",
+    );
   });
 });
 
@@ -73,15 +82,49 @@ describe("selectUserTraits", () => {
     }
   });
 
-  it("is deterministic when every trait is equal (canonical order wins)", () => {
+  it("is deterministic when every trait is equal (matching order wins)", () => {
+    // Amended deliberately: the source of truth for trait selection is now
+    // MATCHING_DIMENSIONS, not the nine personality dimensions.
     const traits = selectUserTraits(makeVector(50));
 
     expect(traits.map((trait) => trait.label)).toEqual(
-      PERSONALITY_DIMENSIONS.slice(0, traits.length).map(
+      MATCHING_DIMENSIONS.slice(0, traits.length).map(
         (dimension) => PERSONALITY_LABELS[dimension],
       ),
     );
     expect(traits).toEqual(selectUserTraits(makeVector(50)));
+  });
+
+  it("skips the four personality-only axes even when they dominate the vector", () => {
+    // Every non-matching axis is maxed; the matching ones are lower and distinct.
+    const vector = {
+      ...makeVector(10),
+      social: 100,
+      adventurous: 100,
+      expressive: 100,
+      experimental: 100,
+      fresh: 60,
+      warm: 50,
+      mysterious: 40,
+      elegant: 30,
+      bold: 20,
+    };
+
+    const traits = selectUserTraits(vector);
+
+    expect(traits).toEqual([
+      { label: PERSONALITY_LABELS.fresh, value: 60 },
+      { label: PERSONALITY_LABELS.warm, value: 50 },
+      { label: PERSONALITY_LABELS.mysterious, value: 40 },
+      { label: PERSONALITY_LABELS.elegant, value: 30 },
+    ]);
+
+    const labels = traits.map((trait) => trait.label);
+
+    expect(labels).not.toContain("اجتماعی");
+    expect(labels).not.toContain("ماجراجو");
+    expect(labels).not.toContain("پرشور");
+    expect(labels).not.toContain("تجربه‌گرا");
   });
 });
 
@@ -100,6 +143,33 @@ describe("buildExplanationUserPrompt", () => {
     expect(prompt).not.toMatch(/[0-9]/);
     expect(prompt).not.toContain("امتیاز");
     expect(prompt).toContain("explanation");
+  });
+
+  it("names the scent traits and none of the four personality-only axes", () => {
+    const vector = {
+      ...makeVector(10),
+      social: 100,
+      adventurous: 100,
+      expressive: 100,
+      experimental: 100,
+      fresh: 60,
+      warm: 50,
+      mysterious: 40,
+      elegant: 30,
+      bold: 20,
+    };
+    const traits = selectUserTraits(vector);
+    const prompt = buildExplanationUserPrompt(makeExplanationInput({ traits }));
+
+    expect(prompt).toContain("ویژگی‌های عطری برجسته کاربر");
+
+    for (const trait of traits) {
+      expect(prompt).toContain(trait.label);
+    }
+
+    for (const excluded of ["اجتماعی", "ماجراجو", "پرشور", "تجربه‌گرا"]) {
+      expect(prompt).not.toContain(excluded);
+    }
   });
 });
 

@@ -59,8 +59,10 @@ export function buildExplanationInputs(
   vector: PersonalityVector,
   archetypeLabel: string,
 ): AiExplanationInput[] {
-  // selectUserTraits picks the user's most pronounced traits (top 4 by value,
-  // canonical order on ties) — the exact prompt input Phase 4 designed.
+  // selectUserTraits picks the shopper's top scent traits (top 4 by value among
+  // the five axes the matcher compares, matching order on ties). The archetype
+  // still describes the full nine-axis vector; the traits do not, because the
+  // other four axes never influenced which perfumes reached this list.
   const traits = selectUserTraits(vector);
 
   return recommendations.map((recommendation) => ({
