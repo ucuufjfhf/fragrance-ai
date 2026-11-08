@@ -28,6 +28,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { logoutAdminAccessAction, unlockAdminAccessAction } from "@/app/admin/access/actions";
+import { hashAdminSecret } from "@/lib/admin/access";
 import { resetRateLimitsForTests } from "@/lib/rate-limit";
 
 const SECRET = "correct-secret-for-test";
@@ -68,6 +69,12 @@ describe("admin unlock throttling", () => {
     for (let index = 0; index < 4; index += 1) await redirectPath(form("wrong"));
     expect(await redirectPath(form(SECRET))).toBe("/admin/perfumes");
     expect(mocks.setCookie).toHaveBeenCalledOnce();
+
+    // The cookie carries the signed token, never the secret's hash.
+    const [cookieName, cookieValue] = mocks.setCookie.mock.calls[0] as [string, string];
+    expect(cookieName).toBe("admin_access");
+    expect(cookieValue).toMatch(/^v1\.\d+\.[0-9a-f]{64}$/);
+    expect(cookieValue).not.toBe(await hashAdminSecret(SECRET));
 
     vi.clearAllMocks();
     expect(await redirectPath(form("wrong"))).toContain("error=wrong");

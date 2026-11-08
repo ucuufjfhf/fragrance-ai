@@ -8,9 +8,10 @@ import {
   ADMIN_ACCESS_COOKIE,
   ADMIN_ACCESS_PATH,
   adminAccessCookieOptions,
-  adminAccessCookieValue,
+  constantTimeEqual,
   hashAdminSecret,
   isAdminAccessConfigured,
+  mintAdminAccessToken,
   safeAdminRedirectPath,
 } from "@/lib/admin/access";
 import {
@@ -23,11 +24,13 @@ import {
 
 /**
  * The unlock server action for the admin access gate (pre-deployment
- * hardening). Defense in depth: the proxy already gates the /admin network
- * path; this re-checks server-side before any cookie is issued.
+ * hardening). Every admin page and action guards itself through
+ * `lib/admin/server-access.ts`; this is the only place a credential is issued.
  *
- * The browser receives only the secret's SHA-256 HASH (in an httpOnly
- * cookie) — never the raw secret, which exists only in the server env.
+ * The browser receives neither the secret nor its SHA-256 hash: the hash
+ * comparison is only what gates the unlock, and the httpOnly cookie carries a
+ * signed, expiring token (`v1.<expiresAt>.<hmac>`) minted from the secret. The
+ * raw secret exists only in the server env.
  *
  * Plain-form action signature (React 19 server form action): outcomes are
  * communicated through redirects, so the page can render the right Persian
@@ -83,18 +86,21 @@ export async function unlockAdminAccessAction(formData: FormData): Promise<void>
     gateRedirect(nextPath, "wrong");
   }
 
+  // Constant-time, like the token check: a plain `!==` walks the hash byte by
+  // byte and leaks how much of a guess was right.
   const [submittedHash, expectedHash] = await Promise.all([
     hashAdminSecret(submitted),
-    adminAccessCookieValue(secret),
+    hashAdminSecret(secret),
   ]);
-  if (submittedHash !== expectedHash) {
+  if (!constantTimeEqual(submittedHash, expectedHash)) {
     gateRedirect(nextPath, "wrong");
   }
 
   await clearRateLimit(unlockKey);
   const host = headersList.get("host") ?? "";
+  const token = await mintAdminAccessToken(secret);
   const cookieStore = await cookies();
-  cookieStore.set(ADMIN_ACCESS_COOKIE, expectedHash, adminAccessCookieOptions(host));
+  cookieStore.set(ADMIN_ACCESS_COOKIE, token, adminAccessCookieOptions(host));
 
   revalidatePath("/admin", "layout");
 

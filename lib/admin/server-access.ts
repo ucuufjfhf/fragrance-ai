@@ -18,12 +18,13 @@ import {
  * SERVER ACTION guards itself through `requireAdminAction()`, so protection
  * no longer depends on middleware.
  *
- * The authentication scheme itself is unchanged and lives in the pure,
- * edge-safe helpers of `lib/admin/access.ts` (SHA-256 hash comparison over
- * the `ADMIN_ACCESS_COOKIE`, fail-closed when `ADMIN_ACCESS_SECRET` is
- * missing/empty). This file adds only the Next.js server plumbing
- * (`cookies()`, `redirect()`) — no second auth implementation, no Prisma,
- * no filesystem access, and the raw secret never leaves the server.
+ * The authentication scheme lives in the pure, edge-safe helpers of
+ * `lib/admin/access.ts`: the `ADMIN_ACCESS_COOKIE` carries a signed, expiring
+ * token (`v1.<expiresAt>.<hmac>`), which is verified fail-closed when
+ * `ADMIN_ACCESS_SECRET` is missing, empty or shorter than the minimum length.
+ * This file adds only the Next.js server plumbing (`cookies()`, `redirect()`) —
+ * no second auth implementation, no Prisma, no filesystem access, and the raw
+ * secret never leaves the server.
  */
 
 /** Whether the current request carries a valid admin access cookie. */

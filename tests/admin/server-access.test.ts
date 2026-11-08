@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   ADMIN_ACCESS_COOKIE,
-  adminAccessCookieValue,
+  hashAdminSecret,
+  mintAdminAccessToken,
 } from "@/lib/admin/access";
 import {
   isAdminAuthenticated,
@@ -48,7 +49,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 async function unlockWith(secret: string): Promise<void> {
-  cookieJar.set(ADMIN_ACCESS_COOKIE, await adminAccessCookieValue(secret));
+  cookieJar.set(ADMIN_ACCESS_COOKIE, await mintAdminAccessToken(secret));
 }
 
 beforeEach(() => {
@@ -75,7 +76,13 @@ describe("isAdminAuthenticated (the server-side gate decision)", () => {
   });
 
   it("denies an invalid cookie value", async () => {
-    cookieJar.set(ADMIN_ACCESS_COOKIE, "not-a-valid-hash");
+    cookieJar.set(ADMIN_ACCESS_COOKIE, "not-a-valid-token");
+    expect(await isAdminAuthenticated()).toBe(false);
+  });
+
+  it("denies the legacy pass-the-hash cookie", async () => {
+    // The old credential — SHA-256(secret) — must no longer authenticate.
+    cookieJar.set(ADMIN_ACCESS_COOKIE, await hashAdminSecret(SECRET));
     expect(await isAdminAuthenticated()).toBe(false);
   });
 
@@ -84,7 +91,7 @@ describe("isAdminAuthenticated (the server-side gate decision)", () => {
     expect(await isAdminAuthenticated()).toBe(false);
   });
 
-  it("accepts a cookie carrying the current secret's hash", async () => {
+  it("accepts a token minted for the current secret", async () => {
     await unlockWith(SECRET);
     expect(await isAdminAuthenticated()).toBe(true);
   });
