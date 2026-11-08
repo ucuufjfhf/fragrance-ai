@@ -75,4 +75,20 @@ describe("landing FAQ", () => {
     // No overclaiming, no invented stats, no social proof.
     expect(answers).not.toMatch(/کاربر|مشتری|رضایت|\d+٪.*دق|تضمین/);
   });
+
+  it("discloses which axes actually pick the perfumes", () => {
+    const accuracy = FAQS.find((faq) => faq.id === "accuracy")!.answer;
+    const catalog = FAQS.find((faq) => faq.id === "catalog")!.answer;
+
+    // The profile and the archetype really do use all nine axes...
+    expect(accuracy).toContain("پروفایل سلیقه با ۹ محور");
+    expect(accuracy).toContain("تیپ عطری‌تون از روی هر ۹ محور انتخاب میشه");
+
+    // ...but the perfume picks compare only the five scent axes, by name.
+    expect(accuracy).toContain("پنج محور رایحه‌ای");
+    for (const axis of ["تازه", "گرم", "مرموز", "شیک", "جسور"]) {
+      expect(accuracy).toContain(axis);
+    }
+    expect(catalog).toContain("پنج محور رایحه‌ای");
+  });
 });

@@ -83,8 +83,10 @@ export default function ProfileEditor({ profile, errors, perfumeId, storeId }: P
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs leading-7 text-muted">
-          این نُه محور، پایهٔ تطبیق عطر با پروفایل مشتری است؛ مقدار دقیق بین ۰ تا ۱۰۰
-          (عدد صحیح) وارد کنید.
+          هر ۹ محور باید مقدار داشته باشند، اما تطبیق عطر با پروفایل مشتری فقط روی
+          پنج محور رایحه‌ای (تازه، گرم، مرموز، شیک، جسور) انجام می‌شود؛ چهار محور
+          دیگر برای تیپ عطری و کامل‌بودن پروفایل‌اند. مقدار دقیق بین ۰ تا ۱۰۰ (عدد
+          صحیح) وارد کنید.
         </p>
         <button
           type="button"
