@@ -10,6 +10,7 @@ vi.mock("@/lib/rate-limit", () => ({
   }),
 }));
 import { createControlledAIProvider, getAiControlState, readAiControlPolicy, resetAiControlsForTests } from "@/lib/ai/cost-controls";
+import { AiUnavailableError } from "@/lib/ai/errors";
 import type { AIProvider } from "@/lib/ai/provider";
 import { makeExplanationInput } from "../ai/fixtures";
 
@@ -31,7 +32,12 @@ describe("AI cost controls", () => {
     const a = createControlledAIProvider(provider(call), "A", () => 0);
     const b = createControlledAIProvider(provider(call), "B", () => 0);
     await a.generateRecommendationExplanation(input);
-    await expect(a.generateRecommendationExplanation(input)).rejects.toThrow();
+    // A ceiling breach surfaces as AiUnavailableError with this exact message;
+    // the fail-closed database path reuses it verbatim so shoppers cannot tell
+    // the two refusals apart (see cost-controls-fail-closed.test.ts).
+    await expect(a.generateRecommendationExplanation(input)).rejects.toThrow(
+      new AiUnavailableError("AI usage temporarily unavailable."),
+    );
     await b.generateRecommendationExplanation(input);
     expect(quota.counts.get("ai:store:A")).toBe(2);
     vi.unstubAllEnvs();
