@@ -400,6 +400,55 @@ async function generateCachedExplanation(
 }
 
 /**
+ * Total time one explanation batch may spend, across all of its items.
+ *
+ * The per-call timeout (15s, `provider.ts`) bounds a single request; this bounds
+ * the batch. Three hanging calls would otherwise stall a results render for
+ * ~45s behind optional copy, and failures are never cached, so every render
+ * would re-pay that wait until the circuit breaker opened.
+ *
+ * Once the deadline passes the remaining items are skipped and the explanations
+ * gathered so far are returned — the caller renders fine with a partial or
+ * empty map, exactly as it does when a provider call fails.
+ */
+export const EXPLANATION_BATCH_BUDGET_MS = 20_000;
+
+export interface ExplanationBatchOptions {
+  /** Overrides `EXPLANATION_BATCH_BUDGET_MS`; a test seam only. */
+  readonly budgetMs?: number;
+}
+
+const BATCH_BUDGET_SPENT = Symbol("explanation-batch-budget-spent");
+
+/**
+ * Races one explanation against the time the batch has left.
+ *
+ * Returns `null` when the deadline wins, so the caller stops instead of starting
+ * another provider call. The abandoned generation is not cancelled (it may still
+ * populate the cache for the next render), and `Promise.race` keeps its eventual
+ * rejection handled.
+ */
+async function withinBatchBudget<T>(
+  work: Promise<T>,
+  remainingMs: number,
+): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const budget = new Promise<typeof BATCH_BUDGET_SPENT>((resolve) => {
+    timer = setTimeout(() => resolve(BATCH_BUDGET_SPENT), remainingMs);
+    // Optional copy must never hold the process open on its own.
+    (timer as { unref?: () => void }).unref?.();
+  });
+
+  try {
+    const raced = await Promise.race([work, budget]);
+    return raced === BATCH_BUDGET_SPENT ? null : raced;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
  * Convenience for the results layer: explanations for a ranked list, keyed by
  * perfume id. Sequential on purpose (small credit, no rate-limit surprises) and
  * resilient — failed items are simply omitted, duplicates keep the first result.
@@ -408,11 +457,16 @@ async function generateCachedExplanation(
  * `explanationCacheKey`): identical prompts reuse the stored explanation and
  * make no provider call, while the within-batch duplicate-id skip below is
  * unchanged.
+ *
+ * The whole batch shares one deadline (`EXPLANATION_BATCH_BUDGET_MS`): a hanging
+ * provider cannot stall the render past it, even when every item hangs.
  */
 export async function generateExplanations(
   provider: AIProvider,
   inputs: readonly AiExplanationInput[],
+  options: ExplanationBatchOptions = {},
 ): Promise<Map<string, string>> {
+  const deadline = Date.now() + (options.budgetMs ?? EXPLANATION_BATCH_BUDGET_MS);
   const explanations = new Map<string, string>();
 
   for (const input of inputs) {
@@ -420,7 +474,28 @@ export async function generateExplanations(
       continue;
     }
 
-    const outcome = await generateCachedExplanation(provider, input);
+    // A cache hit is free, so it is served even when the budget is already gone;
+    // only an item that would spend a provider call needs time left.
+    const cached = readExplanationCache(explanationCacheKey(input));
+    if (cached !== null) {
+      explanations.set(input.recommendation.perfumeId, cached);
+      continue;
+    }
+
+    const remainingMs = deadline - Date.now();
+    if (remainingMs <= 0) {
+      break;
+    }
+
+    const outcome = await withinBatchBudget(
+      generateCachedExplanation(provider, input),
+      remainingMs,
+    );
+
+    if (outcome === null) {
+      // This call used up what was left of the budget: skip the rest.
+      break;
+    }
 
     if (outcome.ok) {
       explanations.set(outcome.value.perfumeId, outcome.value.explanation);

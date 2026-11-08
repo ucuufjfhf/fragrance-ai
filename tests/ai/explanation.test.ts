@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  EXPLANATION_BATCH_BUDGET_MS,
   EXPLANATION_MAX_CHARS,
   EXPLANATION_SYSTEM_PROMPT,
   buildExplanationUserPrompt,
@@ -11,7 +12,11 @@ import {
   selectUserTraits,
   validateAiExplanation,
 } from "@/lib/ai/explanation";
-import { createUnavailableProvider, type AIProvider } from "@/lib/ai/provider";
+import {
+  createUnavailableProvider,
+  type AiExplanationInput,
+  type AIProvider,
+} from "@/lib/ai/provider";
 import { PERSONALITY_LABELS } from "@/lib/personality/labels";
 import { PERSONALITY_DIMENSIONS } from "@/types/personality";
 import { makeExplanationInput, makeVector } from "./fixtures";
@@ -260,5 +265,118 @@ describe("generateExplanations", () => {
     ]);
 
     expect(dead.size).toBe(0);
+  });
+});
+
+describe("generateExplanations batch budget", () => {
+  beforeEach(() => {
+    resetExplanationCacheForTests();
+  });
+
+  const base = makeExplanationInput();
+  /** Distinct names matter: the cache key is the prompt, not the perfume id. */
+  const NAMES = ["نویر", "باران", "آتش"];
+
+  /** `count` distinct items — different prompts, so different cache keys. */
+  const batch = (count: number): AiExplanationInput[] =>
+    Array.from({ length: count }, (_, index) => {
+      const perfumeId = `perfume-budget-${index + 1}`;
+      const name = NAMES[index] ?? `عطر ${perfumeId}`;
+
+      return {
+        ...base,
+        recommendation: { ...base.recommendation, perfumeId },
+        perfume: { ...base.perfume, perfumeId, name },
+      };
+    });
+
+  it("pins one named budget for the whole batch", () => {
+    expect(EXPLANATION_BATCH_BUDGET_MS).toBe(20_000);
+  });
+
+  it("stops at the deadline instead of waiting for every hanging call", async () => {
+    const call = vi.fn(() => new Promise<never>(() => {}));
+
+    const startedAt = Date.now();
+    const explanations = await generateExplanations(
+      explanationProvider(call),
+      batch(3),
+      { budgetMs: 40 },
+    );
+    const elapsed = Date.now() - startedAt;
+
+    expect(explanations.size).toBe(0);
+    // Only the first item was attempted: the deadline ended the loop, so the
+    // second and third hangs never happen (the pre-budget worst case was ~45s).
+    expect(call).toHaveBeenCalledTimes(1);
+    expect(elapsed).toBeGreaterThanOrEqual(40);
+    expect(elapsed).toBeLessThan(2_000);
+  });
+
+  it("keeps the partial result when the deadline lands between items", async () => {
+    const call = vi.fn(async (input: AiExplanationInput) => {
+      // The first answer is free; the second outlives the whole budget.
+      if (input.recommendation.perfumeId.endsWith("2")) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+
+      return {
+        perfumeId: input.recommendation.perfumeId,
+        explanation: VALID_TEXT,
+      };
+    });
+
+    const explanations = await generateExplanations(
+      explanationProvider(call),
+      batch(3),
+      { budgetMs: 60 },
+    );
+
+    expect(call).toHaveBeenCalledTimes(2);
+    expect(explanations.size).toBe(1);
+    expect(explanations.get("perfume-budget-1")).toBe(VALID_TEXT);
+  });
+
+  it("still generates every item when the provider answers quickly", async () => {
+    const seen: string[] = [];
+    const provider = explanationProvider(async (input) => {
+      seen.push(input.recommendation.perfumeId);
+
+      return {
+        perfumeId: input.recommendation.perfumeId,
+        explanation: VALID_TEXT,
+      };
+    });
+
+    const explanations = await generateExplanations(provider, batch(3));
+
+    expect(seen).toHaveLength(3);
+    expect(explanations.size).toBe(3);
+  });
+
+  it("serves a cache hit for free and skips only the uncached item", async () => {
+    const [cached, uncached] = batch(2);
+    const prime = vi.fn(async (input: AiExplanationInput) => ({
+      perfumeId: input.recommendation.perfumeId,
+      explanation: VALID_TEXT,
+    }));
+    await generateExplanations(explanationProvider(prime), [cached]);
+    expect(prime).toHaveBeenCalledTimes(1);
+
+    // Budget already gone: the cached item costs nothing and is still served,
+    // while the uncached one is skipped rather than delaying the render.
+    const call = vi.fn(async (input: AiExplanationInput) => ({
+      perfumeId: input.recommendation.perfumeId,
+      explanation: VALID_TEXT,
+    }));
+    const explanations = await generateExplanations(
+      explanationProvider(call),
+      [cached, uncached],
+      { budgetMs: 0 },
+    );
+
+    expect(explanations.get(cached.recommendation.perfumeId)).toBe(VALID_TEXT);
+    expect(explanations.has(uncached.recommendation.perfumeId)).toBe(false);
+    expect(call).not.toHaveBeenCalled();
   });
 });
