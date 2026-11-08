@@ -10,6 +10,8 @@ import {
 } from "@/lib/matching/service";
 import { RESULTS_TOP_N } from "@/lib/results/params";
 import { recordAnalyticsEvent } from "@/lib/analytics/service";
+import { logEvent } from "@/lib/observability/logger";
+import { PUBLIC_RATE_LIMITS, checkRateLimit } from "@/lib/rate-limit";
 import type { AiExplanationInput } from "@/lib/ai/provider";
 import type {
   MatchedPerfume,
@@ -79,6 +81,41 @@ export function buildExplanationInputs(
   }));
 }
 
+/** Which budget, if any, suppressed this merchant render. */
+type ResultRenderDenial = "requester" | "store";
+
+/**
+ * Applies the two `/result` budgets for a merchant render.
+ *
+ * The requester budget bounds one minter; the store budget bounds many
+ * requesters aimed at one merchant's AI spend and funnel. The requester check
+ * runs first, so a denied minter never spends the store's budget as well.
+ *
+ * `null` requester id = the caller supplied no request context (every
+ * pre-existing caller, including the tests): no checks, exactly today's
+ * behaviour.
+ */
+async function merchantRenderDenial(
+  storeId: string,
+  requesterId: string | null,
+): Promise<ResultRenderDenial | null> {
+  if (requesterId === null) return null;
+
+  const requester = await checkRateLimit(
+    `result:requester:${requesterId}`,
+    PUBLIC_RATE_LIMITS.resultRequester,
+  );
+  if (!requester.allowed) return "requester";
+
+  const store = await checkRateLimit(
+    `result:store:${storeId}`,
+    PUBLIC_RATE_LIMITS.resultStore,
+  );
+  if (!store.allowed) return "store";
+
+  return null;
+}
+
 /**
  * Runs the engine, then the optional AI pass, and returns everything the
  * results page needs. Never throws for AI reasons; a thrown engine error
@@ -88,10 +125,15 @@ export function buildExplanationInputs(
  * a server component renders exactly once per real navigation, so no client
  * dedupe is needed for these two. Analytics failures are swallowed inside the
  * recorder and can never alter the recommendations.
+ *
+ * Buyer audit round 7: `requesterId` (the page's `requesterIdentity`) enables
+ * the two merchant-render budgets. Omitted/null is every pre-existing caller
+ * and keeps today's behaviour exactly — no checks, no change.
  */
 export async function getResultsViewData(
   params: ResultsParams,
   sourceOverride?: RecommendationSource,
+  requesterId: string | null = null,
 ): Promise<ResultsViewData> {
   const { vector, archetype, storeId, audience, season, occasion } = params;
 
@@ -126,10 +168,26 @@ export async function getResultsViewData(
   // the analytics service anyway — skipping avoids the wasted DB round-trip).
   const isDemo = source === "REFERENCE_CATALOG";
 
+  // Merchant renders spend two budgets before either expensive effect — the AI
+  // pass and the funnel writes — because `/result` is unsigned query params:
+  // anyone can mint a URL for any public store id. A denial degrades to the
+  // provider-failure render (no explanations, no events), never an error page.
+  const suppressedBy = isDemo
+    ? null
+    : await merchantRenderDenial(storeId, requesterId);
+
+  if (suppressedBy !== null) {
+    // One line per suppressed render, no vector: enough to see a minting wave
+    // without the log becoming a copy of the URL.
+    logEvent("result_render_throttled", { storeId, limit: suppressedBy }, "warn");
+  }
+
   if (recommendations.length === 0) {
     // A valid profile rendered with zero eligible perfumes still counts as a
     // result view — but there is no recommendation list to count.
-    if (!isDemo) await recordAnalyticsEvent({ eventType: "RESULT_VIEWED", storeId });
+    if (!isDemo && suppressedBy === null) {
+      await recordAnalyticsEvent({ eventType: "RESULT_VIEWED", storeId });
+    }
 
     return {
       recommendations: [],
@@ -146,7 +204,7 @@ export async function getResultsViewData(
   let explanations = new Map<string, string>();
   let aiAvailable = false;
 
-  if (!isDemo) {
+  if (!isDemo && suppressedBy === null) {
     // Same rate-limit + circuit-breaker wrapper the widget route already uses.
     // One implementation, unchanged limits: the results page gets the same
     // cost controls without a second cost-control code path.
@@ -165,7 +223,7 @@ export async function getResultsViewData(
     explanations = await generateExplanations(provider, inputs);
   }
 
-  if (!isDemo) {
+  if (!isDemo && suppressedBy === null) {
     await recordAnalyticsEvent({ eventType: "RESULT_VIEWED", storeId });
     // One event per result page with the list size in metadata (§6) — the
     // per-perfume counts are derived in the dashboard roll-up.

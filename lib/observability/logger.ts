@@ -8,6 +8,8 @@ export type LogFields = {
   errorType?: string;
   circuit?: string;
   status?: string;
+  /** Which named limit denied an action, when the event is a throttle. */
+  limit?: string;
 };
 
 export function classifyError(error: unknown): string {

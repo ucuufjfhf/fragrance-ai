@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 
 import BottleSilhouettes from "@/components/BottleSilhouettes";
 import ResultsView from "@/components/results/ResultsView";
@@ -7,6 +8,7 @@ import SiteHeader from "@/components/site/SiteHeader";
 import { BrandMark } from "@/components/ui-icons";
 import { parseResultsParams, serializeResultsParams } from "@/lib/results/params";
 import { getResultsViewData } from "@/lib/results/service";
+import { requesterIdentity } from "@/lib/rate-limit";
 
 /**
  * GET /result — the Phase 5 results screen (server component).
@@ -41,7 +43,20 @@ export default async function ResultPage({ searchParams }: ResultPageProps) {
     return <ResultErrorState />;
   }
 
-  const data = await getResultsViewData(params.value, params.value.source);
+  // Only a merchant render is throttled, so only it needs the requester's
+  // identity: the demo path keeps its exact previous call and behaviour.
+  const requesterId =
+    params.value.source === "MERCHANT_INVENTORY"
+      ? requesterIdentity(
+          new Request("https://result.invalid/", { headers: await headers() }),
+        )
+      : null;
+
+  const data = await getResultsViewData(
+    params.value,
+    params.value.source,
+    requesterId,
+  );
 
   // When a purchase context (season/occasion) was active and the filtered
   // inventory came back empty, the view offers a relax action: the identical

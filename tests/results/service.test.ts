@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   selectUserTraits: vi.fn(),
   createAIProvider: vi.fn(),
   recordAnalyticsEvent: vi.fn(),
+  checkRateLimit: vi.fn(),
 }));
 
 vi.mock("@/lib/matching/service", () => ({
@@ -32,6 +33,13 @@ vi.mock("@/lib/ai/provider", () => ({
 vi.mock("@/lib/analytics/service", () => ({
   recordAnalyticsEvent: mocks.recordAnalyticsEvent,
 }));
+
+// The two /result budgets are mocked; every policy value still comes from the
+// real module, so the keys and caps under test are the shipped ones.
+vi.mock("@/lib/rate-limit", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/rate-limit")>();
+  return { ...actual, checkRateLimit: mocks.checkRateLimit };
+});
 
 import { getResultsViewData } from "@/lib/results/service";
 import { parseResultsParams } from "@/lib/results/params";
@@ -73,6 +81,7 @@ beforeEach(() => {
     unavailableReason: () => null,
   });
   mocks.recordAnalyticsEvent.mockResolvedValue(undefined);
+  mocks.checkRateLimit.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 });
 });
 
 describe("getResultsViewData — reference-catalog mode never calls AI", () => {
@@ -177,5 +186,139 @@ describe("context threading (results params → matching service)", () => {
     expect(data.isEmpty).toBe(true);
     expect(data.recommendations).toEqual([]);
     expect(mocks.generateExplanations).not.toHaveBeenCalled();
+  });
+});
+
+describe("merchant render throttle (buyer audit round 7)", () => {
+  const REQUESTER = "198.51.100.7";
+
+  it("records both funnel events and generates explanations when both budgets allow", async () => {
+    const data = await getResultsViewData(
+      paramsWith({ store: "store-real-merchant" }),
+      undefined,
+      REQUESTER,
+    );
+
+    expect(mocks.checkRateLimit.mock.calls).toEqual([
+      ["result:requester:198.51.100.7", { limit: 30, windowMs: 60_000 }],
+      ["result:store:store-real-merchant", { limit: 300, windowMs: 60_000 }],
+    ]);
+    expect(mocks.createAIProvider).toHaveBeenCalledTimes(1);
+    expect(mocks.generateExplanations).toHaveBeenCalledTimes(1);
+    expect(data.explanations.get("p-1")).toBe("دلیل");
+    expect(data.aiAvailable).toBe(true);
+    expect(
+      mocks.recordAnalyticsEvent.mock.calls.map((call) => call[0].eventType),
+    ).toEqual(["RESULT_VIEWED", "RECOMMENDATIONS_SHOWN"]);
+  });
+
+  it("renders the deterministic results with no AI and no events when the requester is over budget", async () => {
+    const logged = vi.spyOn(console, "info").mockImplementation(() => {});
+    mocks.checkRateLimit.mockResolvedValueOnce({ allowed: false, retryAfterSeconds: 42 });
+
+    const data = await getResultsViewData(
+      paramsWith({ store: "store-real-merchant" }),
+      undefined,
+      REQUESTER,
+    );
+
+    // Same list, same archetype — only the paid copy and the funnel are gone.
+    expect(data.recommendations).toHaveLength(1);
+    expect(data.isEmpty).toBe(false);
+    expect(data.aiAvailable).toBe(false);
+    expect(data.explanations.size).toBe(0);
+    expect(mocks.createAIProvider).not.toHaveBeenCalled();
+    expect(mocks.generateExplanations).not.toHaveBeenCalled();
+    expect(mocks.recordAnalyticsEvent).not.toHaveBeenCalled();
+    // A denied requester never spends the store budget as well.
+    expect(mocks.checkRateLimit).toHaveBeenCalledTimes(1);
+
+    const entries = logged.mock.calls
+      .map(([line]) => {
+        try {
+          return JSON.parse(String(line)) as {
+            event?: string;
+            storeId?: string;
+            limit?: string;
+            level?: string;
+          };
+        } catch {
+          return null;
+        }
+      })
+      .filter((entry) => entry?.event === "result_render_throttled");
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      level: "warn",
+      storeId: "store-real-merchant",
+      limit: "requester",
+    });
+    logged.mockRestore();
+  });
+
+  it("renders with no AI and no events when the store is over budget", async () => {
+    mocks.checkRateLimit
+      .mockResolvedValueOnce({ allowed: true, retryAfterSeconds: 0 })
+      .mockResolvedValueOnce({ allowed: false, retryAfterSeconds: 12 });
+
+    const data = await getResultsViewData(
+      paramsWith({ store: "store-real-merchant" }),
+      undefined,
+      REQUESTER,
+    );
+
+    expect(data.recommendations).toHaveLength(1);
+    expect(data.aiAvailable).toBe(false);
+    expect(data.explanations.size).toBe(0);
+    expect(mocks.createAIProvider).not.toHaveBeenCalled();
+    expect(mocks.generateExplanations).not.toHaveBeenCalled();
+    expect(mocks.recordAnalyticsEvent).not.toHaveBeenCalled();
+    expect(mocks.checkRateLimit).toHaveBeenCalledTimes(2);
+    expect(mocks.checkRateLimit.mock.calls[1][0]).toBe(
+      "result:store:store-real-merchant",
+    );
+  });
+
+  it("does not record the empty-view event on a suppressed merchant render", async () => {
+    mocks.getRecommendations.mockResolvedValue({ recommendations: [], excluded: 0 });
+    mocks.checkRateLimit.mockResolvedValueOnce({ allowed: false, retryAfterSeconds: 5 });
+
+    const data = await getResultsViewData(
+      paramsWith({ store: "store-real-merchant" }),
+      undefined,
+      REQUESTER,
+    );
+
+    expect(data.isEmpty).toBe(true);
+    expect(data.recommendations).toEqual([]);
+    expect(mocks.recordAnalyticsEvent).not.toHaveBeenCalled();
+  });
+
+  it("never consults the limiter for a public (storeless) render", async () => {
+    const data = await getResultsViewData(paramsWith(), undefined, REQUESTER);
+
+    expect(mocks.checkRateLimit).not.toHaveBeenCalled();
+    expect(data.recommendations).toHaveLength(1);
+    expect(mocks.recordAnalyticsEvent).not.toHaveBeenCalled();
+  });
+
+  it("never consults the limiter for a pinned REFERENCE_CATALOG render with a store", async () => {
+    await getResultsViewData(
+      paramsWith({ store: "store-real-merchant", source: "REFERENCE_CATALOG" }),
+      undefined,
+      REQUESTER,
+    );
+
+    expect(mocks.checkRateLimit).not.toHaveBeenCalled();
+    expect(mocks.generateExplanations).not.toHaveBeenCalled();
+  });
+
+  it("leaves legacy callers without a requester id unthrottled", async () => {
+    await getResultsViewData(paramsWith({ store: "store-real-merchant" }));
+
+    expect(mocks.checkRateLimit).not.toHaveBeenCalled();
+    expect(mocks.generateExplanations).toHaveBeenCalledTimes(1);
+    expect(mocks.recordAnalyticsEvent).toHaveBeenCalledTimes(2);
   });
 });

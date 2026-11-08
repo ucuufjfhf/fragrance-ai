@@ -75,6 +75,12 @@ export const PUBLIC_RATE_LIMITS = {
   // cheap store lookup — its job is blunting a single-source hammer, not
   // rationing shoppers.
   configRequester: { limit: 300, windowMs: 60_000 },
+  // /result merchant renders: the page's unsigned query params are a side door
+  // around the widget route's own limits. The requester budget bounds one
+  // minter, the store budget bounds many requesters aimed at one merchant's AI
+  // spend and funnel writes.
+  resultRequester: { limit: 30, windowMs: 60_000 },
+  resultStore: { limit: 300, windowMs: 60_000 },
   quizRequester: { limit: 30, windowMs: 60_000 },
   adminUnlock: { limit: 5, windowMs: 900_000 },
 } as const satisfies Record<string, RateLimitPolicy>;
