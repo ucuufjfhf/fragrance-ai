@@ -121,7 +121,10 @@ export async function getTopPerfumes(
   });
 
   // RECOMMENDATIONS_SHOWN carries { count: N } per result page view; clicks are
-  // one row each. Aggregate in memory — the volume is Top-N-sized.
+  // one row each. Neither query above has a `take` or a SQL aggregate: both
+  // pull EVERY matching row in the range and the counting below happens in
+  // JavaScript, so cost scales with event volume, not with the Top-N list
+  // size. The 60s dashboard cache in service.ts is what amortises that scan.
   const shown = await prisma.analyticsEvent.findMany({
     where: {
       storeId,

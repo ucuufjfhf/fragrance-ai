@@ -179,7 +179,66 @@ export interface AnalyticsDashboardData {
   hasData: boolean;
 }
 
-export async function getAnalyticsDashboardData(
+/**
+ * How long a finished dashboard aggregation stays fresh. This TTL **is** the
+ * freshness contract: nothing invalidates the cache when an event is written,
+ * so a merchant or admin can see numbers up to a minute old. Acceptable for a
+ * report, unacceptable for anything a shopper's flow depends on — which is why
+ * only the read-only dashboard uses it.
+ */
+export const DASHBOARD_CACHE_TTL_MS = 60_000;
+
+/** Bounded so a long-lived process cannot grow one entry per store forever. */
+export const DASHBOARD_CACHE_MAX_ENTRIES = 50;
+
+interface DashboardCacheEntry {
+  expiresAt: number;
+  /** The in-flight or settled aggregation — concurrent callers share it. */
+  value: Promise<AnalyticsDashboardData>;
+}
+
+/**
+ * In-process cache for the dashboard aggregation.
+ *
+ * Both merchant reports (`/store-report/[token]`) and the admin analytics page
+ * call `getAnalyticsDashboardData` on every render, and refreshing a report is
+ * a normal merchant habit. The aggregation is not free: `getAnalyticsSummary`
+ * is one indexed `groupBy`, but `getTopPerfumes` and `getDailyAnalytics` pull
+ * every event row in the range and count in JavaScript. A 30-day preset for a
+ * store at ~3k events/day therefore reads ~90k rows per render — and re-reads
+ * the same rows on the next refresh, with nothing having changed in between.
+ * This caches the finished aggregation by argument set instead of re-pulling
+ * it.
+ *
+ * FIFO eviction, keyed on insertion order (`writeExplanationCache` in
+ * lib/ai/explanation.ts uses the same shape). Deliberately module-local: no
+ * Redis, no database, no invalidation machinery — a restart just costs one
+ * aggregation. Failures are never cached, so a failed render stays retryable.
+ *
+ * Deferred next step, recorded honestly: what this amortises is the JS
+ * per-row roll-ups in `getTopPerfumes`/`getDailyAnalytics`. Those become SQL
+ * `groupBy` roll-ups when a single uncached render for a real store is
+ * measured to be genuinely slow — measured, not guessed. Until then the range
+ * is already capped (`today`/`7d`/`30d`) and the cache makes repeats cheap.
+ */
+const dashboardCache = new Map<string, DashboardCacheEntry>();
+
+/** Deterministic key over the function's full argument set. */
+function dashboardCacheKey(storeId: string, preset: AnalyticsRangePreset): string {
+  return JSON.stringify([storeId, preset]);
+}
+
+/** Test hook: empties the dashboard cache between tests. */
+export function resetAnalyticsDashboardCacheForTests(): void {
+  dashboardCache.clear();
+}
+
+/** Test hook: current number of cached aggregations. */
+export function analyticsDashboardCacheSizeForTests(): number {
+  return dashboardCache.size;
+}
+
+async function computeAnalyticsDashboardData(
   storeId: string,
   preset: AnalyticsRangePreset,
 ): Promise<AnalyticsDashboardData> {
@@ -203,4 +262,50 @@ export async function getAnalyticsDashboardData(
         : (summary.perfumeClicked / summary.recommendationsShown) * 100,
     hasData: topPerfumes.length > 0 || daily.length > 0 || Object.values(summary).some((count) => count > 0),
   };
+}
+
+/**
+ * Cached `computeAnalyticsDashboardData`: cache hit → no queries at all;
+ * concurrent identical calls → one shared aggregation; rejection → nothing
+ * stored. The oldest inserted entry is evicted before the capacity would be
+ * exceeded, and an expired entry is replaced in place.
+ */
+export function getAnalyticsDashboardData(
+  storeId: string,
+  preset: AnalyticsRangePreset,
+): Promise<AnalyticsDashboardData> {
+  const key = dashboardCacheKey(storeId, preset);
+  const cached = dashboardCache.get(key);
+
+  if (cached !== undefined && cached.expiresAt > Date.now()) {
+    return cached.value;
+  }
+
+  // Expired entries are dropped on read, so a stale promise is never served.
+  dashboardCache.delete(key);
+
+  while (dashboardCache.size >= DASHBOARD_CACHE_MAX_ENTRIES) {
+    const oldest = dashboardCache.keys().next();
+    if (oldest.done) {
+      break;
+    }
+    dashboardCache.delete(oldest.value);
+  }
+
+  const entry: DashboardCacheEntry = {
+    expiresAt: Date.now() + DASHBOARD_CACHE_TTL_MS,
+    value: computeAnalyticsDashboardData(storeId, preset),
+  };
+
+  dashboardCache.set(key, entry);
+
+  // Failures are never cached: a rejected aggregation leaves no entry, so the
+  // next render retries instead of replaying the error for a whole TTL.
+  entry.value.catch(() => {
+    if (dashboardCache.get(key) === entry) {
+      dashboardCache.delete(key);
+    }
+  });
+
+  return entry.value;
 }
