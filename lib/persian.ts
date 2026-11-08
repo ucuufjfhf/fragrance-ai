@@ -11,11 +11,17 @@ export function formatPersianPercent(value: number): string {
 }
 
 /**
- * Formats an engine presentation score with Persian digits, e.g.
- * `92.4` → `«۹۲٫۴٪»`. Takes the already-rounded `presentationScore` only —
- * the raw score is never displayed and never re-rounded here.
+ * Display form of an engine presentation score: a closeness index
+ * («شاخص نزدیکی») on a 0–100 scale with Persian digits, e.g.
+ * `92.4` → `«۹۲»`.
+ *
+ * Deliberately NOT a percentage. The score is a normalised inverse-distance
+ * index derived from the accord table, not a share of anything, so the display
+ * carries no «٪» and no decimal separator: the tenth of a point the engine
+ * keeps cannot be supported by the source profiles. Rounding to a whole number
+ * happens here, at display time only — the stored `presentationScore` and every
+ * ranking that reads it are untouched.
  */
 export function formatPersianScore(value: number): string {
-  const fixed = value.toFixed(1);
-  return `${toPersianDigits(fixed.replace(".", "٫"))}٪`;
+  return toPersianDigits(Math.round(value));
 }

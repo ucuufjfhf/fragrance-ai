@@ -93,7 +93,7 @@ describe("WidgetAnalysis — performed analysis", () => {
 });
 
 describe("WidgetRecommendationCard — data contracts", () => {
-  it("renders the rank, the match bar + «تطابق», the explanation and the CTA", () => {
+  it("renders the rank, the closeness bar + «شاخص نزدیکی», the explanation and the CTA", () => {
     const html = renderToStaticMarkup(
       <WidgetRecommendationCard recommendation={MATCHES[1]} storeId="store-A" />,
     );
@@ -103,7 +103,12 @@ describe("WidgetRecommendationCard — data contracts", () => {
     expect(html).not.toContain('aria-label="رتبه');
     expect(html).toContain('role="progressbar"');
     expect(html).toContain('aria-valuenow="78"');
-    expect(html).toContain("تطابق");
+    // Amended by design (majid's 2026-11-08 decision): 78.2 renders as the
+    // whole-number closeness index «۷۸», never as «۷۸٫۲٪ تطابق».
+    expect(html).toContain("شاخص نزدیکی ۷۸");
+    expect(html).not.toContain("تطابق");
+    expect(html).not.toContain("٪");
+    expect(html).not.toContain("٫");
     expect(html).toContain("چرا بهتون میاد؟");
     // No productUrl AND no store site → no CTA at all, never a fake link.
     expect(html).not.toContain("<a ");

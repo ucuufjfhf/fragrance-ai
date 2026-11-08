@@ -8,6 +8,7 @@ import ResultsView from "@/components/results/ResultsView";
 import { makeMatchResult, makeVector } from "@/tests/ai/fixtures";
 import type { ResultsViewData } from "@/lib/results/service";
 import { getArchetypeById } from "@/lib/personality/archetypes";
+import { toPersianDigits } from "@/lib/persian";
 
 /**
  * Server-side render smoke tests for the Phase 5 results UI (same convention
@@ -50,12 +51,18 @@ describe("results view rendering", () => {
     expect(freshIndex).toBeGreaterThan(noirIndex);
   });
 
-  it("displays the engine's presentation score, not a recomputed one", () => {
+  it("presents the engine's score as a whole-number closeness index, not a percentage", () => {
+    // Amended by design (majid's 2026-11-08 decision): the card rendered
+    // «۹۲٫۴٪ تطابق» — a percentage the accord-table profiles cannot support.
+    // It now reads «شاخص نزدیکی ۹۲»; the engine value is still not recomputed.
     const recommendation = engineResult.recommendations[0];
     const html = render(<RecommendationCard recommendation={recommendation} />);
+    const index = toPersianDigits(Math.round(recommendation.presentationScore));
 
-    expect(html).toContain(String(recommendation.presentationScore));
-    expect(html).toContain("تطابق");
+    expect(html).toContain(`شاخص نزدیکی ${index}`);
+    expect(html).not.toContain("تطابق");
+    expect(html).not.toContain("٪");
+    expect(html).not.toContain("٫");
     expect(html).toContain(`aria-valuenow="${Math.round(recommendation.presentationScore)}"`);
   });
 

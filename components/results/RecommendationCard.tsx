@@ -15,9 +15,10 @@ interface RecommendationCardProps {
  * One deterministic recommendation in the ranked list.
  *
  * Every value comes straight from the Phase 3 engine output (`MatchedPerfume`)
- * — this component never recomputes, re-rounds or re-orders anything. The
- * presentation score is displayed as-is; the AI explanation, when present, is
- * decoration on top and its absence never blocks or alters the card.
+ * — this component never recomputes or re-orders anything. The presentation
+ * score is shown as a whole-number closeness index («شاخص نزدیکی»), never as a
+ * percentage; the engine's own value is not rewritten. The AI explanation, when
+ * present, is decoration on top and its absence never blocks or alters the card.
  *
  * Phase D: each card leads with a 3:4 portrait artwork panel. The merchant's own
  * `imageUrl` keeps absolute precedence; when the engine returns none (every
@@ -98,7 +99,7 @@ export default function RecommendationCard({
             aria-valuenow={Math.round(presentationScore)}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label={`میزان تطابق ${name}`}
+            aria-label={`شاخص نزدیکی ${name}`}
           >
             <div
               className="h-full rounded-full"
@@ -110,7 +111,7 @@ export default function RecommendationCard({
             />
           </div>
           <span className="tnum shrink-0 text-sm font-semibold text-accent">
-            {formatPersianScore(presentationScore)} تطابق
+            شاخص نزدیکی {formatPersianScore(presentationScore)}
           </span>
         </div>
 

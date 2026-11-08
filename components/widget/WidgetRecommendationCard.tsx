@@ -11,15 +11,17 @@ import type { WidgetRecommendation } from "@/lib/widget/contract";
  * One recommendation inside the widget (Phase 8).
  *
  * Restyled to the main site's card language: a 3:4 portrait artwork panel, the rank
- * chip, a match bar with the «تطابق» label, the explanation block and a button
+ * chip, a closeness bar labelled «شاخص نزدیکی», the explanation block and a button
  * in the shared `.btn-secondary` tier. Every data behaviour of the Phase-8 card
  * is preserved byte-for-byte in intent:
  *
  *  - only customer-safe fields from the widget API (§12);
  *  - the rank chip shows the same Persian digit as the rest of the card and
  *    carries no accessible name (a plain span cannot have one);
- *  - `matchPercent` is displayed as-is (the engine rounds once) and the bar
- *    keeps its accessible progressbar contract;
+ *  - `matchPercent` renders as a whole-number closeness index («شاخص نزدیکی»),
+ *    not a percentage — the field name and value are the widget API's contract
+ *    and stay as they are — and the bar keeps its accessible progressbar
+ *    contract;
  *  - the explanation renders only when the AI answered;
  *  - the CTA never dead-ends: a real `productUrl` is the primary action, and
  *    when there is none but the merchant has a site, «مشاهده در فروشگاه» sends
@@ -109,7 +111,7 @@ export default function WidgetRecommendationCard({
             aria-valuenow={Math.round(matchPercent)}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label={`میزان تطابق ${name}`}
+            aria-label={`شاخص نزدیکی ${name}`}
           >
             <div
               className="h-full rounded-full"
@@ -121,7 +123,7 @@ export default function WidgetRecommendationCard({
             />
           </div>
           <span className="tnum shrink-0 text-sm font-semibold text-accent">
-            {formatPersianScore(matchPercent)} تطابق
+            شاخص نزدیکی {formatPersianScore(matchPercent)}
           </span>
         </div>
 
