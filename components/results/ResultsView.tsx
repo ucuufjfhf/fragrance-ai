@@ -71,7 +71,7 @@ export default function ResultsView({
   contextRelaxHref = null,
   answers = [],
 }: ResultsViewProps) {
-  const { recommendations, explanations, isEmpty } = data;
+  const { recommendations, explanations, isEmpty, rateLimited = false } = data;
   const decoded = decodeAnswers(answers, vector);
   const travelHighlight = splitHighlighted(
     TRAVEL_NOTE_HEADLINE,
@@ -228,7 +228,19 @@ export default function ResultsView({
           </div>
         </div>
 
-        {isEmpty ? (
+        {rateLimited ? (
+          <div className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 text-center">
+            <p className="text-sm leading-8 text-muted">
+              درخواست‌های زیادی در مدت کوتاه ارسال شده است. لطفاً کمی بعد دوباره تلاش کنید.
+            </p>
+            <Link
+              href="/quiz"
+              className="btn-secondary mx-auto flex min-h-12 w-full items-center justify-center px-5 text-sm text-muted hover:text-foreground sm:w-fit sm:px-8"
+            >
+              بازگشت به آزمون
+            </Link>
+          </div>
+        ) : isEmpty ? (
           <div className="flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 text-center">
             {contextRelaxHref ? (
               // Context-filtered empty state: the filters are NEVER bypassed
