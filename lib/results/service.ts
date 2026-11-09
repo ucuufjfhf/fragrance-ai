@@ -45,6 +45,8 @@ export interface ResultsViewData {
   aiAvailable: boolean;
   /** True when the deterministic engine found no eligible perfume. */
   isEmpty: boolean;
+  /** True when a merchant render was throttled before inventory access. */
+  rateLimited?: boolean;
 }
 
 /**
@@ -163,6 +165,16 @@ export async function getResultsViewData(
     // One line per suppressed render, no vector: enough to see a minting wave
     // without the log becoming a copy of the URL.
     logEvent("result_render_throttled", { storeId, limit: suppressedBy }, "warn");
+
+    // Do not load merchant inventory for a denied render. The page has an
+    // explicit throttled state so this cannot be mistaken for an empty catalog.
+    return {
+      recommendations: [],
+      explanations: new Map(),
+      aiAvailable: false,
+      isEmpty: false,
+      rateLimited: true,
+    };
   }
 
   const matchResult: MatchResult = await getRecommendations({
@@ -186,7 +198,7 @@ export async function getResultsViewData(
   if (recommendations.length === 0) {
     // A valid profile rendered with zero eligible perfumes still counts as a
     // result view — but there is no recommendation list to count.
-    if (!isDemo && suppressedBy === null) {
+    if (!isDemo) {
       await recordAnalyticsEvent({ eventType: "RESULT_VIEWED", storeId });
     }
 
@@ -205,7 +217,7 @@ export async function getResultsViewData(
   let explanations = new Map<string, string>();
   let aiAvailable = false;
 
-  if (!isDemo && suppressedBy === null) {
+  if (!isDemo) {
     // Same rate-limit + circuit-breaker wrapper the widget route already uses.
     // One implementation, unchanged limits: the results page gets the same
     // cost controls without a second cost-control code path.
