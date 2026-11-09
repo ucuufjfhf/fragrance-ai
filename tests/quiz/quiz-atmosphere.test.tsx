@@ -150,11 +150,13 @@ describe("rendered layers", () => {
   const render = (props: Parameters<typeof QuizAtmosphere>[0]) =>
     renderToStaticMarkup(<QuizAtmosphere {...props} />);
 
-  it("is decorative and inert: aria-hidden and pointer-events-none on all three", () => {
+  it("is decorative and inert: aria-hidden and pointer-events-none on all four", () => {
+    // Three layers plus the beauty pass's arc wash, added by design on
+    // 2026-11-09 — every one of them still inert.
     const html = render({ blooms: [bloom(0)], pulses: [{ id: 1, x: 10, y: 20 }], answeredCount: 0, totalQuestions: 10 });
 
-    expect((html.match(/aria-hidden="true"/g) ?? []).length).toBe(3);
-    expect((html.match(/pointer-events-none/g) ?? []).length).toBe(3);
+    expect((html.match(/aria-hidden="true"/g) ?? []).length).toBe(4);
+    expect((html.match(/pointer-events-none/g) ?? []).length).toBe(4);
   });
 
   it("renders exactly one bloom node per answer, with its tint class", () => {

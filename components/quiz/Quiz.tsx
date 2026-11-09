@@ -635,6 +635,7 @@ export default function Quiz({ storeId }: { storeId?: string }) {
       >
         <Question
           question={question}
+          chapterNumeral
           selectedOptionId={selectedOptionId}
           onSelect={handleSelect}
         />

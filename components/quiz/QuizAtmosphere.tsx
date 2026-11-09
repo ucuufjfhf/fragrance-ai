@@ -68,6 +68,22 @@ export const MAX_LIVE_PULSES = 4;
 /** Fog starts here on Q1 and thins to 0 as the questions are answered. */
 export const FOG_START_OPACITY = 0.45;
 
+/** The arc's gold air, strongest on Q1 … */
+export const ARC_GOLD_START_OPACITY = 0.1;
+
+/** … and its floor once every question is answered. */
+export const ARC_GOLD_FLOOR_OPACITY = 0.02;
+
+/**
+ * The arc's wine cap on the last question.
+ *
+ * Held deliberately low: the washes paint above the reading veil, so every
+ * point of alpha spends muted-label contrast. At 0.08 the Q10 backdrop is still
+ * no darker than the Q1 fogged one, which is the envelope this quiz already
+ * ships — tests/quiz/quiz-beauty-pass.test.tsx pins exactly that.
+ */
+export const ARC_WINE_CAP_OPACITY = 0.08;
+
 /** Deterministic tint rotation, by the question's position in the bank. */
 export function bloomTintFor(questionIndex: number): number {
   const index = Number.isFinite(questionIndex) ? Math.abs(Math.trunc(questionIndex)) : 0;
@@ -101,6 +117,30 @@ export function fogOpacityFor(answeredCount: number, totalQuestions: number): nu
   return Number(((FOG_START_OPACITY * (totalQuestions - answered)) / totalQuestions).toFixed(4));
 }
 
+/**
+ * The arc: the background's own colour for a given progress.
+ *
+ * Gold is strongest before the first answer and fades as answers accumulate;
+ * wine is absent at the start and reaches its cap on the last question. Both are
+ * clamped rather than extrapolated, so the air can only ever be "as gold as Q1"
+ * or "as wine as Q10", and nonsense input leaves the arc inert.
+ */
+export function arcWashOpacities(
+  answeredCount: number,
+  totalQuestions: number,
+): { gold: number; wine: number } {
+  if (!Number.isFinite(answeredCount) || !Number.isFinite(totalQuestions) || totalQuestions <= 0) {
+    return { gold: 0, wine: 0 };
+  }
+  const answered = Math.min(Math.max(answeredCount, 0), totalQuestions);
+  const progress = answered / totalQuestions;
+  const gold = ARC_GOLD_FLOOR_OPACITY + (ARC_GOLD_START_OPACITY - ARC_GOLD_FLOOR_OPACITY) * (1 - progress);
+  return {
+    gold: Number(gold.toFixed(4)),
+    wine: Number((ARC_WINE_CAP_OPACITY * progress).toFixed(4)),
+  };
+}
+
 interface QuizAtmosphereProps {
   /** The blooms accumulated so far — one per answered question. */
   blooms: readonly InkBloom[];
@@ -117,8 +157,15 @@ export default function QuizAtmosphere({
   answeredCount,
   totalQuestions,
 }: QuizAtmosphereProps) {
+  const arc = arcWashOpacities(answeredCount, totalQuestions);
+
   return (
     <>
+      {/* The arc — gold air at Q1 giving way to wine by Q10, opacity only. */}
+      <div aria-hidden="true" className="quiz-arc pointer-events-none">
+        <span className="quiz-arc-gold" style={{ opacity: arc.gold }} />
+        <span className="quiz-arc-wine" style={{ opacity: arc.wine }} />
+      </div>
       {/* Ink blooms — the shopper's own marbling, one node per answer. */}
       <div aria-hidden="true" className="quiz-ink pointer-events-none fixed inset-0 -z-10">
         {blooms.map((bloom) => (

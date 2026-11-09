@@ -15,6 +15,12 @@ interface QuestionProps {
   question: QuizQuestion;
   selectedOptionId?: string;
   onSelect: (questionId: string, optionId: string) => void;
+  /**
+   * Opt-in editorial watermark: the question's own number, huge and faint,
+   * behind the prompt. Off by default because `Question` is shared with the
+   * widget, whose narrower layout keeps its existing chrome.
+   */
+  chapterNumeral?: boolean;
 }
 
 /**
@@ -28,11 +34,16 @@ interface QuestionProps {
  * The prompt, the option values and everything downstream (scoring,
  * matching, /result) are untouched. Above the prompt sits one full-scene
  * illustration per question, decorative and frameless.
+ *
+ * `chapterNumeral` adds the quiz-only chapter watermark behind the prompt. It is
+ * aria-hidden and absolutely positioned, so it changes no layout — and it is
+ * opt-in, because the widget renders this same screen at 480px.
  */
 export default function Question({
   question,
   selectedOptionId,
   onSelect,
+  chapterNumeral = false,
 }: QuestionProps) {
   const highlight = HIGHLIGHTED_QUESTION_IDS.has(question.id)
     ? splitHighlighted(question.prompt, QUESTION_HIGHLIGHTS[question.id])
@@ -74,7 +85,7 @@ export default function Question({
           the fieldset's gap: a rendered <legend> is laid out specially and
           flex gap never reaches it (measured 0px in Chrome), while
           margin-bottom lands exactly. */}
-      <fieldset className="flex min-w-0 flex-col gap-6">
+      <fieldset className="relative isolate flex min-w-0 flex-col gap-6">
         <legend className="mb-12 flex flex-col gap-3 p-0">
           <span className="quiz-editorial-kicker">
             سؤال {toPersianDigits(question.order)}
@@ -93,6 +104,13 @@ export default function Question({
             )}
           </span>
         </legend>
+        {/* Out of flow and behind the words: the watermark is the same number
+            the kicker already gives, so it never carries anything on its own. */}
+        {chapterNumeral ? (
+          <span aria-hidden="true" className="quiz-chapter-numeral">
+            {toPersianDigits(question.order)}
+          </span>
+        ) : null}
         <div className="flex flex-col gap-3">
           {question.options.map((option, optionIndex) => (
             <QuizOption

@@ -28,18 +28,30 @@ export default function ProgressBar({ current, total }: ProgressBarProps) {
           {formatPersianPercent(percent)}
         </span>
       </div>
-      <div
-        role="progressbar"
-        aria-label="پیشرفت آزمون"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={percent}
-        className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2"
-      >
+      <div className="relative">
         <div
-          className="h-full rounded-full bg-linear-to-l from-accent to-accent/70 transition-[width] duration-500 ease-out"
-          style={{ width: `${percent}%` }}
-        />
+          role="progressbar"
+          aria-label="پیشرفت آزمون"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={percent}
+          className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2"
+        >
+          <div
+            className="h-full rounded-full bg-linear-to-l from-accent to-accent/70 transition-[width] duration-500 ease-out"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+        {/* The head of the fill: RTL, so the fill grows from the inline start
+            and this marker rides `percent` in from that edge. It sits in the
+            wrapper, never inside the track, so overflow-hidden cannot clip it. */}
+        <span
+          aria-hidden="true"
+          className="quiz-progress-spark"
+          style={{ insetInlineStart: `${percent}%` }}
+        >
+          ✦
+        </span>
       </div>
     </div>
   );

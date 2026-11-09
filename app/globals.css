@@ -751,6 +751,45 @@ h1, h2, h3, h4, h5, h6 {
   --bloom-color: color-mix(in srgb, var(--accent) 72%, var(--accent-soft));
 }
 
+/* The arc: the air's own colour, travelling from the warm gold the quiz opens
+ * in to the wine it closes in. ONE fixed, inert layer holding two stacked
+ * radial washes — gold anchored to the sky, wine to the floor — whose opacities
+ * come from `arcWashOpacities` and ease over 600ms between questions. Opacity
+ * only: no filter, no background animation, and nothing that runs on its own;
+ * it is a state read-out, exactly like the fog below.
+ *
+ * The strength is a contrast decision: the washes paint above the reading veil,
+ * so every point of alpha spends muted-label contrast. The wine cap is held
+ * where the Q10 backdrop is still no darker than the Q1 fogged one — the
+ * envelope this quiz already ships — and by Q10 that fog is gone.
+ * tests/quiz/quiz-beauty-pass.test.tsx pins the comparison. */
+.quiz-arc {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+}
+.quiz-arc-gold,
+.quiz-arc-wine {
+  position: absolute;
+  inset: 0;
+  transition: opacity 600ms ease;
+}
+.quiz-arc-gold {
+  background: radial-gradient(
+    120% 78% at 50% -12%,
+    color-mix(in srgb, var(--accent) 58%, white) 0%,
+    transparent 68%
+  );
+}
+.quiz-arc-wine {
+  background: radial-gradient(
+    118% 72% at 50% 112%,
+    var(--wine) 0%,
+    transparent 64%
+  );
+}
+
 /* Clearing fog: ONE layer, opacity only (1s, so it eases between questions).
  *
  * A warm veil anchored to the TOP of the viewport (the sky) and fully transparent
@@ -823,6 +862,10 @@ h1, h2, h3, h4, h5, h6 {
     animation: none;
   }
   .quiz-fog {
+    transition: none;
+  }
+  .quiz-arc-gold,
+  .quiz-arc-wine {
     transition: none;
   }
   .quiz-pulse-layer {
@@ -1007,10 +1050,54 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--muted);
 }
 
+/* The chapter numeral: the question's own number set huge and faint in the
+ * display face behind the prompt — an editorial watermark, not information (the
+ * kicker already says «سؤال ۳», and the numeral is aria-hidden). Absolutely
+ * positioned, so it is out of flow and shifts nothing; `z-index: -1` inside the
+ * fieldset's own stacking context puts it BEHIND the words, and the gold is the
+ * same recipe `.quiz-orb-gold` uses, so the two golds cannot drift apart. */
+.quiz-chapter-numeral {
+  position: absolute;
+  inset-inline-start: -0.04em;
+  top: -0.34em;
+  z-index: -1;
+  font-family: var(--font-display);
+  font-size: clamp(8.5rem, 24vw, 11rem);
+  font-weight: 600;
+  line-height: 0.78;
+  letter-spacing: -0.045em;
+  color: color-mix(in srgb, var(--accent) 58%, white);
+  opacity: 0.14;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* The progress marker: a small «✦» riding the head of the fill. This flow is
+ * RTL, so the fill grows from the inline start and its head sits `percent` in
+ * from that edge. The marker lives in the wrapper NEXT TO the track, never
+ * inside it, so the track's `overflow-hidden` cannot clip it; it follows the
+ * fill's own 500ms width transition. Decoration only — aria-hidden and inert,
+ * so the progressbar contract is exactly as it was. */
+.quiz-progress-spark {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  margin-inline-start: -7px;
+  font-size: 14px;
+  line-height: 1;
+  text-align: center;
+  color: var(--wine);
+  transform: translateY(-50%);
+  pointer-events: none;
+  user-select: none;
+  transition: inset-inline-start 500ms ease-out;
+}
+
 /* Answer option rows: real <button>s in a number / label / arrow grid (RTL:
  * number at inline-start, arrow at inline-end). Opaque surface so every label
  * is foreground-on-white, far above the AA floor whatever the orbs do. */
 .quiz-option-row {
+  position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -1036,6 +1123,55 @@ h1, h2, h3, h4, h5, h6 {
   border-color: var(--accent);
   background-color: var(--accent-soft);
   box-shadow: var(--shadow-card);
+}
+
+/* Selection moment — the row answers the tap itself (the viewport ripple is
+ * QuizAtmosphere's; there is no second one here).
+ *
+ * The ring is one-shot: this ::after only exists while the row is pressed, so
+ * releasing it and pressing again recreates the pseudo-element and the 600ms
+ * animation starts over. It never loops (one iteration, no fill) and its
+ * resting state is invisible (`opacity: 0`), so a static or reduced-motion run
+ * shows no ring at all. Transform and opacity only — no shadow to re-raster,
+ * and the rows are solid `--surface`, never frosted. */
+.quiz-option-row[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 0;
+  border: 2px solid var(--marker-gold);
+  border-radius: inherit;
+  opacity: 0;
+  transform: scale(1);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .quiz-option-row[aria-pressed="true"]::after {
+    animation: quiz-option-ring 600ms ease-out;
+  }
+}
+@keyframes quiz-option-ring {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.035);
+    opacity: 0;
+  }
+}
+
+/* The marker stroke under the chosen label: the same gold highlighter idiom as
+ * `.marker-wipe`, painted as a background band so it sits behind the glyphs.
+ * Static — present for as long as the row stays selected, reduced motion
+ * included. */
+.quiz-option-row[aria-pressed="true"] .quiz-option-label {
+  background-image: linear-gradient(
+    transparent 62%,
+    color-mix(in srgb, var(--marker-gold) 55%, transparent) 62%
+  );
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
 }
 .quiz-option-num {
   display: flex;
@@ -1223,6 +1359,9 @@ h1, h2, h3, h4, h5, h6 {
     animation: none;
   }
   .quiz-option-row {
+    transition: none;
+  }
+  .quiz-progress-spark {
     transition: none;
   }
   body {
