@@ -215,7 +215,7 @@ describe("merchant render throttle (buyer audit round 7)", () => {
     ).toEqual(["RESULT_VIEWED", "RECOMMENDATIONS_SHOWN"]);
   });
 
-  it("renders the deterministic results with no AI and no events when the requester is over budget", async () => {
+  it("stops before inventory access and returns a throttled state when the requester is over budget", async () => {
     const logged = vi.spyOn(console, "info").mockImplementation(() => {});
     mocks.checkRateLimit.mockResolvedValueOnce({ allowed: false, retryAfterSeconds: 42 });
 
@@ -264,7 +264,7 @@ describe("merchant render throttle (buyer audit round 7)", () => {
     logged.mockRestore();
   });
 
-  it("renders with no AI and no events when the store is over budget", async () => {
+  it("stops before inventory access when the store is over budget", async () => {
     mocks.checkRateLimit
       .mockResolvedValueOnce({ allowed: true, retryAfterSeconds: 0 })
       .mockResolvedValueOnce({ allowed: false, retryAfterSeconds: 12 });
