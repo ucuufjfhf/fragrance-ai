@@ -21,7 +21,8 @@ import { QUIZ_QUESTIONS } from "@/lib/personality/questions";
  * Three of the four treatments are CSS, so this suite checks both halves like
  * its siblings do: the rendered markup (the watermark, the arc layer, the
  * sparkle) and the rules in `app/globals.css` that make them what they are (the
- * gold recipe, the one-shot ring, the reduced-motion gates, the marker band).
+ * gold recipe, the one-shot ring, the reduced-motion gates, the selection
+ * sparkle).
  *
  * Nothing is a snapshot of the visuals: every assertion is one of the brief's
  * constraints, plus the contrast envelope the arc must not break.
@@ -301,18 +302,94 @@ describe("selection moment on the row", () => {
     expect(block(".quiz-option-row")).toContain("position: relative;");
   });
 
-  it("keeps the existing pressed styles and adds a static marker under the label", () => {
+  it("keeps the existing pressed styles and paints no marker band", () => {
     const pressed = block('.quiz-option-row[aria-pressed="true"]');
     expect(pressed).toContain("border-color: var(--accent);");
     expect(pressed).toContain("background-color: var(--accent-soft);");
     expect(pressed).toContain("box-shadow: var(--shadow-card);");
 
-    const marker = block('.quiz-option-row[aria-pressed="true"] .quiz-option-label');
-    expect(marker).toContain("background-image: linear-gradient(");
-    expect(marker).toContain("transparent 62%");
-    expect(marker).toContain("color-mix(in srgb, var(--marker-gold) 55%, transparent) 62%");
-    // Static: declared at the top level, so reduced motion keeps it.
-    expect(topLevel('.quiz-option-row[aria-pressed="true"] .quiz-option-label')).toBe(true);
+    // The rejected band is gone, not merely overridden: no rule that targets the
+    // option label — pressed, hovered or at rest — may paint a background, so
+    // nothing can paint a highlighter band under the selected text again.
+    expect(CSS).not.toContain("var(--marker-gold) 55%");
+    const labelRules = [...CSS.matchAll(/[^\n]*quiz-option-label[^{]*\{[^}]*\}/g)].map(
+      ([rule]) => rule,
+    );
+    expect(labelRules.length).toBeGreaterThanOrEqual(3);
+    for (const rule of labelRules) {
+      expect(rule, `label rule paints a background: ${rule.slice(0, 60)}`).not.toContain(
+        "background",
+      );
+    }
+  });
+
+  it("marks the chosen label with a gold ✦ in the gutter it reserves", () => {
+    const label = block('.quiz-option-row[aria-pressed="true"] .quiz-option-label');
+    const spark = block('.quiz-option-row[aria-pressed="true"] .quiz-option-label::after');
+
+    // Same sparkle as the progress head, at the design's 14px.
+    expect(spark).toContain('content: "✦";');
+    expect(spark).toContain("color: var(--marker-gold);");
+    expect(spark).toContain("font-size: 14px;");
+
+    // Absolutely placed in the reserved inline-end gutter and centred on the
+    // label block — that gutter is what makes wrapped labels overlap-proof:
+    // every line stops before the padding, so the glyph can never sit on text.
+    expect(spark).toContain("position: absolute;");
+    expect(spark).toContain("inset-inline-end: 0;");
+    expect(spark).toContain("top: 50%;");
+    expect(spark).toContain("transform: translateY(-50%);");
+    expect(label).toContain("padding-inline-end: 1.4rem;");
+    expect(label).toContain("position: relative;");
+
+    // Decorative and inert: it is a pseudo-element, so it cannot take a click,
+    // and it is explicitly pointer-inert as well.
+    expect(spark).toContain("pointer-events: none;");
+
+    // Visible with no motion at all: the resting rule is unconditional.
+    expect(topLevel('.quiz-option-row[aria-pressed="true"] .quiz-option-label::after')).toBe(true);
+
+    // Gated on the pressed state: every rule that could paint a sparkle names it.
+    for (const match of CSS.matchAll(/[^\n]*quiz-option-label::after[^\n]*/g)) {
+      expect(match[0], `ungated sparkle selector: ${match[0]}`).toContain('[aria-pressed="true"]');
+    }
+
+    // An unpressed row reserves nothing and shows nothing: the base label rule
+    // is matched standalone — `block()` would find the pressed rule first, since
+    // that selector ends with this same text.
+    const baseLabel = CSS.match(/\n\.quiz-option-label \{[^}]*\}/)?.[0] ?? "";
+    expect(baseLabel).not.toBe("");
+    expect(baseLabel).not.toContain("padding");
+    expect(baseLabel).not.toContain("::after");
+  });
+
+  it("fades the ✦ in once, then rests — static under reduced motion", () => {
+    const animationAt = CSS.indexOf("animation: quiz-option-spark");
+    expect(animationAt).toBeGreaterThan(-1);
+    const gateAt = CSS.lastIndexOf("@media (prefers-reduced-motion: no-preference) {", animationAt);
+    expect(gateAt).toBeGreaterThan(-1);
+    expect(gateAt).toBeLessThan(animationAt);
+    expect(CSS.slice(gateAt, animationAt)).toContain(
+      '.quiz-option-row[aria-pressed="true"] .quiz-option-label::after {',
+    );
+
+    // 240ms, one iteration, declared exactly once: it plays on selection and
+    // never loops.
+    expect(CSS).toContain("animation: quiz-option-spark 240ms ease-out;");
+    expect(CSS).not.toContain("quiz-option-spark 240ms ease-out infinite");
+    expect((CSS.match(/animation: quiz-option-spark/g) ?? []).length).toBe(1);
+
+    const keyframes = block("@keyframes quiz-option-spark");
+    const properties = [...keyframes.matchAll(/([a-zA-Z-]+):\s*[^;]+;/g)].map(([, name]) => name);
+    expect(properties.length).toBeGreaterThan(0);
+    for (const property of properties) {
+      expect(["transform", "opacity"], `unexpected animated property: ${property}`).toContain(
+        property,
+      );
+    }
+    // The settle keeps the centring translate; dropping it would jump the glyph.
+    expect(keyframes).toContain("translateY(-50%) scale(0.6);");
+    expect(keyframes).toContain("translateY(-50%) scale(1);");
   });
 });
 

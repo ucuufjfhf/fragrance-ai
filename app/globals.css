@@ -1161,17 +1161,52 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* The marker stroke under the chosen label: the same gold highlighter idiom as
- * `.marker-wipe`, painted as a background band so it sits behind the glyphs.
- * Static — present for as long as the row stays selected, reduced motion
- * included. */
+/* The selection's mark: a small gold ✦ at the end of the chosen label — the
+ * same sparkle family as `.quiz-progress-spark` at the head of the progress
+ * fill, not a highlighter band. The band that used to sit under the glyphs read
+ * as cheap at this size (the marker-wipe belongs to the large editorial
+ * headlines), so it is gone.
+ *
+ * The sparkle is a pseudo-element on the label, and the label reserves its own
+ * inline-end gutter with `padding-inline-end` while pressed: the ::after is
+ * positioned inside that padding, so no wrapped line of any length can run
+ * under it. Reserving on the label rather than the row leaves the row's own
+ * inline end to the arrow. The ::after only exists while the row is pressed,
+ * so an unpressed row reserves no space and shows nothing, and it is
+ * decorative and pointer-inert. Static by default — reduced motion included. */
 .quiz-option-row[aria-pressed="true"] .quiz-option-label {
-  background-image: linear-gradient(
-    transparent 62%,
-    color-mix(in srgb, var(--marker-gold) 55%, transparent) 62%
-  );
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
+  position: relative;
+  padding-inline-end: 1.4rem;
+}
+.quiz-option-row[aria-pressed="true"] .quiz-option-label::after {
+  content: "✦";
+  position: absolute;
+  inset-inline-end: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  line-height: 1;
+  color: var(--marker-gold);
+  pointer-events: none;
+  user-select: none;
+}
+/* One appearance per selection: a newly pressed row creates the pseudo-element,
+ * so the 240ms fade-and-settle plays once and the sparkle then rests. Never
+ * loops, and only transform + opacity move. */
+@media (prefers-reduced-motion: no-preference) {
+  .quiz-option-row[aria-pressed="true"] .quiz-option-label::after {
+    animation: quiz-option-spark 240ms ease-out;
+  }
+}
+@keyframes quiz-option-spark {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
 }
 .quiz-option-num {
   display: flex;
