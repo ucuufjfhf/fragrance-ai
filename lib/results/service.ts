@@ -24,10 +24,12 @@ import type { ResultsParams } from "@/lib/results/params";
  * Server-side orchestration for the results page (Phase 5).
  *
  * Flow, in strict order:
- *   1. `getRecommendations` (Phase 3) produces the ranked Top-N — the single
+ *   1. Merchant render budgets are checked before inventory access; denied
+ *      requests return a distinct throttled state without querying perfumes.
+ *   2. `getRecommendations` (Phase 3) produces the ranked Top-N — the single
  *      source of truth for which perfumes appear, in which order, at which
  *      score. This module never re-scores, re-ranks or re-orders.
- *   2. `generateExplanations` (Phase 4) attaches optional Persian copy. Any
+ *   3. `generateExplanations` (Phase 4) attaches optional Persian copy. Any
  *      failure degrades to `{ ok: false }` per the Phase 4 contract and leaves
  *      the deterministic list untouched.
  *
@@ -132,7 +134,8 @@ async function merchantRenderDenial(
  *
  * Buyer audit round 7: `requesterId` (the page's `requesterIdentity`) enables
  * the two merchant-render budgets. Omitted/null is every pre-existing caller
- * and keeps today's behaviour exactly — no checks, no change.
+ * and keeps today's unthrottled behaviour exactly. A denied merchant render
+ * now exits before matching, so no inventory query or AI call is performed.
  */
 export async function getResultsViewData(
   params: ResultsParams,
@@ -236,7 +239,7 @@ export async function getResultsViewData(
     explanations = await generateExplanations(provider, inputs);
   }
 
-  if (!isDemo && suppressedBy === null) {
+  if (!isDemo) {
     await recordAnalyticsEvent({ eventType: "RESULT_VIEWED", storeId });
     // One event per result page with the list size in metadata (§6) — the
     // per-perfume counts are derived in the dashboard roll-up.
