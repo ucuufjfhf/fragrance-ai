@@ -53,8 +53,8 @@ vi.mock("@/lib/ai/explanation", () => ({
   selectUserTraits: vi.fn().mockReturnValue([]),
 }));
 
-import { GET as configGet } from "@/app/api/widget/config/route";
-import { POST as recommendPost } from "@/app/api/widget/recommend/route";
+import { GET as configGet, OPTIONS as configOptions } from "@/app/api/widget/config/route";
+import { POST as recommendPost, OPTIONS as recommendOptions } from "@/app/api/widget/recommend/route";
 import type { MatchResult } from "@/types/recommendation";
 import { widgetCorsHeaders } from "@/lib/widget/cors";
 import { resetRateLimitsForTests } from "@/lib/rate-limit";
@@ -209,6 +209,24 @@ describe("GET /api/widget/config — store validation (§11)", () => {
     expect(mocks.storeFindFirst.mock.calls[0][0].where.active).toBe(true);
   });
 
+  it("rate-limits config preflight lookups before querying the store", async () => {
+    const preflight = () => configOptions(new Request(
+      "https://app.test/api/widget/config?storeId=store-A",
+      { method: "OPTIONS", headers: { Origin: "https://shop.example" } },
+    ));
+
+    for (let index = 0; index < 300; index += 1) {
+      expect((await preflight()).status).toBe(204);
+    }
+
+    mocks.storeFindFirst.mockClear();
+    const limited = await preflight();
+
+    expect(limited.status).toBe(429);
+    expect(limited.headers.get("Retry-After")).toBe("1");
+    expect(mocks.storeFindFirst).not.toHaveBeenCalled();
+  });
+
   it("applies a per-requester limit before the store lookup", async () => {
     const config = () => configGet(new Request("https://app.test/api/widget/config?storeId=store-A"));
 
@@ -279,7 +297,46 @@ describe("POST /api/widget/recommend — store isolation (§4/§13)", () => {
     expect(mocks.matchPerfumes).not.toHaveBeenCalled();
   });
 
-  it("applies the stricter requester limit and preserves CORS and AI fallback", async () => {
+  it("applies the requester limit before store lookup", async () => {
+    const post = () => recommendPost(new Request("https://app.test/api/widget/recommend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "https://shop.example" },
+      body: JSON.stringify({ storeId: "store-A", personalityVector: VECTOR }),
+    }));
+
+    for (let index = 0; index < 10; index += 1) {
+      expect((await post()).status).toBe(200);
+    }
+
+    mocks.storeFindFirst.mockClear();
+    const limited = await post();
+
+    expect(limited.status).toBe(429);
+    expect((await limited.json()).reason).toBe("RATE_LIMITED");
+    // Requester denial happens before the store lookup.
+    expect(mocks.storeFindFirst).not.toHaveBeenCalled();
+    expect(limited.headers.get("Access-Control-Allow-Origin")).toBeNull();
+  });
+
+  it("rate-limits widget preflight lookups before querying the store", async () => {
+    const preflight = () => recommendOptions(new Request(
+      "https://app.test/api/widget/recommend?storeId=store-A",
+      { method: "OPTIONS", headers: { Origin: "https://shop.example" } },
+    ));
+
+    for (let index = 0; index < 300; index += 1) {
+      expect((await preflight()).status).toBe(204);
+    }
+
+    mocks.storeFindFirst.mockClear();
+    const limited = await preflight();
+
+    expect(limited.status).toBe(429);
+    expect(limited.headers.get("Retry-After")).toBe("1");
+    expect(mocks.storeFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("applies the stricter requester limit before store lookup and returns 429", async () => {
     mocks.matchPerfumes.mockReturnValue(makeMatchResult("store-A", 1));
     const post = () => recommendPost(new Request("https://app.test/api/widget/recommend", {
       method: "POST",
@@ -296,8 +353,10 @@ describe("POST /api/widget/recommend — store isolation (§4/§13)", () => {
     const limited = await post();
     expect(limited.status).toBe(429);
     expect(limited.headers.get("Retry-After")).toMatch(/^[1-9]\d*$/);
-    expect(limited.headers.get("Access-Control-Allow-Origin")).toBe("https://shop.example");
+    expect(limited.headers.get("Access-Control-Allow-Origin")).toBeNull();
     expect((await limited.json()).reason).toBe("RATE_LIMITED");
+    // Requester denial is evaluated before the store lookup.
+    expect(mocks.storeFindFirst).toHaveBeenCalledTimes(10);
   });
 
   it("passes the engine the validated vector untouched (no local scoring, §13)", async () => {

@@ -111,6 +111,19 @@ export async function GET(request: Request): Promise<Response> {
 export async function OPTIONS(request: Request): Promise<Response> {
   const storeId = new URL(request.url).searchParams.get("storeId");
   const origin = request.headers.get("origin");
+  const headers = widgetCorsHeaders(origin, null);
+  const limit = await checkRateLimit(
+    `widget:preflight:${requesterIdentity(request)}`,
+    PUBLIC_RATE_LIMITS.configRequester,
+  );
+  if (!limit.allowed) {
+    return rateLimitResponse(
+      limit.retryAfterSeconds,
+      { ok: false, reason: "RATE_LIMITED" },
+      headers,
+    );
+  }
+
   const prisma = getPrisma();
   const store = storeId && isValidStoreId(storeId)
     ? await prisma.store.findFirst({ where: { id: storeId, active: true }, select: { websiteUrl: true } })

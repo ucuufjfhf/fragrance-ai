@@ -24,10 +24,12 @@ import type { ResultsParams } from "@/lib/results/params";
  * Server-side orchestration for the results page (Phase 5).
  *
  * Flow, in strict order:
- *   1. `getRecommendations` (Phase 3) produces the ranked Top-N — the single
+ *   1. Merchant render budgets are checked before inventory access; denied
+ *      requests return a distinct throttled state without querying perfumes.
+ *   2. `getRecommendations` (Phase 3) produces the ranked Top-N — the single
  *      source of truth for which perfumes appear, in which order, at which
  *      score. This module never re-scores, re-ranks or re-orders.
- *   2. `generateExplanations` (Phase 4) attaches optional Persian copy. Any
+ *   3. `generateExplanations` (Phase 4) attaches optional Persian copy. Any
  *      failure degrades to `{ ok: false }` per the Phase 4 contract and leaves
  *      the deterministic list untouched.
  *
@@ -45,6 +47,8 @@ export interface ResultsViewData {
   aiAvailable: boolean;
   /** True when the deterministic engine found no eligible perfume. */
   isEmpty: boolean;
+  /** True when a merchant render was throttled before inventory access. */
+  rateLimited?: boolean;
 }
 
 /**
@@ -130,7 +134,8 @@ async function merchantRenderDenial(
  *
  * Buyer audit round 7: `requesterId` (the page's `requesterIdentity`) enables
  * the two merchant-render budgets. Omitted/null is every pre-existing caller
- * and keeps today's behaviour exactly — no checks, no change.
+ * and keeps today's unthrottled behaviour exactly. A denied merchant render
+ * now exits before matching, so no inventory query or AI call is performed.
  */
 export async function getResultsViewData(
   params: ResultsParams,
@@ -146,6 +151,34 @@ export async function getResultsViewData(
   // an explicit `?source=` wins; otherwise a store context means merchant
   // inventory and the storeless default experience uses the demo catalog.
   const source: RecommendationSource = sourceOverride ?? params.source;
+
+  // Reference-catalog mode is a demo: no real store context exists, so no
+  // store-scoped analytics are recorded (unknown store ids are rejected by
+  // the analytics service anyway — skipping avoids the wasted DB round-trip).
+  const isDemo = source === "REFERENCE_CATALOG";
+
+  // Apply merchant budgets BEFORE loading inventory. The results URL is
+  // unsigned, so anyone can mint requests for a public store id; throttling
+  // after matching would still let denied requests spend database work.
+  const suppressedBy = isDemo
+    ? null
+    : await merchantRenderDenial(storeId, requesterId);
+
+  if (suppressedBy !== null) {
+    // One line per suppressed render, no vector: enough to see a minting wave
+    // without the log becoming a copy of the URL.
+    logEvent("result_render_throttled", { storeId, limit: suppressedBy }, "warn");
+
+    // Do not load merchant inventory for a denied render. The page has an
+    // explicit throttled state so this cannot be mistaken for an empty catalog.
+    return {
+      recommendations: [],
+      explanations: new Map(),
+      aiAvailable: false,
+      isEmpty: false,
+      rateLimited: true,
+    };
+  }
 
   const matchResult: MatchResult = await getRecommendations({
     storeId,
@@ -165,29 +198,10 @@ export async function getResultsViewData(
 
   const recommendations = matchResult.recommendations;
 
-  // Reference-catalog mode is a demo: no real store context exists, so no
-  // store-scoped analytics are recorded (unknown store ids are rejected by
-  // the analytics service anyway — skipping avoids the wasted DB round-trip).
-  const isDemo = source === "REFERENCE_CATALOG";
-
-  // Merchant renders spend two budgets before either expensive effect — the AI
-  // pass and the funnel writes — because `/result` is unsigned query params:
-  // anyone can mint a URL for any public store id. A denial degrades to the
-  // provider-failure render (no explanations, no events), never an error page.
-  const suppressedBy = isDemo
-    ? null
-    : await merchantRenderDenial(storeId, requesterId);
-
-  if (suppressedBy !== null) {
-    // One line per suppressed render, no vector: enough to see a minting wave
-    // without the log becoming a copy of the URL.
-    logEvent("result_render_throttled", { storeId, limit: suppressedBy }, "warn");
-  }
-
   if (recommendations.length === 0) {
     // A valid profile rendered with zero eligible perfumes still counts as a
     // result view — but there is no recommendation list to count.
-    if (!isDemo && suppressedBy === null) {
+    if (!isDemo) {
       await recordAnalyticsEvent({ eventType: "RESULT_VIEWED", storeId });
     }
 
@@ -206,7 +220,7 @@ export async function getResultsViewData(
   let explanations = new Map<string, string>();
   let aiAvailable = false;
 
-  if (!isDemo && suppressedBy === null) {
+  if (!isDemo) {
     // Same rate-limit + circuit-breaker wrapper the widget route already uses.
     // One implementation, unchanged limits: the results page gets the same
     // cost controls without a second cost-control code path.
@@ -225,7 +239,7 @@ export async function getResultsViewData(
     explanations = await generateExplanations(provider, inputs);
   }
 
-  if (!isDemo && suppressedBy === null) {
+  if (!isDemo) {
     await recordAnalyticsEvent({ eventType: "RESULT_VIEWED", storeId });
     // One event per result page with the list size in metadata (§6) — the
     // per-perfume counts are derived in the dashboard roll-up.

@@ -203,6 +203,9 @@ describe("merchant render throttle (buyer audit round 7)", () => {
       ["result:requester:198.51.100.7", { limit: 30, windowMs: 60_000 }],
       ["result:store:store-real-merchant", { limit: 300, windowMs: 60_000 }],
     ]);
+    expect(mocks.checkRateLimit.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.getRecommendations.mock.invocationCallOrder[0],
+    );
     expect(mocks.createAIProvider).toHaveBeenCalledTimes(1);
     expect(mocks.generateExplanations).toHaveBeenCalledTimes(1);
     expect(data.explanations.get("p-1")).toBe("دلیل");
@@ -212,7 +215,7 @@ describe("merchant render throttle (buyer audit round 7)", () => {
     ).toEqual(["RESULT_VIEWED", "RECOMMENDATIONS_SHOWN"]);
   });
 
-  it("renders the deterministic results with no AI and no events when the requester is over budget", async () => {
+  it("stops before inventory access and returns a throttled state when the requester is over budget", async () => {
     const logged = vi.spyOn(console, "info").mockImplementation(() => {});
     mocks.checkRateLimit.mockResolvedValueOnce({ allowed: false, retryAfterSeconds: 42 });
 
@@ -222,16 +225,20 @@ describe("merchant render throttle (buyer audit round 7)", () => {
       REQUESTER,
     );
 
-    // Same list, same archetype — only the paid copy and the funnel are gone.
-    expect(data.recommendations).toHaveLength(1);
+    // A denied render is stopped before inventory access; the UI gets a
+    // distinct throttled state rather than a misleading empty-catalog state.
+    expect(data.recommendations).toHaveLength(0);
     expect(data.isEmpty).toBe(false);
+    expect(data.rateLimited).toBe(true);
+    expect(mocks.getRecommendations).not.toHaveBeenCalled();
     expect(data.aiAvailable).toBe(false);
     expect(data.explanations.size).toBe(0);
     expect(mocks.createAIProvider).not.toHaveBeenCalled();
     expect(mocks.generateExplanations).not.toHaveBeenCalled();
     expect(mocks.recordAnalyticsEvent).not.toHaveBeenCalled();
-    // A denied requester never spends the store budget as well.
+    // A denied requester never spends the store budget or loads inventory.
     expect(mocks.checkRateLimit).toHaveBeenCalledTimes(1);
+    expect(mocks.getRecommendations).not.toHaveBeenCalled();
 
     const entries = logged.mock.calls
       .map(([line]) => {
@@ -257,7 +264,7 @@ describe("merchant render throttle (buyer audit round 7)", () => {
     logged.mockRestore();
   });
 
-  it("renders with no AI and no events when the store is over budget", async () => {
+  it("stops before inventory access when the store is over budget", async () => {
     mocks.checkRateLimit
       .mockResolvedValueOnce({ allowed: true, retryAfterSeconds: 0 })
       .mockResolvedValueOnce({ allowed: false, retryAfterSeconds: 12 });
@@ -268,9 +275,11 @@ describe("merchant render throttle (buyer audit round 7)", () => {
       REQUESTER,
     );
 
-    expect(data.recommendations).toHaveLength(1);
+    expect(data.recommendations).toHaveLength(0);
     expect(data.aiAvailable).toBe(false);
     expect(data.explanations.size).toBe(0);
+    expect(data.rateLimited).toBe(true);
+    expect(mocks.getRecommendations).not.toHaveBeenCalled();
     expect(mocks.createAIProvider).not.toHaveBeenCalled();
     expect(mocks.generateExplanations).not.toHaveBeenCalled();
     expect(mocks.recordAnalyticsEvent).not.toHaveBeenCalled();
@@ -290,8 +299,9 @@ describe("merchant render throttle (buyer audit round 7)", () => {
       REQUESTER,
     );
 
-    expect(data.isEmpty).toBe(true);
-    expect(data.recommendations).toEqual([]);
+    expect(data.isEmpty).toBe(false);
+    expect(data.rateLimited).toBe(true);
+    expect(mocks.getRecommendations).not.toHaveBeenCalled();
     expect(mocks.recordAnalyticsEvent).not.toHaveBeenCalled();
   });
 
