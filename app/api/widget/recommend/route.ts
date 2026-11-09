@@ -59,8 +59,20 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ ok: false, reason: "INVALID_ID" }, { status: 400, headers });
   }
 
-  // Rate limits are applied after authoritative store lookup so the response
-  // CORS decision uses that store's websiteUrl.
+  // Bound a single requester before the authoritative store lookup. The
+  // store-specific budget still runs after the store is validated below.
+  const requester = requesterIdentity(request);
+  const requesterLimit = await checkRateLimit(
+    `widget:requester:${requester}`,
+    PUBLIC_RATE_LIMITS.widgetRequester,
+  );
+  if (!requesterLimit.allowed) {
+    return rateLimitResponse(
+      requesterLimit.retryAfterSeconds,
+      { ok: false, reason: "RATE_LIMITED" },
+      headers,
+    );
+  }
 
   const prisma = getPrisma();
 
@@ -77,12 +89,16 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     return Response.json({ ok: false, reason: "STORE_NOT_FOUND" }, { status: 500, headers });
   }
-  const requester = requesterIdentity(request);
-  const requesterLimit = await checkRateLimit(`widget:requester:${requester}`, PUBLIC_RATE_LIMITS.widgetRequester);
-  const storeLimit = await checkRateLimit(`widget:store:${body.storeId}`, PUBLIC_RATE_LIMITS.widgetStore);
-  if (!requesterLimit.allowed || !storeLimit.allowed) {
-    const limited = !requesterLimit.allowed ? requesterLimit : storeLimit;
-    return rateLimitResponse(limited.retryAfterSeconds, { ok: false, reason: "RATE_LIMITED" }, headers);
+  const storeLimit = await checkRateLimit(
+    `widget:store:${body.storeId}`,
+    PUBLIC_RATE_LIMITS.widgetStore,
+  );
+  if (!storeLimit.allowed) {
+    return rateLimitResponse(
+      storeLimit.retryAfterSeconds,
+      { ok: false, reason: "RATE_LIMITED" },
+      headers,
+    );
   }
 
 
@@ -188,6 +204,20 @@ export async function POST(request: Request): Promise<Response> {
 export async function OPTIONS(request: Request): Promise<Response> {
   const storeId = new URL(request.url).searchParams.get("storeId");
   const origin = request.headers.get("origin");
+  const headers = widgetCorsHeaders(origin, null);
+  const requester = requesterIdentity(request);
+  const limit = await checkRateLimit(
+    `widget:preflight:${requester}`,
+    PUBLIC_RATE_LIMITS.configRequester,
+  );
+  if (!limit.allowed) {
+    return rateLimitResponse(
+      limit.retryAfterSeconds,
+      { ok: false, reason: "RATE_LIMITED" },
+      headers,
+    );
+  }
+
   const prisma = getPrisma();
   const store = storeId && isValidStoreId(storeId)
     ? await prisma.store.findFirst({ where: { id: storeId, active: true }, select: { websiteUrl: true } })
