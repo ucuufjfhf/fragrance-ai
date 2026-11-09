@@ -225,9 +225,12 @@ describe("merchant render throttle (buyer audit round 7)", () => {
       REQUESTER,
     );
 
-    // Same list, same archetype — only the paid copy and the funnel are gone.
-    expect(data.recommendations).toHaveLength(1);
+    // A denied render is stopped before inventory access; the UI gets a
+    // distinct throttled state rather than a misleading empty-catalog state.
+    expect(data.recommendations).toHaveLength(0);
     expect(data.isEmpty).toBe(false);
+    expect(data.rateLimited).toBe(true);
+    expect(mocks.getRecommendations).not.toHaveBeenCalled();
     expect(data.aiAvailable).toBe(false);
     expect(data.explanations.size).toBe(0);
     expect(mocks.createAIProvider).not.toHaveBeenCalled();
@@ -272,9 +275,11 @@ describe("merchant render throttle (buyer audit round 7)", () => {
       REQUESTER,
     );
 
-    expect(data.recommendations).toHaveLength(1);
+    expect(data.recommendations).toHaveLength(0);
     expect(data.aiAvailable).toBe(false);
     expect(data.explanations.size).toBe(0);
+    expect(data.rateLimited).toBe(true);
+    expect(mocks.getRecommendations).not.toHaveBeenCalled();
     expect(mocks.createAIProvider).not.toHaveBeenCalled();
     expect(mocks.generateExplanations).not.toHaveBeenCalled();
     expect(mocks.recordAnalyticsEvent).not.toHaveBeenCalled();
@@ -294,8 +299,9 @@ describe("merchant render throttle (buyer audit round 7)", () => {
       REQUESTER,
     );
 
-    expect(data.isEmpty).toBe(true);
-    expect(data.recommendations).toEqual([]);
+    expect(data.isEmpty).toBe(false);
+    expect(data.rateLimited).toBe(true);
+    expect(mocks.getRecommendations).not.toHaveBeenCalled();
     expect(mocks.recordAnalyticsEvent).not.toHaveBeenCalled();
   });
 
