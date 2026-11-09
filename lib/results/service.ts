@@ -147,6 +147,24 @@ export async function getResultsViewData(
   // inventory and the storeless default experience uses the demo catalog.
   const source: RecommendationSource = sourceOverride ?? params.source;
 
+  // Reference-catalog mode is a demo: no real store context exists, so no
+  // store-scoped analytics are recorded (unknown store ids are rejected by
+  // the analytics service anyway — skipping avoids the wasted DB round-trip).
+  const isDemo = source === "REFERENCE_CATALOG";
+
+  // Apply merchant budgets BEFORE loading inventory. The results URL is
+  // unsigned, so anyone can mint requests for a public store id; throttling
+  // after matching would still let denied requests spend database work.
+  const suppressedBy = isDemo
+    ? null
+    : await merchantRenderDenial(storeId, requesterId);
+
+  if (suppressedBy !== null) {
+    // One line per suppressed render, no vector: enough to see a minting wave
+    // without the log becoming a copy of the URL.
+    logEvent("result_render_throttled", { storeId, limit: suppressedBy }, "warn");
+  }
+
   const matchResult: MatchResult = await getRecommendations({
     storeId,
     personalityVector: vector,
@@ -164,25 +182,6 @@ export async function getResultsViewData(
   });
 
   const recommendations = matchResult.recommendations;
-
-  // Reference-catalog mode is a demo: no real store context exists, so no
-  // store-scoped analytics are recorded (unknown store ids are rejected by
-  // the analytics service anyway — skipping avoids the wasted DB round-trip).
-  const isDemo = source === "REFERENCE_CATALOG";
-
-  // Merchant renders spend two budgets before either expensive effect — the AI
-  // pass and the funnel writes — because `/result` is unsigned query params:
-  // anyone can mint a URL for any public store id. A denial degrades to the
-  // provider-failure render (no explanations, no events), never an error page.
-  const suppressedBy = isDemo
-    ? null
-    : await merchantRenderDenial(storeId, requesterId);
-
-  if (suppressedBy !== null) {
-    // One line per suppressed render, no vector: enough to see a minting wave
-    // without the log becoming a copy of the URL.
-    logEvent("result_render_throttled", { storeId, limit: suppressedBy }, "warn");
-  }
 
   if (recommendations.length === 0) {
     // A valid profile rendered with zero eligible perfumes still counts as a
