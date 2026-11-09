@@ -203,6 +203,9 @@ describe("merchant render throttle (buyer audit round 7)", () => {
       ["result:requester:198.51.100.7", { limit: 30, windowMs: 60_000 }],
       ["result:store:store-real-merchant", { limit: 300, windowMs: 60_000 }],
     ]);
+    expect(mocks.checkRateLimit.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.getRecommendations.mock.invocationCallOrder[0],
+    );
     expect(mocks.createAIProvider).toHaveBeenCalledTimes(1);
     expect(mocks.generateExplanations).toHaveBeenCalledTimes(1);
     expect(data.explanations.get("p-1")).toBe("دلیل");
@@ -230,8 +233,9 @@ describe("merchant render throttle (buyer audit round 7)", () => {
     expect(mocks.createAIProvider).not.toHaveBeenCalled();
     expect(mocks.generateExplanations).not.toHaveBeenCalled();
     expect(mocks.recordAnalyticsEvent).not.toHaveBeenCalled();
-    // A denied requester never spends the store budget as well.
+    // A denied requester never spends the store budget or loads inventory.
     expect(mocks.checkRateLimit).toHaveBeenCalledTimes(1);
+    expect(mocks.getRecommendations).not.toHaveBeenCalled();
 
     const entries = logged.mock.calls
       .map(([line]) => {
