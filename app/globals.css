@@ -1208,6 +1208,23 @@ h1, h2, h3, h4, h5, h6 {
     transform: translateY(-50%) scale(1);
   }
 }
+
+/* Results header: the archetype's own trait words, banded in its OWN accent.
+ * `--accent` is re-pointed to `archetype.accentColor` on the results root, so
+ * each archetype gets its own colour from the same rule; the text colour is
+ * inherited from the body paragraph and never set here. Deliberately NOT the
+ * quiz's `--marker-gold`: that band was removed from the option rows in batch
+ * 26. This is the display-size trait highlight, and the band only covers
+ * 55%→92% of the line so the glyphs stay clear of its edges. */
+.results-emphasis {
+  background: linear-gradient(
+    transparent 55%,
+    color-mix(in srgb, var(--accent) 38%, transparent) 55%,
+    color-mix(in srgb, var(--accent) 38%, transparent) 92%,
+    transparent 92%
+  );
+  font-weight: 700;
+}
 .quiz-option-num {
   display: flex;
   height: 1.75rem;

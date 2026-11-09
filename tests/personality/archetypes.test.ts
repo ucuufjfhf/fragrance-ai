@@ -4,6 +4,7 @@ import {
   ARCHETYPES,
   getArchetypeById,
   nearestArchetype,
+  splitEmphasis,
   squaredDistance,
 } from "@/lib/personality/archetypes";
 import { PERSONALITY_DIMENSIONS } from "@/types/personality";
@@ -144,6 +145,69 @@ describe("archetypes", () => {
   it("is stable across repeated calls with equal vectors", () => {
     const vector = ARCHETYPES[3].centroid;
     expect(nearestArchetype({ ...vector })).toBe(nearestArchetype(vector));
+  });
+
+  it("lists 3–4 emphasis words per archetype, each exactly once in its own copy", () => {
+    for (const archetype of ARCHETYPES) {
+      expect(archetype.emphasisWords.length).toBeGreaterThanOrEqual(3);
+      expect(archetype.emphasisWords.length).toBeLessThanOrEqual(4);
+
+      for (const word of archetype.emphasisWords) {
+        // Counted as occurrences of the exact stored substring: a word that is
+        // not in the description, or repeats in it, fails here.
+        const occurrences = archetype.description.split(word).length - 1;
+        expect(occurrences, `${archetype.id}: «${word}» occurs ${occurrences}×`).toBe(1);
+      }
+    }
+  });
+
+  it("keeps the words non-nested, so no emphasis can swallow another", () => {
+    for (const archetype of ARCHETYPES) {
+      for (const word of archetype.emphasisWords) {
+        for (const other of archetype.emphasisWords) {
+          if (word === other) continue;
+          expect(other.includes(word), `${archetype.id}: «${word}» inside «${other}»`).toBe(
+            false,
+          );
+        }
+      }
+    }
+  });
+
+  it("rejoins the split segments into the description byte-for-byte", () => {
+    for (const archetype of ARCHETYPES) {
+      const segments = splitEmphasis(archetype.description, archetype.emphasisWords);
+
+      // Presentation only: emphasis never rewrites the copy.
+      expect(segments.map((segment) => segment.text).join("")).toBe(archetype.description);
+      expect(
+        segments
+          .filter((segment) => segment.emphasized)
+          .map((segment) => segment.text)
+          .sort(),
+      ).toEqual([...archetype.emphasisWords].sort());
+      // No empty run, so the renderer never emits an empty band or a stray span.
+      for (const segment of segments) expect(segment.text.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("splits by position, leaves unlisted text whole, and survives empty input", () => {
+    const description = "الف ب پ";
+
+    expect(splitEmphasis(description, [])).toEqual([
+      { text: description, emphasized: false },
+    ]);
+    expect(splitEmphasis(description, ["نیست"])).toEqual([
+      { text: description, emphasized: false },
+    ]);
+    expect(splitEmphasis("", ["الف"])).toEqual([]);
+    // Declared out of order: the earliest occurrence still comes first.
+    expect(splitEmphasis(description, ["ب", "الف"]).map((s) => s.text)).toEqual([
+      "الف",
+      " ",
+      "ب",
+      " پ",
+    ]);
   });
 
   it("measures distance symmetrically and looks archetypes up by id", () => {

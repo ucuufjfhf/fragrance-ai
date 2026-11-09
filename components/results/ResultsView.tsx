@@ -1,9 +1,9 @@
 import { BrandMark } from "@/components/ui-icons";
-import { ARCHETYPE_ICON_POP_CSS } from "@/components/archetype-icons";
-import { ArchetypeEmblem } from "@/components/archetype-icon-map";
+import { archetypeEmblemImageFor } from "@/components/archetype-emblems";
 import AmbientParticles from "@/components/AmbientParticles";
 import TraitBars from "@/components/results/TraitBars";
 
+import { Fragment } from "react";
 import type { CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,6 +19,7 @@ import {
   QUESTION_HIGHLIGHTS,
   splitHighlighted,
 } from "@/lib/personality/question-highlights";
+import { splitEmphasis } from "@/lib/personality/archetypes";
 import { toPersianDigits } from "@/lib/persian";
 import type {
   Archetype,
@@ -60,9 +61,10 @@ interface ResultsViewProps {
  *
  * The archetype header is a choreographed reveal (a staggered `quiz-rise`
  * cascade, reduced-motion aware) and names the selection basis: the complete
- * nine-axis profile, not the single strongest one. Its seal shows the
- * archetype's own emblem, which pops in after the seal lands. No archetype math,
- * scoring or ordering lives here.
+ * nine-axis profile, not the single strongest one. Its seal is a gold-ringed
+ * medallion showing the archetype's illustrated emblem — the same bundled
+ * artwork every other surface uses. No archetype math, scoring or ordering
+ * lives here.
  */
 export default function ResultsView({
   vector,
@@ -93,8 +95,6 @@ export default function ResultsView({
 
       {/* --- archetype reveal (Phase 1 data, same contract as the quiz card) --- */}
       <section className="relative overflow-hidden rounded-[2rem] border border-accent/30 bg-accent-soft px-6 py-10 text-center shadow-[var(--shadow-soft)] sm:px-10 sm:py-12">
-        {/* Emblem motion contract — reduced-motion bypass included. */}
-        <style>{ARCHETYPE_ICON_POP_CSS}</style>
         <span
           aria-hidden="true"
           className="pointer-events-none absolute left-1/2 top-0 h-64 w-64 -translate-x-1/2 -translate-y-1/3 rounded-full blur-2xl"
@@ -119,19 +119,37 @@ export default function ResultsView({
           <span
             role="img"
             aria-label={archetype.label}
-            className="quiz-rise relative mt-2 flex h-16 w-16 items-center justify-center rounded-full border border-accent/30 bg-background/70 text-accent shadow-[var(--shadow-card)]"
-            style={{ animationDelay: "120ms", animationFillMode: "backwards" }}
+            className="quiz-rise relative mt-2 flex h-28 w-28 items-center justify-center rounded-full border-[3px] bg-surface-2 shadow-[var(--shadow-soft)] sm:h-32 sm:w-32"
+            style={{
+              animationDelay: "120ms",
+              animationFillMode: "backwards",
+              // Gold ring around the medallion — the same gold the arc uses.
+              borderColor: "var(--marker-gold)",
+            }}
           >
+            {/* Faint gold halo, one step outside the ring. */}
             <span
               aria-hidden="true"
-              className="absolute inset-0 -m-2.5 rounded-full border border-accent/20"
+              className="pointer-events-none absolute -inset-2 rounded-full border"
+              style={{
+                borderColor: "color-mix(in srgb, var(--marker-gold) 25%, transparent)",
+              }}
             />
-            {/* Emblem for this archetype — a pure id lookup, never an engine
-                value. */}
-            <ArchetypeEmblem
-              archetypeId={archetype.id}
-              className="archetype-icon-pop h-8 w-8"
-            />
+            {/* The archetype's illustrated emblem — a pure id lookup, never an
+                engine value — clipped to the medallion. Decorative: the seal
+                above already carries the accessible name. */}
+            <span aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-full">
+              {/* Bundled public/ asset, not merchant data: a plain <img> ships the
+                  exact file, so the artwork is never re-encoded. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={archetypeEmblemImageFor(archetype.id)}
+                alt=""
+                width={1600}
+                height={1600}
+                className="h-full w-full object-cover"
+              />
+            </span>
           </span>
 
           <h1
@@ -147,11 +165,24 @@ export default function ResultsView({
             style={{ animationDelay: "260ms", animationFillMode: "backwards" }}
           />
 
+          {/* The copy is split, never rewritten: the trait words the archetype
+              declares are wrapped in a band in the archetype's OWN accent
+              (`.results-emphasis` reads the `--accent` set on this root), and
+              rejoining the runs reproduces `description` byte-for-byte. */}
           <p
             className="quiz-rise max-w-md text-sm leading-8 text-foreground/80"
             style={{ animationDelay: "320ms", animationFillMode: "backwards" }}
           >
-            {archetype.description}
+            {splitEmphasis(archetype.description, archetype.emphasisWords).map(
+              (segment, index) =>
+                segment.emphasized ? (
+                  <span key={index} className="results-emphasis">
+                    {segment.text}
+                  </span>
+                ) : (
+                  <Fragment key={index}>{segment.text}</Fragment>
+                ),
+            )}
           </p>
 
           {/* Selection basis — the archetype is the nearest match across the

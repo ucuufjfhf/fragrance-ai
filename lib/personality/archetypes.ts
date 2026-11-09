@@ -18,6 +18,7 @@ export const ARCHETYPES: Archetype[] = [
     emoji: "🖤",
     description:
       "کنجکاوی و رمزآلودگی رو با هم دارید؛ دنبال رایحه‌ای هستید که متفاوت باشه و یه ذره سؤال ایجاد کنه.",
+    emphasisWords: ["کنجکاوی", "رمزآلودگی", "متفاوت"],
     fragranceHint:
       "رایحه‌های گرم، چوبی و خاص بیشتر با سلیقه عطری شما هماهنگ هستند.",
     centroid: {
@@ -40,6 +41,7 @@ export const ARCHETYPES: Archetype[] = [
     emoji: "🤍",
     description:
       "سادگی، تمیزی و نظم براتون مهمه؛ رایحه‌ای می‌خواید که سبک و بی‌ادعا باشه ولی خوش‌حس و مرتب.",
+    emphasisWords: ["سادگی", "تمیزی", "نظم", "مرتب"],
     fragranceHint:
       "رایحه‌های تازه، تمیز و ملایم بیشتر با سلیقه عطری شما هماهنگ هستند.",
     centroid: {
@@ -62,6 +64,7 @@ export const ARCHETYPES: Archetype[] = [
     emoji: "✨",
     description:
       "راحت با آدم‌ها ارتباط می‌گیرید و حضورتون به چشم میاد؛ دوست دارید عطرتون هم همین حس رو منتقل کنه.",
+    emphasisWords: ["راحت", "ارتباط", "حضورتون"],
     fragranceHint:
       "رایحه‌های تازه و پرحضور با پخش خوب بیشتر با سلیقه عطری شما هماهنگ هستند.",
     centroid: {
@@ -84,6 +87,7 @@ export const ARCHETYPES: Archetype[] = [
     emoji: "🕊️",
     description:
       "سلیقه‌تون ساده اما سنجیده‌ست؛ چیزهای باکیفیت و ماندگار رو به چیزهای پرزرق‌وبرق ترجیح می‌دید.",
+    emphasisWords: ["ساده", "سنجیده", "باکیفیت", "ماندگار"],
     fragranceHint:
       "رایحه‌های چوبی، تمیز و پودری بیشتر با سلیقه عطری شما هماهنگ هستند.",
     centroid: {
@@ -106,6 +110,7 @@ export const ARCHETYPES: Archetype[] = [
     emoji: "🌊",
     description:
       "تغییر و تجربه‌های تازه براتون جذابه و دوست ندارید توی یه قالب ثابت بمونید.",
+    emphasisWords: ["تغییر", "تازه", "جذابه"],
     fragranceHint:
       "رایحه‌های تازه، آبی و متنوع بیشتر با سلیقه عطری شما هماهنگ هستند.",
     centroid: {
@@ -128,6 +133,7 @@ export const ARCHETYPES: Archetype[] = [
     emoji: "🌹",
     description:
       "حس و رابطه‌های گرم براتون مهمه؛ عطر براتون یه یادآوریه، نه فقط یه محصول.",
+    emphasisWords: ["رابطه‌های", "گرم", "یادآوریه"],
     fragranceHint:
       "رایحه‌های شیرین، گلی و گرم بیشتر با سلیقه عطری شما هماهنگ هستند.",
     centroid: {
@@ -150,6 +156,7 @@ export const ARCHETYPES: Archetype[] = [
     emoji: "🔥",
     description:
       "ریسک‌پذیری و پرسروصدا بودن براتون غریبه نیست؛ عطرتون هم باید مثل شعله بدرخشه.",
+    emphasisWords: ["ریسک‌پذیری", "پرسروصدا", "شعله"],
     fragranceHint:
       "رایحه‌های ادویه‌ای، گرم و پرپخش بیشتر با سلیقه عطری شما هماهنگ هستند.",
     centroid: {
@@ -172,6 +179,7 @@ export const ARCHETYPES: Archetype[] = [
     emoji: "💎",
     description:
       "عمق و آرامش توی انتخاب‌هاتون دیده می‌شه؛ عجله ندارید و سلیقه‌تون خاص و سنجیده‌ست.",
+    emphasisWords: ["عمق", "آرامش", "خاص", "سنجیده"],
     fragranceHint:
       "رایحه‌های عمیق، چوبی و دودی بیشتر با سلیقه عطری شما هماهنگ هستند.",
     centroid: {
@@ -223,4 +231,59 @@ export function nearestArchetype(vector: PersonalityVector): Archetype {
 
 export function getArchetypeById(id: string): Archetype | undefined {
   return ARCHETYPES.find((archetype) => archetype.id === id);
+}
+
+/** One run of an archetype description: plain copy, or one emphasised trait. */
+export interface EmphasisSegment {
+  text: string;
+  emphasized: boolean;
+}
+
+/**
+ * Splits `description` into plain and emphasised runs without rewriting it.
+ *
+ * Matching is on the exact stored substrings, never on re-typed copy, so the
+ * ZWNJ and Persian punctuation inside a word survive untouched. The earliest
+ * remaining occurrence wins; on a tie the longer word wins, so a shorter listed
+ * word cannot split a longer one. Concatenating every segment's `text`
+ * reproduces the input byte-for-byte — emphasis changes presentation only.
+ */
+export function splitEmphasis(
+  description: string,
+  words: readonly string[],
+): EmphasisSegment[] {
+  const segments: EmphasisSegment[] = [];
+  let cursor = 0;
+
+  while (cursor < description.length) {
+    let nextIndex = -1;
+    let nextWord = "";
+
+    for (const word of words) {
+      if (word === "") continue;
+      const index = description.indexOf(word, cursor);
+      if (index === -1) continue;
+      if (
+        nextIndex === -1 ||
+        index < nextIndex ||
+        (index === nextIndex && word.length > nextWord.length)
+      ) {
+        nextIndex = index;
+        nextWord = word;
+      }
+    }
+
+    if (nextIndex === -1) break;
+    if (nextIndex > cursor) {
+      segments.push({ text: description.slice(cursor, nextIndex), emphasized: false });
+    }
+    segments.push({ text: nextWord, emphasized: true });
+    cursor = nextIndex + nextWord.length;
+  }
+
+  if (cursor < description.length) {
+    segments.push({ text: description.slice(cursor), emphasized: false });
+  }
+
+  return segments;
 }

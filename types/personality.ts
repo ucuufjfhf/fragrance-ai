@@ -52,6 +52,15 @@ export interface Archetype {
   label: string;
   /** Short Persian description shown on the result screen. */
   description: string;
+  /**
+   * Trait words from `description` that the results header emphasises.
+   *
+   * Presentation only: every entry must be an exact substring of
+   * `description` occurring exactly once (pinned in tests). The copy itself is
+   * never rewritten to fit the emphasis — the renderer splits the stored
+   * string and rejoins it byte-for-byte.
+   */
+  emphasisWords: readonly string[];
   /** Persian hint about the fragrance direction that fits this archetype. */
   fragranceHint: string;
   /** Hex accent used only by the results presentation layer. */
