@@ -336,7 +336,7 @@ describe("POST /api/widget/recommend — store isolation (§4/§13)", () => {
     expect(mocks.storeFindFirst).not.toHaveBeenCalled();
   });
 
-  it("applies the stricter requester limit before store lookup", async () => {
+  it("applies the stricter requester limit before store lookup and returns 429", async () => {
     mocks.matchPerfumes.mockReturnValue(makeMatchResult("store-A", 1));
     const post = () => recommendPost(new Request("https://app.test/api/widget/recommend", {
       method: "POST",
