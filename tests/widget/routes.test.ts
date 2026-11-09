@@ -53,8 +53,8 @@ vi.mock("@/lib/ai/explanation", () => ({
   selectUserTraits: vi.fn().mockReturnValue([]),
 }));
 
-import { GET as configGet } from "@/app/api/widget/config/route";
-import { POST as recommendPost } from "@/app/api/widget/recommend/route";
+import { GET as configGet, OPTIONS as configOptions } from "@/app/api/widget/config/route";
+import { POST as recommendPost, OPTIONS as recommendOptions } from "@/app/api/widget/recommend/route";
 import type { MatchResult } from "@/types/recommendation";
 import { widgetCorsHeaders } from "@/lib/widget/cors";
 import { resetRateLimitsForTests } from "@/lib/rate-limit";
@@ -277,6 +277,45 @@ describe("POST /api/widget/recommend — store isolation (§4/§13)", () => {
 
     expect(response.status).toBe(400);
     expect(mocks.matchPerfumes).not.toHaveBeenCalled();
+  });
+
+  it("applies the requester limit before store lookup", async () => {
+    const post = () => recommendPost(new Request("https://app.test/api/widget/recommend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "https://shop.example" },
+      body: JSON.stringify({ storeId: "store-A", personalityVector: VECTOR }),
+    }));
+
+    for (let index = 0; index < 10; index += 1) {
+      expect((await post()).status).toBe(200);
+    }
+
+    mocks.storeFindFirst.mockClear();
+    const limited = await post();
+
+    expect(limited.status).toBe(429);
+    expect((await limited.json()).reason).toBe("RATE_LIMITED");
+    // Requester denial happens before the store lookup.
+    expect(mocks.storeFindFirst).not.toHaveBeenCalled();
+    expect(limited.headers.get("Access-Control-Allow-Origin")).toBeNull();
+  });
+
+  it("rate-limits widget preflight lookups before querying the store", async () => {
+    const preflight = () => recommendOptions(new Request(
+      "https://app.test/api/widget/recommend?storeId=store-A",
+      { method: "OPTIONS", headers: { Origin: "https://shop.example" } },
+    ));
+
+    for (let index = 0; index < 300; index += 1) {
+      expect((await preflight()).status).toBe(204);
+    }
+
+    mocks.storeFindFirst.mockClear();
+    const limited = await preflight();
+
+    expect(limited.status).toBe(429);
+    expect(limited.headers.get("Retry-After")).toBe("1");
+    expect(mocks.storeFindFirst).not.toHaveBeenCalled();
   });
 
   it("applies the stricter requester limit and preserves CORS and AI fallback", async () => {
