@@ -55,6 +55,7 @@ import {
   toAnswers,
   type QuizFlowState,
 } from "@/lib/personality/quiz-flow";
+import { buildAnalysisEchoes } from "@/lib/personality/analysis-echoes";
 import { scoreQuiz } from "@/lib/personality/scoring";
 import { fetchMatchesPreview } from "@/lib/quiz/matches-preview";
 import { serializeResultsParams } from "@/lib/results/params";
@@ -494,12 +495,23 @@ export default function Quiz({ storeId }: { storeId?: string }) {
     );
   }
 
+  // The two lines that quote the shopper's OWN answers back during the
+  // performed wait (batch 30). Built from the recorded sheet only — an
+  // unanswered question contributes no echo, so the rotation falls back to the
+  // generic lines. Presentation only: the engine has already ranked everything,
+  // and the beat's duration, progress, skip and reduced-motion frame are
+  // untouched.
+  const analysisEchoLines = buildAnalysisEchoes(toAnswers(flow)).map(
+    (echo) => echo.line,
+  );
+
   if (flow.phase === "analysis" && result && preview) {
     return withAtmosphere(
       <AnalysisInterstitial
         matches={preview.matches}
         onDone={handleAnalysisDone}
         onSkip={handleSkipBeats}
+        echoLines={analysisEchoLines}
       />,
     );
   }

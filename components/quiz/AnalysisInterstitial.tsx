@@ -56,6 +56,32 @@ export const INTERSTITIAL_LINES = [
 ] as const;
 
 /**
+ * The rotating sequence: generic-1, echo-1, generic-2, echo-2, generic-3.
+ *
+ * Echoes change WHICH lines rotate, never how long anything takes — the
+ * interval, the tick rate and the duration are untouched. With no echoes the
+ * sequence is exactly `INTERSTITIAL_LINES` (today's behaviour, byte for byte);
+ * a missing echo (the shopper skipped that question) just drops out.
+ */
+/** At most two echoes: they fill the two gaps between the three generic lines. */
+export const MAX_INTERSTITIAL_ECHOES = 2;
+
+export function analysisLineSequence(
+  echoLines: readonly string[] = [],
+): readonly string[] {
+  const sequence: string[] = [];
+  INTERSTITIAL_LINES.forEach((line, index) => {
+    sequence.push(line);
+    const echo =
+      index < MAX_INTERSTITIAL_ECHOES ? echoLines[index] : undefined;
+    if (echo) {
+      sequence.push(echo);
+    }
+  });
+  return sequence;
+}
+
+/**
  * The frozen frame reduced motion shows: mid-analysis (۳۴٪), first line,
  * second artwork — the same mid-performance moment as before, minus motion.
  */
@@ -76,6 +102,12 @@ interface AnalysisInterstitialProps {
    * static frame (no animated transitions) while auto-advance still works.
    */
   reducedMotionOverride?: boolean;
+  /**
+   * Up to two lines built from the shopper's own answers (`buildAnalysisEchoes`
+   * in `lib/personality/analysis-echoes`). They are interleaved with the generic
+   * lines; omitted or empty keeps the three-line rotation exactly as it was.
+   */
+  echoLines?: readonly string[];
 }
 
 /**
@@ -91,12 +123,19 @@ interface AnalysisInterstitialProps {
  *
  * Never a forced gate: the «رد شدن» skip is always visible and jumps straight
  * to /result.
+ *
+ * Batch 30: when the caller passes `echoLines` (built from the shopper's own
+ * answers), two of the rotated lines quote those answers back, so the wait
+ * reads as computation done for this person. The rotation interleaves them with
+ * the generic lines at the same 1200ms interval — the performance's duration,
+ * progress, artwork cycle, skip and reduced-motion frame are all unchanged.
  */
 export default function AnalysisInterstitial({
   matches,
   onDone,
   onSkip,
   reducedMotionOverride,
+  echoLines,
 }: AnalysisInterstitialProps) {
   const [reduced] = useState<boolean>(
     () =>
@@ -125,10 +164,11 @@ export default function AnalysisInterstitial({
   }, [tick, reduced, onDone]);
 
   const progress = reduced ? STATIC_PROGRESS : progressForTick(tick);
+  const lines = analysisLineSequence(echoLines);
   const lineIndex = reduced
     ? STATIC_LINE_INDEX
     : Math.min(
-        INTERSTITIAL_LINES.length - 1,
+        lines.length - 1,
         Math.floor((tick * ANALYSIS_TICK_MS) / INTERSTITIAL_LINE_INTERVAL_MS),
       );
   const artworkIndex = reduced
@@ -235,7 +275,7 @@ export default function AnalysisInterstitial({
       ) : null}
 
       <p aria-live="polite" className="font-editorial leading-8 text-muted">
-        {INTERSTITIAL_LINES[lineIndex]}
+        {lines[lineIndex]}
       </p>
 
       <button
