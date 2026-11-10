@@ -19,6 +19,8 @@ import type { ArchetypeId } from "@/types/personality";
  *   300–1600  the wipe: a soft light sweep travels across the emblem and the fog
  *             trails away behind it (`archetype-focus-wipe`, clip-path)
  *   700–1600  the warm glow blooms behind the emblem as it sharpens
+ *   1600–2500 five gold sparkles burst once around the emblem and fade — the
+ *             settle of the wipe, ending exactly with the CTA (not a new beat)
  *   1500–2500 the name, then the explainer line, then the CTA rise gently
  *
  * ENTRY IS ALREADY FOGGED. Nothing sharp is ever painted first: the crisp layer
@@ -61,6 +63,11 @@ export const ARCHETYPE_REVEAL_CSS = `
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes archetype-sparkle-burst {
+  0% { opacity: 0; transform: translate(-50%, -50%) translate(0, 0) scale(0.7); }
+  35% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--spark-x), var(--spark-y)) scale(1); }
+}
 .archetype-focus-fog {
   background: color-mix(in srgb, var(--accent) 12%, white);
   filter: blur(22px) saturate(0.68) brightness(1.08);
@@ -86,6 +93,26 @@ export const ARCHETYPE_REVEAL_CSS = `
   animation: archetype-focus-glow 900ms cubic-bezier(0.22, 1, 0.36, 1) 700ms backwards;
 }
 .archetype-focus-line { animation: archetype-focus-line 600ms ease-out backwards; }
+/* The settle: five gold sparkles burst once around the emblem as the wipe lands, then
+ * fade. They start exactly when the wipe completes (300ms delay + 1300ms) and
+ * end with the CTA (1900ms + 600ms), so they decorate the existing settle
+ * instead of adding a beat. One iteration, forwards, ending invisible — never
+ * a loop, so the coarse-pointer ambience budget is untouched. Each sparkle sits
+ * just outside the emblem's circle and drifts outward from it. */
+.archetype-sparkle {
+  position: absolute;
+  color: var(--marker-gold);
+  font-size: 16px;
+  line-height: 1;
+  pointer-events: none;
+  opacity: 0;
+  animation: archetype-sparkle-burst 900ms ease-out 1600ms forwards;
+}
+.archetype-sparkle--top { left: 50%; top: -1rem; --spark-x: 0px; --spark-y: -14px; }
+.archetype-sparkle--upper-left { left: 4%; top: 4%; --spark-x: -16px; --spark-y: -14px; }
+.archetype-sparkle--upper-right { left: 96%; top: 4%; --spark-x: 16px; --spark-y: -14px; }
+.archetype-sparkle--left { left: -0.75rem; top: 50%; --spark-x: -20px; --spark-y: 0px; }
+.archetype-sparkle--right { left: calc(100% + 0.75rem); top: 50%; --spark-x: 20px; --spark-y: 0px; }
 /* Perf: backwards (not both) means the animation stops applying once it ends,
  * so the entrance never leaves a held animation behind. The fog and the glow
  * are the two layers carrying a live filter; both drop it on animationend (see
@@ -99,8 +126,22 @@ export const ARCHETYPE_REVEAL_CSS = `
   .archetype-focus-glow,
   .archetype-focus-line { animation: none; }
   .archetype-focus-fog { filter: none; }
+  .archetype-sparkle { display: none; }
 }
 `;
+
+/**
+ * The five settle sparkles, in the approved spread around the emblem: one above
+ * it and two either side, just outside the circle so the burst frames the
+ * artwork instead of sitting on it. Where each one lands lives in the CSS.
+ */
+const SPARKLE_POSITIONS = [
+  "top",
+  "upper-left",
+  "upper-right",
+  "left",
+  "right",
+] as const;
 
 /** Inline delays for the three text steps of the cascade (ms). */
 const NAME_DELAY_MS = "1500ms";
@@ -244,6 +285,20 @@ export default function ArchetypeRevealStage({
             }}
           />
         </span>
+
+        {/* The settle: five decorative ✦ that burst once as the wipe lands and
+            fade before the shopper can read them as anything but a finish.
+            Purely presentational — aria-hidden, pointer-inert, and hidden
+            entirely under reduced motion (see the CSS). */}
+        {SPARKLE_POSITIONS.map((position) => (
+          <span
+            key={position}
+            aria-hidden="true"
+            className={`archetype-sparkle archetype-sparkle--${position}`}
+          >
+            ✦
+          </span>
+        ))}
       </span>
 
       <h1

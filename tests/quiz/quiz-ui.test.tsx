@@ -277,7 +277,14 @@ describe("archetype reveal stage", () => {
 
     expect(html).toContain("<h1");
     expect(html).toContain(">رز</h1>");
-    expect(html).not.toMatch(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
+    // No emoji stands in for the artwork. The one glyph in that range is the
+    // batch-29 settle: five decorative, aria-hidden ✦ sparkles, pinned in
+    // `archetype-reveal-sparkles.test.tsx`.
+    const withoutSparkles = html.replace(
+      /<span aria-hidden="true" class="archetype-sparkle[^"]*">✦<\/span>/g,
+      "",
+    );
+    expect(withoutSparkles).not.toMatch(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
   });
 
   it("emits one fog choreography, ~2.5s, reduced-motion bypass last", () => {
