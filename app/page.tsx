@@ -71,6 +71,30 @@ export default function Home() {
             </div>
 
             <div className="relative mx-auto w-full max-w-[270px] sm:max-w-[300px] lg:max-w-[330px]">
+              {/* Two still light layers behind the glass — the gold-and-wine pair
+                  from the quiz ambience, frozen into one glow. Both are pure
+                  paint: no animation, no keyframes, no transition, and nothing
+                  animated is imported from the quiz. Horizontally they stay
+                  inside this column's box (inset-x-0 and percentage insets, no
+                  negative offsets), so the bloom can never widen the page on a
+                  phone. They come first in source order, so the bottle and its
+                  ground shadow paint above them. */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-[2%] h-[76%]"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(58% 46% at 50% 42%, color-mix(in srgb, var(--marker-gold) 34%, transparent) 0%, color-mix(in srgb, var(--marker-gold) 17%, transparent) 40%, transparent 70%)",
+                }}
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute right-[4%] top-[26%] h-[44%] w-[62%]"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(closest-side, color-mix(in srgb, var(--wine) 13%, transparent) 0%, color-mix(in srgb, var(--wine) 7%, transparent) 46%, transparent 100%)",
+                }}
+              />
               <div className="relative aspect-[293/669] w-full">
                 <Image
                   src="/hero/fiage-hero-bottle.webp"
