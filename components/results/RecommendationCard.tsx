@@ -39,6 +39,11 @@ export default function RecommendationCard({
   // catalog leaves (it stores no image URLs at all).
   const artwork = imageUrl ? null : artworkForPerfume(perfumeId);
 
+  // ONE round, used for both the printed number and the bar length below — the
+  // same whole number `formatPersianScore` shows, so the fill can never claim a
+  // point the number does not.
+  const closeness = Math.round(presentationScore);
+
   return (
     <article className="quiz-rise relative flex h-full flex-col overflow-hidden rounded-3xl border border-border-soft bg-surface shadow-[var(--shadow-card)]">
       {/* --- artwork panel --- */}
@@ -92,27 +97,36 @@ export default function RecommendationCard({
 
       {/* --- card body: match, explanation, details --- */}
       <div className="flex flex-col gap-4 p-5 sm:p-6">
-        <div className="flex items-center gap-3">
+        {/* Closeness index: the printed line is unchanged, and the slim gold
+            bar beneath it is its picture — `closeness` is the one rounded value
+            shared by the digits and the fill width. The track is decoration
+            (the progressbar wrapper keeps the accessible name and value). */}
+        <div className="flex flex-col gap-2">
+          <span className="tnum shrink-0 text-sm font-semibold text-accent">
+            شاخص نزدیکی {formatPersianScore(closeness)}
+          </span>
           <div
-            className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2"
+            className="w-full"
             role="progressbar"
-            aria-valuenow={Math.round(presentationScore)}
+            aria-valuenow={closeness}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-label={`شاخص نزدیکی ${name}`}
           >
             <div
-              className="h-full rounded-full"
-              style={{
-                width: `${presentationScore}%`,
-                backgroundImage:
-                  "linear-gradient(to left, var(--accent) 0%, var(--accent) 55%, color-mix(in srgb, var(--accent) 55%, white) 100%)",
-              }}
-            />
+              aria-hidden="true"
+              className="h-[5px] w-full overflow-hidden rounded-full bg-surface-2"
+            >
+              <div
+                className="rec-score-fill h-full rounded-full"
+                style={{
+                  width: `${closeness}%`,
+                  backgroundImage:
+                    "linear-gradient(to left, var(--marker-gold) 0%, color-mix(in srgb, var(--marker-gold) 55%, var(--accent)) 60%, var(--accent) 100%)",
+                }}
+              />
+            </div>
           </div>
-          <span className="tnum shrink-0 text-sm font-semibold text-accent">
-            شاخص نزدیکی {formatPersianScore(presentationScore)}
-          </span>
         </div>
 
         {explanation ? (

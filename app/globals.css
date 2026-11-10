@@ -341,6 +341,29 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* Recommendation closeness bars (/result): a thin gold bar under the printed
+ * index that fills once, to exactly the rounded number the card shows. A
+ * one-shot keyframe, not a transition, so the server-rendered markup is already
+ * the finished bar — no-JS and reduced motion see the full length — and `both`
+ * holds the end state after the single pass. `from { width: 0 }` is the whole
+ * animation and the target stays the inline width, so the digits and the fill
+ * length share one value by construction. One pass only: no loop, no shimmer. */
+.rec-score-fill {
+  animation: rec-score-grow 520ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes rec-score-grow {
+  from {
+    width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rec-score-fill {
+    animation: none;
+  }
+}
+
 /* Ambient floating particles — shared by the Fragrance Profile and
  * Recommendations screens (see components/AmbientParticles.tsx). Purely
  * decorative: CSS-only drift, no canvas and no JS loop. `--accent` (inherited
