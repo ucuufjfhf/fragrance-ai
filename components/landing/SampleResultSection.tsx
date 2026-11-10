@@ -1,9 +1,9 @@
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import { Fragment, type CSSProperties } from "react";
 
 import { archetypeEmblemImageFor } from "@/components/archetype-emblems";
 import TraitBars from "@/components/results/TraitBars";
-import { getArchetypeById } from "@/lib/personality/archetypes";
+import { getArchetypeById, splitEmphasis } from "@/lib/personality/archetypes";
 import type { PersonalityVector } from "@/types/personality";
 
 /**
@@ -65,14 +65,22 @@ export default function SampleResultSection() {
       <div className="mt-8 flex flex-col gap-6">
         <div className="relative overflow-hidden rounded-[2rem] border border-accent/30 bg-accent-soft px-6 py-10 text-center shadow-[var(--shadow-soft)] sm:px-10 sm:py-12">
           <div className="relative flex flex-col items-center gap-3">
+            {/* The batch-27 medallion at the /result header's size: a 3px gold
+                ring with a 25%-alpha gold halo one step outside it. The sample
+                keeps the same language as the real result screens. */}
             <span
               role="img"
               aria-label={archetype.label}
-              className="relative mt-2 flex h-24 w-24 items-center justify-center rounded-full border border-accent/30 bg-surface-2 shadow-[var(--shadow-card)]"
+              className="relative mt-2 flex h-28 w-28 items-center justify-center rounded-full border-[3px] bg-surface-2 shadow-[var(--shadow-soft)] sm:h-32 sm:w-32"
+              style={{ borderColor: "var(--marker-gold)" }}
             >
               <span
                 aria-hidden="true"
-                className="absolute inset-0 -m-2.5 rounded-full border border-accent/20"
+                className="pointer-events-none absolute -inset-2 rounded-full border"
+                style={{
+                  borderColor:
+                    "color-mix(in srgb, var(--marker-gold) 25%, transparent)",
+                }}
               />
               <span
                 aria-hidden="true"
@@ -95,8 +103,21 @@ export default function SampleResultSection() {
 
             <span aria-hidden="true" className="mt-1 h-px w-16 bg-accent/40" />
 
+            {/* Split, never rewritten: the archetype's declared trait words get
+                the accent band, and rejoining the runs reproduces the stored
+                description byte-for-byte. `--accent` above is already the
+                archetype's own colour. */}
             <p className="max-w-md text-sm leading-8 text-foreground/80">
-              {archetype.description}
+              {splitEmphasis(archetype.description, archetype.emphasisWords).map(
+                (segment, index) =>
+                  segment.emphasized ? (
+                    <span key={index} className="results-emphasis">
+                      {segment.text}
+                    </span>
+                  ) : (
+                    <Fragment key={index}>{segment.text}</Fragment>
+                  ),
+              )}
             </p>
           </div>
         </div>

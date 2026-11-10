@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 
 import { archetypeEmblemImageFor } from "@/components/archetype-emblems";
 import MarkerWipe from "@/components/quiz/MarkerWipe";
@@ -19,6 +26,7 @@ import {
   trackQuizStarted,
   trackWidgetViewed,
 } from "@/lib/analytics/flow-tracker";
+import { splitEmphasis } from "@/lib/personality/archetypes";
 import { QUESTION_HIGHLIGHTS, splitHighlighted } from "@/lib/personality/question-highlights";
 import { QUIZ_QUESTIONS } from "@/lib/personality/questions";
 import {
@@ -469,7 +477,7 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
   );
 }
 
-function WidgetResult({
+export function WidgetResult({
   storeId,
   storeSlug,
   storeWebsiteUrl,
@@ -523,31 +531,52 @@ function WidgetResult({
               `public/archetypes/<id>.jpg` resolver the main site uses. The
               label below carries the accessible name, so the picture is
               decorative and never announced twice. */}
+          {/* The same medallion as /result, held at the widget's h-24 scale:
+              3px gold ring, 25%-alpha gold halo one step outside. */}
           <span
             role="img"
             aria-label={result.archetype.label}
-            className="relative mt-1 flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-accent/30 bg-background shadow-[var(--shadow-card)]"
+            className="relative mt-1 flex h-24 w-24 items-center justify-center rounded-full border-[3px] bg-background shadow-[var(--shadow-card)]"
+            style={{ borderColor: "var(--marker-gold)" }}
           >
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 -m-2 rounded-full border border-accent/20"
+              className="pointer-events-none absolute -inset-2 rounded-full border"
+              style={{
+                borderColor:
+                  "color-mix(in srgb, var(--marker-gold) 25%, transparent)",
+              }}
             />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={archetypeEmblemImageFor(result.archetype.id)}
-              alt=""
-              width={1600}
-              height={1600}
-              className="h-full w-full object-cover"
-            />
+            <span aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={archetypeEmblemImageFor(result.archetype.id)}
+                alt=""
+                width={1600}
+                height={1600}
+                className="h-full w-full object-cover"
+              />
+            </span>
           </span>
 
           <h1 className="font-heading text-2xl font-bold leading-9 text-foreground">
             {result.archetype.label}
           </h1>
           <span aria-hidden="true" className="h-px w-12 bg-accent/40" />
+          {/* Split, never rewritten. The accent here is the ARCHETYPE's: the
+              wrapper above re-points `--accent` to `result.archetype.accentColor`,
+              which shadows the store accent `WidgetShell` scopes around it. */}
           <p className="max-w-md text-sm leading-8 text-foreground/80">
-            {result.archetype.description}
+            {splitEmphasis(result.archetype.description, result.archetype.emphasisWords).map(
+              (segment, index) =>
+                segment.emphasized ? (
+                  <span key={index} className="results-emphasis">
+                    {segment.text}
+                  </span>
+                ) : (
+                  <Fragment key={index}>{segment.text}</Fragment>
+                ),
+            )}
           </p>
         </div>
       </section>

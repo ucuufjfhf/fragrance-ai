@@ -23,7 +23,11 @@ describe("sample result preview", () => {
 
     expect(html).toContain("نمونه نتیجه");
     expect(html).toContain(flame.label);
-    expect(html).toContain(flame.description);
+    // The copy now carries the batch-35 emphasis bands; the text is unchanged,
+    // so the wrappers come off before the comparison.
+    expect(
+      html.replace(/<span class="results-emphasis">/g, "").replace(/<\/span>/g, ""),
+    ).toContain(flame.description);
     // Never presented as a real user's outcome.
     expect(html).toContain("نمونه");
     expect(html).not.toMatch(/کاربر|مشتری|رضایت|درصد/);

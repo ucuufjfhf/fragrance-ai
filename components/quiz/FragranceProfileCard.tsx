@@ -8,9 +8,10 @@ import { archetypeEmblemImageFor } from "@/components/archetype-emblems";
 import { resetAnalyticsFlow } from "@/lib/analytics/flow-tracker";
 import type { AudienceGender } from "@/lib/audience";
 import type { SeasonFilter } from "@/lib/context";
+import { splitEmphasis } from "@/lib/personality/archetypes";
 import { serializeResultsParams } from "@/lib/results/params";
 import type { Occasion } from "@/types/fragrance";
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import type { QuizResult } from "@/types/personality";
 
 /**
@@ -182,11 +183,23 @@ export default function FragranceProfileCard({
             style={{ animationDelay: "260ms", animationFillMode: "backwards" }}
           />
 
+          {/* Same split as /result: the declared trait words take the accent
+              band, and rejoining the runs gives the stored copy back. The
+              `--accent` in scope is this step's archetype colour. */}
           <p
             className="quiz-rise max-w-md text-sm leading-8 text-foreground/80"
             style={{ animationDelay: "320ms", animationFillMode: "backwards" }}
           >
-            {archetype.description}
+            {splitEmphasis(archetype.description, archetype.emphasisWords).map(
+              (segment, index) =>
+                segment.emphasized ? (
+                  <span key={index} className="results-emphasis">
+                    {segment.text}
+                  </span>
+                ) : (
+                  <Fragment key={index}>{segment.text}</Fragment>
+                ),
+            )}
           </p>
 
           {/* Selection basis — see SELECTION_BASIS above. */}

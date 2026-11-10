@@ -74,9 +74,12 @@ describe("homepage hero bloom", () => {
     expect(goldAt).toBeLessThan(bottleAt);
     expect(wineAt).toBeLessThan(bottleAt);
     expect(bottleAt).toBeLessThan(shadowAt);
-    // Exactly two decorative layers, both marked as such.
+    // Exactly two decorative layers, both marked as such — scoped to the two
+    // bloom boxes, since other decorative spans share that class prefix.
     expect(
-      html.match(/aria-hidden="true" class="pointer-events-none absolute/g) ?? [],
+      html.match(
+        /aria-hidden="true" class="pointer-events-none absolute(?: inset-x-0| right-\[4%\])/g,
+      ) ?? [],
     ).toHaveLength(2);
   });
 
