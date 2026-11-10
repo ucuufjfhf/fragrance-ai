@@ -1,5 +1,13 @@
 "use client";
 
+import {
+  SCENT_RADAR_AXES,
+  SCENT_RADAR_GRID_RINGS,
+  SCENT_RADAR_LABELS,
+  radarLabelPoint,
+  radarPoints,
+  type RadarPoint,
+} from "@/lib/fragrance/radar";
 import { toPersianDigits } from "@/lib/persian";
 import type { ShareCardEmphasisSegment, ShareCardModel } from "@/lib/results/share-card";
 
@@ -47,6 +55,7 @@ export interface ShareCardLayout {
   profileLabel: ShareCardPoint;
   archetypeLabel: ShareCardPoint;
   description: ShareCardRect & { align: CanvasTextAlign };
+  radar: ShareCardPoint & { radius: number; labelRadius: number };
   divider: ShareCardPoint;
   topPick:
     | (ShareCardRect & {
@@ -96,25 +105,22 @@ export function buildShareCardLayout(
       wordmark: { x: width / 2, y: 176 },
       tagline: { x: width / 2, y: 220 },
     },
-    medallion: { x: width / 2, y: 402, radius: 92, ringWidth: 3, haloRadius: 112 },
-    profileLabel: { x: width / 2, y: 528 },
-    archetypeLabel: { x: width / 2, y: 596 },
-    description: { x: anchorX, y: 650, width: 860, height: 220, align },
-    divider: { x: width / 2, y: 890 },
+    medallion: { x: width / 2, y: 352, radius: 78, ringWidth: 3, haloRadius: 96 },
+    profileLabel: { x: width / 2, y: 468 },
+    archetypeLabel: { x: width / 2, y: 530 },
+    description: { x: anchorX, y: 574, width: 860, height: 190, align },
+    radar: { x: width / 2, y: 830, radius: 82, labelRadius: 106 },
+    divider: { x: width / 2, y: 962 },
     topPick: model.topPick
       ? {
           x: anchorX,
-          y: 946,
+          y: 1008,
           width: 860,
-          height: 300,
+          height: 240,
           align,
-          bottle: centred
-            ? null
-            : { x: 96, y: 968, width: 320, height: 300 },
-          bottleRadial: centred
-            ? null
-            : { x: 256, y: 1088, radius: 208 },
-          shadow: centred ? null : { x: 116, y: 1236, width: 280, height: 26 },
+          bottle: centred ? null : { x: 96, y: 1018, width: 300, height: 220 },
+          bottleRadial: centred ? null : { x: 246, y: 1128, radius: 190 },
+          shadow: centred ? null : { x: 116, y: 1230, width: 260, height: 24 },
           composite: centred ? "source-over" : "multiply",
         }
       : null,
@@ -308,6 +314,67 @@ export function paintShareCard(
 
   drawDescription(ctx, model.archetype.segments, layout.description, model.archetype.accentColor);
 
+  // Scent radar: the five matching axes only, drawn from the SAME geometry
+  // module as the page's SVG — labels included, at canvas scale.
+  {
+    const { x: rx, y: ry, radius, labelRadius } = layout.radar;
+    const centre = { x: rx, y: ry };
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = GOLD;
+    for (const ring of SCENT_RADAR_GRID_RINGS) {
+      ctx.globalAlpha = ring === 100 ? 0.4 : 0.2;
+      ctx.beginPath();
+      radarPoints(SCENT_RADAR_AXES.map(() => ring), radius, centre).forEach(
+        (point, index) => {
+          if (index === 0) ctx.moveTo(point.x, point.y);
+          else ctx.lineTo(point.x, point.y);
+        },
+      );
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    ctx.globalAlpha = 0.18;
+    SCENT_RADAR_AXES.forEach((_, index) => {
+      const tip = radarLabelPoint(index, radius, centre);
+      ctx.beginPath();
+      ctx.moveTo(rx, ry);
+      ctx.lineTo(tip.x, tip.y);
+      ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+
+    const polygon: RadarPoint[] = radarPoints(model.radar.values, radius, centre);
+    ctx.beginPath();
+    polygon.forEach((point, index) => {
+      if (index === 0) ctx.moveTo(point.x, point.y);
+      else ctx.lineTo(point.x, point.y);
+    });
+    ctx.closePath();
+    ctx.fillStyle = GOLD;
+    ctx.globalAlpha = 0.18;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = "#8a2333";
+    for (const point of polygon) {
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = MUTED;
+    ctx.font = `400 18px ${FONT_BODY}`;
+    ctx.textAlign = "center";
+    SCENT_RADAR_AXES.forEach((axis, index) => {
+      const at = radarLabelPoint(index, labelRadius, centre);
+      ctx.fillText(SCENT_RADAR_LABELS[axis], at.x, at.y);
+    });
+  }
+
   // ✦ hairline divider.
   ctx.fillStyle = GOLD;
   ctx.font = `400 26px ${FONT_BODY}`;
@@ -338,16 +405,16 @@ export function paintShareCard(
     // Closeness: label, the printed number, then the gold bar — one value.
     ctx.fillStyle = MUTED;
     ctx.font = `400 22px ${FONT_BODY}`;
-    ctx.fillText(top.label, pick.x, pick.y + 156);
+    ctx.fillText(top.label, pick.x, pick.y + 142);
 
     ctx.fillStyle = INK;
     ctx.font = `600 40px ${FONT_DISPLAY}`;
-    ctx.fillText(toPersianDigits(top.score), pick.x, pick.y + 208);
+    ctx.fillText(toPersianDigits(top.score), pick.x, pick.y + 190);
 
     const trackWidth = 300;
     const barHeight = 8;
     const trackRight = pick.x;
-    const trackTop = pick.y + 232;
+    const trackTop = pick.y + 214;
     ctx.fillStyle = "#f5f0e8";
     ctx.beginPath();
     ctx.roundRect(trackRight - trackWidth, trackTop, trackWidth, barHeight, barHeight / 2);

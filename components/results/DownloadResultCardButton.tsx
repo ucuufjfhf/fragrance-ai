@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { buildShareCardModel, resolveShareCardImage } from "@/lib/results/share-card";
 import { downloadShareCard } from "@/lib/results/share-card-painter";
-import type { Archetype } from "@/types/personality";
+import type { Archetype, PersonalityVector } from "@/types/personality";
 import type { MatchedPerfume } from "@/types/recommendation";
 
 /**
@@ -21,9 +21,12 @@ import type { MatchedPerfume } from "@/types/recommendation";
 export default function DownloadResultCardButton({
   archetype,
   recommendation,
+  vector,
 }: {
   archetype: Archetype;
   recommendation: MatchedPerfume;
+  /** The shopper's own five matching-axis values — the radar on the card. */
+  vector: PersonalityVector;
 }) {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -41,7 +44,7 @@ export default function DownloadResultCardButton({
         // Same-origin only: a merchant photo on another host would taint the
         // canvas, so it resolves to null and the card centres its text instead.
         imageUrl: resolveShareCardImage(recommendation),
-      });
+      }, vector);
 
       const ok = await downloadShareCard(model);
       if (!ok) setFailed(true);

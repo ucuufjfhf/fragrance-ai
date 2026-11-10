@@ -14,6 +14,7 @@ import DownloadResultCardButton from "@/components/results/DownloadResultCardBut
 import ShareResultButton from "@/components/results/ShareResultButton";
 import MarkerWipe from "@/components/quiz/MarkerWipe";
 import SectionHeadline from "@/components/results/SectionHeadline";
+import ScentRadar from "@/components/results/ScentRadar";
 import RecommendationCard from "@/components/results/RecommendationCard";
 import StagedReveal from "@/components/results/StagedReveal";
 import { decodeAnswers } from "@/lib/personality/answer-decode";
@@ -208,8 +209,10 @@ export default function ResultsView({
         <p className="text-sm leading-8 text-muted">{archetype.fragranceHint}</p>
       </section>
 
-      {/* --- top traits: the pronounced dimensions, engine values only --- */}
-      <div className="w-full lg:mx-auto lg:max-w-2xl">
+      {/* --- the scent picture, then the same five axes in detail: the radar
+          is the picture, TraitBars stays the detail --- */}
+      <div className="flex w-full flex-col gap-6 lg:mx-auto lg:max-w-2xl">
+        <ScentRadar vector={vector} />
         <TraitBars vector={vector} />
       </div>
 
@@ -345,6 +348,7 @@ export default function ResultsView({
           <DownloadResultCardButton
             archetype={archetype}
             recommendation={recommendations[0]}
+            vector={vector}
           />
         ) : null}
         <Link

@@ -1,6 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
+import {
+  SCENT_RADAR_AXES,
+  radarValuesFromVector,
+  scentRadarSummary,
+} from "@/lib/fragrance/radar";
 import { ARCHETYPES, getArchetypeById } from "@/lib/personality/archetypes";
 import {
   SHARE_CARD_HEIGHT,
@@ -8,6 +13,7 @@ import {
   buildShareCardModel,
   resolveShareCardImage,
 } from "@/lib/results/share-card";
+import { makeVector } from "@/tests/ai/fixtures";
 import { buildShareCardLayout } from "@/lib/results/share-card-painter";
 
 /**
@@ -25,6 +31,7 @@ const PAINTER_SOURCE = readFileSync(
 );
 
 const archetype = getArchetypeById("bold-one")!;
+const vector = makeVector(50);
 
 const fullPick = {
   name: "نویر آزمون",
@@ -34,7 +41,7 @@ const fullPick = {
 };
 
 const modelWith = (overrides: Partial<typeof fullPick> = {}) =>
-  buildShareCardModel(archetype, { ...fullPick, ...overrides });
+  buildShareCardModel(archetype, { ...fullPick, ...overrides }, vector);
 
 describe("share card model — content", () => {
   const model = modelWith();
@@ -66,8 +73,10 @@ describe("share card model — content", () => {
     expect(model.footer.title).toBe("عطر خودتو پیدا کن");
   });
 
-  it("leaves room for the radar that comes next, without shipping one", () => {
-    expect(Object.keys(model)).not.toContain("radar");
+  it("now carries the scent radar's five values (batch 37)", () => {
+    expect(model.radar.values).toEqual(radarValuesFromVector(vector));
+    expect(model.radar.axes).toEqual(SCENT_RADAR_AXES);
+    expect(model.radar.summary).toBe(scentRadarSummary(radarValuesFromVector(vector)));
   });
 });
 
@@ -94,7 +103,7 @@ describe("share card model — the score is the printed number", () => {
 describe("share card model — emphasis is lossless", () => {
   it("bands the declared words and reassembles the copy byte-for-byte", () => {
     for (const candidate of ARCHETYPES) {
-      const model = buildShareCardModel(candidate, fullPick);
+      const model = buildShareCardModel(candidate, fullPick, vector);
       const banded = model.archetype.segments
         .filter((segment) => segment.emphasized)
         .map((segment) => segment.text);
@@ -147,7 +156,7 @@ describe("share card — fallbacks", () => {
   });
 
   it("no top pick at all: model stays complete, minus the block", () => {
-    const model = buildShareCardModel(archetype, null);
+    const model = buildShareCardModel(archetype, null, vector);
 
     expect(model.topPick).toBeNull();
     expect(model.textCentred).toBe(true);

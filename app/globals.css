@@ -364,6 +364,30 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* The five-axis scent radar (/result): the polygon and its vertices grow once,
+ * from the centre out, when the card first becomes visible — the trait bars'
+ * duration family and the same easing. The class is only added after mount by
+ * the observer, so server markup and no-JS show the finished polygon, and
+ * reduced motion never sees the class at all. One pass: no loop, no shimmer. */
+.scent-radar-grow {
+  transform-box: view-box;
+  transform-origin: center;
+  animation: scent-radar-grow 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes scent-radar-grow {
+  from {
+    opacity: 0.35;
+    transform: scale(0.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scent-radar-grow {
+    animation: none;
+  }
+}
+
 /* Ambient floating particles — shared by the Fragrance Profile and
  * Recommendations screens (see components/AmbientParticles.tsx). Purely
  * decorative: CSS-only drift, no canvas and no JS loop. `--accent` (inherited

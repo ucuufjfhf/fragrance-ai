@@ -1,7 +1,13 @@
 import { archetypeEmblemImageFor } from "@/components/archetype-emblems";
+import {
+  SCENT_RADAR_AXES,
+  SCENT_RADAR_LABELS,
+  radarValuesFromVector,
+  scentRadarSummary,
+} from "@/lib/fragrance/radar";
 import { artworkForPerfume } from "@/lib/perfumes/artwork";
 import { splitEmphasis } from "@/lib/personality/archetypes";
-import type { Archetype } from "@/types/personality";
+import type { Archetype, PersonalityVector } from "@/types/personality";
 
 /**
  * The downloadable share card's CONTENT model — pure data, no canvas, no React.
@@ -75,6 +81,16 @@ export interface ShareCardModel {
     emblemUrl: string;
   };
   divider: string;
+  /**
+   * The five-axis scent radar, from the SAME module the page's SVG uses — the
+   * card's picture of the shopper's own five matching-axis values.
+   */
+  radar: {
+    axes: readonly string[];
+    labels: string[];
+    values: number[];
+    summary: string;
+  };
   topPick: ShareCardTopPick | null;
   /** True when there is no bottle, so the text column centres. */
   textCentred: boolean;
@@ -107,8 +123,10 @@ export function resolveShareCardImage(pick: {
 export function buildShareCardModel(
   archetype: Archetype,
   topPick: ShareCardTopPickInput | null,
+  vector: PersonalityVector,
 ): ShareCardModel {
   const segments = splitEmphasis(archetype.description, archetype.emphasisWords);
+  const radarValues = radarValuesFromVector(vector);
   const score = topPick ? Math.round(topPick.presentationScore) : 0;
   const bottleImageUrl = topPick?.imageUrl ?? null;
   const bottle = bottleImageUrl !== null;
@@ -126,6 +144,12 @@ export function buildShareCardModel(
       emblemUrl: archetypeEmblemImageFor(archetype.id),
     },
     divider: SHARE_CARD_DIVIDER,
+    radar: {
+      axes: SCENT_RADAR_AXES,
+      labels: SCENT_RADAR_AXES.map((axis) => SCENT_RADAR_LABELS[axis]),
+      values: radarValues,
+      summary: scentRadarSummary(radarValues),
+    },
     topPick: topPick
       ? {
           name: topPick.name,
