@@ -9,6 +9,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import AnswerDecode from "@/components/results/AnswerDecode";
+import BrandSignoff from "@/components/results/BrandSignoff";
 import ShareResultButton from "@/components/results/ShareResultButton";
 import MarkerWipe from "@/components/quiz/MarkerWipe";
 import SectionHeadline from "@/components/results/SectionHeadline";
@@ -65,6 +66,10 @@ interface ResultsViewProps {
  * medallion showing the archetype's illustrated emblem — the same bundled
  * artwork every other surface uses. No archetype math, scoring or ordering
  * lives here.
+ *
+ * The page signs off with `BrandSignoff` (batch 32): after the share and retake
+ * actions, a quiet centred closing — mark, wordmark, FIND YOUR SCENT line and
+ * the owner-picked Persian sentence — closes both result modes.
  */
 export default function ResultsView({
   vector,
@@ -340,6 +345,10 @@ export default function ResultsView({
           شروع دوباره
         </Link>
       </div>
+
+      {/* The page's closing signature — the last thing on /result, in both the
+          demo and the merchant-inventory mode. */}
+      <BrandSignoff />
     </div>
   );
 }
