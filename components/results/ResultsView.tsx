@@ -10,6 +10,7 @@ import Link from "next/link";
 
 import AnswerDecode from "@/components/results/AnswerDecode";
 import BrandSignoff from "@/components/results/BrandSignoff";
+import DownloadResultCardButton from "@/components/results/DownloadResultCardButton";
 import ShareResultButton from "@/components/results/ShareResultButton";
 import MarkerWipe from "@/components/quiz/MarkerWipe";
 import SectionHeadline from "@/components/results/SectionHeadline";
@@ -338,6 +339,14 @@ export default function ResultsView({
 
       <div className="flex w-full flex-col gap-3 sm:flex-row lg:mx-auto lg:max-w-2xl">
         <ShareResultButton />
+        {/* The share card is a picture of the top pick as rendered; with an empty
+            result there is nothing truthful to draw, so the button is absent. */}
+        {!isEmpty && recommendations[0] ? (
+          <DownloadResultCardButton
+            archetype={archetype}
+            recommendation={recommendations[0]}
+          />
+        ) : null}
         <Link
           href="/quiz"
           className="btn-secondary flex min-h-12 flex-1 items-center justify-center px-5 text-sm text-muted hover:text-foreground"
