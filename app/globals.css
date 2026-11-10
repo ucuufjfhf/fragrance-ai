@@ -250,27 +250,51 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* Question illustration stage: one fixed flat drawing per question screen.
- * Opacity-only fade (no transform, so the layout never shifts); the stage is
- * keyed by question id, so the fade replays on each screen change. The stage
- * itself is a bare fixed-height box — no background, border or shadow, so the
- * transparent drawing sits directly on the quiz ambience. Fully static under
- * prefers-reduced-motion. */
+/* Question illustration stage: one illustrated scene per question screen, in
+ * the artwork's own 3:2 box with clipped overflow, so the whole approved scene
+ * shows and the height never changes between questions. The stage itself is
+ * deliberately static: the question-change crossfade belongs to the incoming
+ * layer, and stacking two layers inside this fixed box is what keeps the layout
+ * from moving while the outgoing scene is still on screen. */
 .quiz-illustration {
-  animation: quiz-illustration-fade 450ms ease-out;
+  position: relative;
+  isolation: isolate;
 }
 
-@keyframes quiz-illustration-fade {
+/* Every layer covers the stage: the outgoing scene first, the incoming one on
+ * top of it — which is why the stack is only ever two layers deep. */
+.quiz-illustration-layer {
+  position: absolute;
+  inset: 0;
+}
+
+/* The incoming layer waits here, invisible, while its artwork downloads: the
+ * outgoing scene stays fully visible until that load event starts the fade. */
+.quiz-illustration-layer--pending {
+  opacity: 0;
+}
+
+/* One-shot page-turn crossfade: the new scene fades in over the old one while
+ * settling from a slight scale. It plays on question change only — never a loop,
+ * so the coarse-pointer ambience budget is untouched — and the component never
+ * applies it under reduced motion. */
+.quiz-illustration-layer--swap {
+  animation: quiz-illustration-swap 600ms ease forwards;
+}
+
+@keyframes quiz-illustration-swap {
   from {
     opacity: 0;
+    transform: scale(1.04);
   }
   to {
     opacity: 1;
+    transform: scale(1);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .quiz-illustration {
+  .quiz-illustration-layer--swap {
     animation: none;
   }
 }

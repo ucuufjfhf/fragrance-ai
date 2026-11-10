@@ -124,15 +124,15 @@ describe("question illustrations", () => {
     expect(stages.size).toBe(1);
   });
 
-  it("keeps the fade on question change, static for reduced motion", () => {
+  it("keeps the stage static: the crossfade lives on the layers", () => {
+    // Batch 28 moved the transition off the stage: the box never animates, and
+    // the whole-stage 450ms fade is gone rather than overridden. The page-turn
+    // crossfade itself is pinned by `tests/quiz/illustration-crossfade.test.tsx`.
     expect(CSS).toContain(".quiz-illustration {");
-    expect(CSS).toContain("animation: quiz-illustration-fade 450ms ease-out;");
-    expect(CSS).toContain("@keyframes quiz-illustration-fade");
-    const reduced = CSS.slice(
-      CSS.indexOf("@media (prefers-reduced-motion: reduce)", CSS.indexOf(".quiz-illustration {")),
-    );
-    expect(reduced).toContain(".quiz-illustration");
-    expect(reduced).toContain("animation: none;");
+    expect(CSS).not.toContain("quiz-illustration-fade");
+    expect(CSS).toContain(".quiz-illustration-layer {");
+    expect(CSS).toContain(".quiz-illustration-layer--swap {");
+    expect(CSS).toContain("animation: quiz-illustration-swap 600ms ease forwards;");
     // The retired photo band is gone from the stylesheet entirely.
     expect(CSS).not.toContain("quiz-photo-band");
   });

@@ -431,8 +431,10 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
     <section className="flex flex-col gap-5">
       <ProgressBar current={progress.current} total={progress.total} />
 
+      {/* No `key` here: the illustration crossfade needs `Question` to stay
+          mounted across questions. It is the same shared component the quiz
+          renders, so the widget inherits the transition unchanged. */}
       <Question
-        key={question.id}
         question={question}
         selectedOptionId={selectedOptionId}
         onSelect={(_questionId, optionId) =>
