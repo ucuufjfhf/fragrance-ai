@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import FaqSection from "@/components/landing/FaqSection";
 import SampleResultSection from "@/components/landing/SampleResultSection";
+import MarkerWipe from "@/components/quiz/MarkerWipe";
 import SiteFooter from "@/components/site/SiteFooter";
 import SiteHeader from "@/components/site/SiteHeader";
 
@@ -47,9 +48,13 @@ export default function Home() {
             <div className="flex flex-col items-start gap-6">
               {/* Two fixed lines: «کنید» can never be orphaned at the end of a
                   line, at any width. The text is unchanged, split at the
-                  natural clause break. */}
+                  natural clause break — only «خودتون» now carries the site's
+                  marker-wipe, the same shipped component (and the same static
+                  finished highlight) the quiz intro already uses. */}
               <h1 className="font-heading text-4xl font-bold leading-[1.3] text-foreground sm:text-5xl lg:text-6xl">
-                <span className="block">عطر خودتون رو</span>{" "}
+                <span className="block">
+                  عطر <MarkerWipe replayKey="home-hero">خودتون</MarkerWipe> رو
+                </span>{" "}
                 <span className="block">پیدا کنید</span>
               </h1>
               <p className="max-w-xl text-lg leading-loose text-muted">
