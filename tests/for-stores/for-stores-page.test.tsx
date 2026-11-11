@@ -130,6 +130,19 @@ describe("for-stores page — promises the code cannot keep are absent", () => {
     expect(copy).toContain("به‌صورت درخواستی");
     expect(html).toContain('href="/data-policy"');
   });
+
+  it("keeps the new result-features sentence inside the same rules (batch 47)", () => {
+    const start = copy.indexOf("در نتیجهٔ آزمون");
+    expect(start).toBeGreaterThan(-1);
+
+    const sentence = copy.slice(start, copy.indexOf(".", start) + 1);
+
+    // The sentence may describe shipped features only: no price, trial,
+    // uptime/SLA or duration claim may ride along with it.
+    expect(sentence).not.toMatch(/تومان|ریال|دلار|درهم|رایگان|تخفیف/);
+    expect(sentence).not.toMatch(/SLA|آپ‌تایم|آپتایم|uptime|پشتیبان|backup|۲۴\/۷|24\/7/i);
+    expect(sentence).not.toMatch(/(\d+|[۰-۹]+)\s*(روز|ماه|هفته|ساعت|سال)/);
+  });
 });
 
 describe("for-stores page — contact and footer", () => {
@@ -147,5 +160,29 @@ describe("for-stores page — contact and footer", () => {
 
     expect(footer).toContain('href="/for-stores"');
     expect(footer).toContain("برای فروشگاه‌ها");
+  });
+});
+
+describe("for-stores page — the widget result features it now ships", () => {
+  // Batch 47: the widget result ships the five-axis scent radar (batch 41) and
+  // the head-to-head comparison of two of the top three (batch 40). The live
+  // demo on this page renders that widget, so this sentence describes what a
+  // merchant already sees rather than a roadmap.
+  const PARAGRAPH =
+    "در نتیجهٔ آزمون، مشتری نمودار رایحهٔ خودش را روی پنج محور می‌بیند و می‌تواند هر دو تا از سه پیشنهاد اول را رودررو مقایسه کند — همه داخل همان ویجت، روی موجودی شما.";
+
+  it("renders the radar/head-to-head sentence verbatim", () => {
+    expect(textOf(html)).toContain(PARAGRAPH);
+  });
+
+  it("sits directly after the demo intro and before the demo box", () => {
+    const text = textOf(html);
+    const intro = text.indexOf("یک‌بار تا آخر بروید و نتیجه را ببینید.");
+    const paragraph = text.indexOf(PARAGRAPH);
+
+    expect(intro).toBeGreaterThan(-1);
+    expect(paragraph).toBeGreaterThan(intro);
+    // The demo panel follows it: the copy introduces the live widget.
+    expect(paragraph).toBeLessThan(html.indexOf("data-for-stores-demo"));
   });
 });

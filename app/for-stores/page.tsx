@@ -122,6 +122,12 @@ export default function ForStoresPage() {
               دامنه. یک‌بار تا آخر بروید و نتیجه را ببینید.
             </p>
 
+            <p className="mt-4 leading-loose text-foreground/90">
+              در نتیجهٔ آزمون، مشتری نمودار رایحهٔ خودش را روی پنج محور می‌بیند و
+              می‌تواند هر دو تا از سه پیشنهاد اول را رودررو مقایسه کند — همه داخل
+              همان ویجت، روی موجودی شما.
+            </p>
+
             <div
               data-for-stores-demo=""
               data-store-id={WIDGET_DEMO_STORE_ID}
