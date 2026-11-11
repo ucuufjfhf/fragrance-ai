@@ -322,3 +322,79 @@ describe("merchant render throttle (buyer audit round 7)", () => {
     expect(mocks.recordAnalyticsEvent).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("attempt token threading (results params → server-fired events)", () => {
+  const TOKEN = "s-1737500000000-abc123";
+
+  it("attaches the parsed sessionId to BOTH funnel events", async () => {
+    await getResultsViewData(
+      paramsWith({ store: "store-real-merchant", session: TOKEN }),
+    );
+
+    const events = mocks.recordAnalyticsEvent.mock.calls.map(([payload]) => payload);
+
+    expect(events.map((event) => event.eventType)).toEqual([
+      "RESULT_VIEWED",
+      "RECOMMENDATIONS_SHOWN",
+    ]);
+
+    for (const event of events) {
+      expect(event.sessionId).toBe(TOKEN);
+      expect(event.storeId).toBe("store-real-merchant");
+    }
+  });
+
+  it("omits sessionId entirely when the URL carried none (payload byte-identical)", async () => {
+    await getResultsViewData(paramsWith({ store: "store-real-merchant" }));
+
+    const [viewed, shown] = mocks.recordAnalyticsEvent.mock.calls.map(
+      ([payload]) => payload,
+    );
+
+    // No `sessionId: undefined` key either — the wire shape is the old one.
+    expect(Object.keys(viewed).sort()).toEqual(["eventType", "storeId"]);
+    expect(Object.keys(shown).sort()).toEqual(["eventType", "metadata", "storeId"]);
+  });
+
+  it("carries the token on the empty-result firing path too", async () => {
+    mocks.getRecommendations.mockResolvedValue({ recommendations: [], excluded: 4 });
+
+    const data = await getResultsViewData(
+      paramsWith({ store: "store-real-merchant", session: TOKEN }),
+    );
+
+    expect(data.isEmpty).toBe(true);
+    expect(mocks.recordAnalyticsEvent).toHaveBeenCalledTimes(1);
+
+    const [event] = mocks.recordAnalyticsEvent.mock.calls[0];
+
+    expect(event).toMatchObject({
+      eventType: "RESULT_VIEWED",
+      storeId: "store-real-merchant",
+      sessionId: TOKEN,
+    });
+  });
+
+  it("stays byte-identical on the empty-result path without a token", async () => {
+    mocks.getRecommendations.mockResolvedValue({ recommendations: [], excluded: 4 });
+
+    await getResultsViewData(paramsWith({ store: "store-real-merchant" }));
+
+    const [event] = mocks.recordAnalyticsEvent.mock.calls[0];
+
+    expect(Object.keys(event).sort()).toEqual(["eventType", "storeId"]);
+  });
+
+  it("never sends a token the analytics contract would reject", async () => {
+    await getResultsViewData(
+      paramsWith({ store: "store-real-merchant", session: "bad id!" }),
+    );
+
+    const events = mocks.recordAnalyticsEvent.mock.calls.map(([payload]) => payload);
+
+    expect(events).toHaveLength(2);
+    for (const event of events) {
+      expect(Object.keys(event)).not.toContain("sessionId");
+    }
+  });
+});

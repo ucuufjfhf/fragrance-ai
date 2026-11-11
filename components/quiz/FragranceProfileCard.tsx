@@ -9,7 +9,7 @@ import { resetAnalyticsFlow } from "@/lib/analytics/flow-tracker";
 import type { AudienceGender } from "@/lib/audience";
 import type { SeasonFilter } from "@/lib/context";
 import { splitEmphasis } from "@/lib/personality/archetypes";
-import { serializeResultsParams } from "@/lib/results/params";
+import { buildResultsHref } from "@/lib/results/href";
 import type { Occasion } from "@/types/fragrance";
 import { Fragment, useEffect, useRef } from "react";
 import type { QuizResult } from "@/types/personality";
@@ -100,15 +100,14 @@ export default function FragranceProfileCard({
   // so recommendations come from that store instead of the default.
   // The audience rides along as the compact target token; without one the URL
   // is byte-identical to the pre-audience contract (legacy behaviour).
-  const resultsHref = `/result?${serializeResultsParams(
+  const resultsHref = buildResultsHref({
     vector,
-    archetype.id,
+    archetypeId: archetype.id,
     storeId,
-    undefined,
     audience,
     season,
     occasion,
-  )}`;
+  });
 
   return (
     <>

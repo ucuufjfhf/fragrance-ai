@@ -131,13 +131,22 @@ async function merchantRenderDenial(
  * Buyer audit round 7: `requesterId` (the page's `requesterIdentity`) enables
  * the two merchant-render budgets. Omitted/null is every pre-existing caller
  * and keeps today's behaviour exactly — no checks, no change.
+ *
+ * Batch 43: when the results URL carried the attempt's opaque session token
+ * (parsed defensively in `lib/results/params.ts`), every funnel event recorded
+ * here carries it as well, so a result view can be joined to the quiz attempt
+ * that produced it. No token → the payload is exactly the pre-batch shape.
  */
 export async function getResultsViewData(
   params: ResultsParams,
   sourceOverride?: RecommendationSource,
   requesterId: string | null = null,
 ): Promise<ResultsViewData> {
-  const { vector, archetype, storeId, audience, season, occasion } = params;
+  const { vector, archetype, storeId, audience, season, occasion, sessionId } = params;
+
+  // Added only when a token survived parsing, so the no-session payload keeps
+  // its exact previous shape (no `sessionId: undefined` key on the wire).
+  const sessionField = sessionId === null ? {} : { sessionId };
 
   // Mode selection: an explicit `source` query param wins (demo links can pin
   // REFERENCE_CATALOG); otherwise a real store context means merchant
@@ -188,7 +197,11 @@ export async function getResultsViewData(
     // A valid profile rendered with zero eligible perfumes still counts as a
     // result view — but there is no recommendation list to count.
     if (!isDemo && suppressedBy === null) {
-      await recordAnalyticsEvent({ eventType: "RESULT_VIEWED", storeId });
+      await recordAnalyticsEvent({
+        eventType: "RESULT_VIEWED",
+        storeId,
+        ...sessionField,
+      });
     }
 
     return {
@@ -226,12 +239,17 @@ export async function getResultsViewData(
   }
 
   if (!isDemo && suppressedBy === null) {
-    await recordAnalyticsEvent({ eventType: "RESULT_VIEWED", storeId });
+    await recordAnalyticsEvent({
+      eventType: "RESULT_VIEWED",
+      storeId,
+      ...sessionField,
+    });
     // One event per result page with the list size in metadata (§6) — the
     // per-perfume counts are derived in the dashboard roll-up.
     await recordAnalyticsEvent({
       eventType: "RECOMMENDATIONS_SHOWN",
       storeId,
+      ...sessionField,
       // `count` stays the list size; `perfumeIds` names exactly which perfumes
       // were on screen, in display order — so the report can count per-perfume
       // impressions without depending on a click (or on a product URL).

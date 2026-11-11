@@ -61,7 +61,7 @@ import {
 import { buildAnalysisEchoes } from "@/lib/personality/analysis-echoes";
 import { scoreQuiz } from "@/lib/personality/scoring";
 import { fetchMatchesPreview } from "@/lib/quiz/matches-preview";
-import { serializeResultsParams } from "@/lib/results/params";
+import { buildResultsHref } from "@/lib/results/href";
 import type {
   QuizMatchesResponse,
   QuizResult,
@@ -467,16 +467,15 @@ export default function Quiz({
     if (!result) {
       return;
     }
-    const href = `/result?${serializeResultsParams(
-      result.vector,
-      result.archetype.id,
+    const href = buildResultsHref({
+      vector: result.vector,
+      archetypeId: result.archetype.id,
       storeId,
-      undefined,
-      flow.audience,
-      null,
-      null,
-      toAnswers(flow),
-    )}`;
+      audience: flow.audience,
+      season: null,
+      occasion: null,
+      answers: toAnswers(flow),
+    });
     if (router) {
       router.push(href);
     } else if (typeof window !== "undefined") {

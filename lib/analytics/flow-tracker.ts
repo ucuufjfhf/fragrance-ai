@@ -30,8 +30,14 @@ function createSessionToken(): string {
   return `s-${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
 }
 
-/** Returns the attempt token, creating + persisting one when absent. */
-function getSessionToken(): string {
+/**
+ * Returns the attempt token, creating + persisting one when absent.
+ *
+ * This is the ONE owner of the token: the quiz's QUIZ_STARTED/QUIZ_COMPLETED
+ * events and the results-link builder (`lib/results/href.ts`, so /result can
+ * carry the same id) all read it here. Nothing else mints or rotates a token.
+ */
+export function getSessionToken(): string {
   try {
     const existing = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
 

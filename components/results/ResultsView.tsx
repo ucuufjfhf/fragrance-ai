@@ -53,6 +53,12 @@ interface ResultsViewProps {
    * "relax the filters" action. `null`/absent → the legacy empty state.
    */
   contextRelaxHref?: string | null;
+  /**
+   * The attempt's opaque analytics token, parsed from the results URL by the
+   * page. Threaded to the recommendation cards so their PERFUME_CLICKED can be
+   * joined to the attempt; `null`/absent changes nothing about the render.
+   */
+  sessionId?: string | null;
 }
 
 /**
@@ -80,6 +86,7 @@ export default function ResultsView({
   data,
   contextRelaxHref = null,
   answers = [],
+  sessionId = null,
 }: ResultsViewProps) {
   const { recommendations, explanations, isEmpty } = data;
   const decoded = decodeAnswers(answers, vector);
@@ -325,6 +332,7 @@ export default function ResultsView({
                 <RecommendationCard
                   recommendation={recommendation}
                   explanation={explanations.get(recommendation.perfumeId)}
+                  sessionId={sessionId}
                 />
               </li>
             ))}

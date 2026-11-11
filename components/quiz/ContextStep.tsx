@@ -13,7 +13,7 @@ import {
   SEASON_QUESTION,
   type SeasonFilter,
 } from "@/lib/context";
-import { serializeResultsParams } from "@/lib/results/params";
+import { buildResultsHref } from "@/lib/results/href";
 import type { Occasion } from "@/types/fragrance";
 import type { QuizResult } from "@/types/personality";
 
@@ -60,16 +60,15 @@ export default function ContextStep({
 }: ContextStepProps) {
   const { archetype, vector } = result;
 
-  const resultsHref = `/result?${serializeResultsParams(
+  const resultsHref = buildResultsHref({
     vector,
-    archetype.id,
+    archetypeId: archetype.id,
     storeId,
-    undefined,
     audience,
     season,
     occasion,
-    result.answers,
-  )}`;
+    answers: result.answers,
+  });
 
   return (
     <div className="flex flex-col gap-6">

@@ -71,6 +71,10 @@ export default async function ResultPage({ searchParams }: ResultPageProps) {
         params.value.storeId,
         params.value.source,
         params.value.audience,
+        undefined,
+        undefined,
+        undefined,
+        params.value.sessionId,
       )}`
     : null;
 
@@ -95,6 +99,7 @@ export default async function ResultPage({ searchParams }: ResultPageProps) {
           data={data}
           contextRelaxHref={contextRelaxHref}
           answers={params.value.answers}
+          sessionId={params.value.sessionId}
         />
       </main>
 

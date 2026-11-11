@@ -109,6 +109,15 @@ export interface ResultsParams {
    * exactly as before. Unknown pairs degrade to omission, never to failure.
    */
   answers: QuizAnswer[];
+  /**
+   * The attempt's opaque analytics token, when the quiz linked here with one
+   * (`?session=…`).
+   *
+   * `null` = legacy link, invalid or oversized value → the server-fired result
+   * events carry no session id at all, exactly the pre-batch payload. Never an
+   * identity, and never an input to scoring, filtering or rendering.
+   */
+  sessionId: string | null;
 }
 
 /** Query-string keys, kept in one place so both sides can never drift. */
@@ -119,6 +128,15 @@ const TARGET_KEY = "target";
 const SEASON_KEY = "season";
 const OCCASION_KEY = "occasion";
 const ANSWERS_KEY = "answers";
+/**
+ * The quiz attempt's opaque analytics token (`?session=…`).
+ *
+ * The same token the attempt's QUIZ_STARTED/QUIZ_COMPLETED events carried
+ * (`getSessionToken` in `lib/analytics/flow-tracker.ts`). Carrying it lets the
+ * server-fired result events be correlated with the attempt that produced
+ * them; it is not an identity and never influences scoring, filters or render.
+ */
+const SESSION_KEY = "session";
 
 function firstValue(
   source: Record<string, string | string[] | undefined>,
@@ -148,6 +166,7 @@ export function serializeResultsParams(
   season?: SeasonFilter | null,
   occasion?: Occasion | null,
   answers?: readonly QuizAnswer[] | null,
+  sessionId?: string | null,
 ): string {
   const search = new URLSearchParams();
 
@@ -207,6 +226,13 @@ export function serializeResultsParams(
     if (pairs.length > 0) {
       search.set(ANSWERS_KEY, pairs.join(","));
     }
+  }
+
+  // The attempt's opaque session token (batch 43) — optional, and emitted only
+  // when it matches the analytics id contract, so a URL can never carry a token
+  // the recorder would reject. Absent → the URL stays byte-identical.
+  if (isResultsSessionId(sessionId)) {
+    search.set(SESSION_KEY, sessionId);
   }
 
   return search.toString();
@@ -284,6 +310,10 @@ export function parseResultsParams(
   // degrades to a shorter decode (or none) while recommendations render.
   const answers = orderAnswers(parseAnswerPairs(firstValue(input, ANSWERS_KEY)));
 
+  // Deliberately lenient, same as `target`: an absent, empty, malformed or
+  // oversized token resolves to `null` (no session) instead of failing the page.
+  const sessionId = parseResultsSessionId(firstValue(input, SESSION_KEY));
+
   return {
     ok: true,
     value: {
@@ -295,6 +325,7 @@ export function parseResultsParams(
       season,
       occasion,
       answers,
+      sessionId,
     },
   };
 }
@@ -328,4 +359,34 @@ function parseAnswerPairs(raw: string | undefined): QuizAnswer[] {
   }
 
   return pairs;
+}
+
+/**
+ * The analytics contract's opaque-id shape (`ID_PATTERN` in
+ * `lib/analytics/types.ts`): 1–64 chars of `[A-Za-z0-9_-]`.
+ *
+ * Repeated here rather than imported so this module stays free of the analytics
+ * package; a round-trip test pins that the two agree, which is what guarantees
+ * a token parsed here is always writable there.
+ */
+const SESSION_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+
+/** True when `value` could be written as an analytics session id. */
+function isResultsSessionId(value: string | null | undefined): value is string {
+  return typeof value === "string" && SESSION_ID_PATTERN.test(value);
+}
+
+/**
+ * Parses the optional `session` param defensively: absent, empty, malformed or
+ * oversized values resolve to `null` (no session) instead of failing the page,
+ * so a hand-edited link still renders and its events fire without a token.
+ */
+function parseResultsSessionId(raw: string | undefined): string | null {
+  if (typeof raw !== "string") {
+    return null;
+  }
+
+  const value = raw.trim();
+
+  return isResultsSessionId(value) ? value : null;
 }

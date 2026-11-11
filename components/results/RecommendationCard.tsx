@@ -9,6 +9,14 @@ interface RecommendationCardProps {
   recommendation: MatchedPerfume;
   /** Persian «چرا این عطر؟» copy, present only when the AI answered. */
   explanation?: string;
+  /**
+   * The attempt's opaque analytics token parsed from the results URL.
+   *
+   * `/result` is stateless, so the click event can only correlate with the quiz
+   * attempt if the page hands the parsed value down. `null`/absent → the click
+   * payload is exactly the pre-batch shape (event type, store, perfume).
+   */
+  sessionId?: string | null;
 }
 
 /**
@@ -31,6 +39,7 @@ interface RecommendationCardProps {
 export default function RecommendationCard({
   recommendation,
   explanation,
+  sessionId = null,
 }: RecommendationCardProps) {
   const { rank, name, brand, presentationScore, productUrl, imageUrl, perfumeId, storeId } =
     recommendation;
@@ -144,7 +153,12 @@ export default function RecommendationCard({
             onClick={() => {
               // PERFUME_CLICKED — a real click on the product link (§6/§12).
               // Viewing the card never records an event.
-              void trackEvent({ eventType: "PERFUME_CLICKED", storeId, perfumeId });
+              void trackEvent({
+                eventType: "PERFUME_CLICKED",
+                storeId,
+                perfumeId,
+                ...(sessionId === null ? {} : { sessionId }),
+              });
             }}
             className="btn-secondary flex min-h-11 items-center justify-center px-5 text-sm font-medium text-foreground hover:text-accent"
           >
