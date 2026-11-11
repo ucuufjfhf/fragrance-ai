@@ -1,10 +1,10 @@
 "use client";
 
 import { BottleMark } from "@/components/ui-icons";
-import { trackEvent } from "@/lib/analytics/client";
 import { formatPersianScore, toPersianDigits } from "@/lib/persian";
 import { formatTomanPrice } from "@/lib/pricing/currency";
 import { withWidgetAttribution } from "@/lib/widget/attribution";
+import { trackWidgetPerfumeClick } from "@/lib/widget/click";
 import type { WidgetRecommendation } from "@/lib/widget/contract";
 
 /**
@@ -140,8 +140,9 @@ export default function WidgetRecommendationCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => {
-              // A real click on the merchant's product link (§17).
-              void trackEvent({ eventType: "PERFUME_CLICKED", storeId, perfumeId: recommendation.perfumeId });
+              // A real click on the merchant's product link (§17) — the one
+              // shared widget click path the comparison also uses (batch 40).
+              trackWidgetPerfumeClick(storeId, recommendation.perfumeId);
             }}
             className="btn-secondary flex min-h-11 items-center justify-center px-5 text-sm font-medium text-foreground hover:text-accent"
           >

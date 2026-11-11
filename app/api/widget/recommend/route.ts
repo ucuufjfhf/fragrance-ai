@@ -177,6 +177,10 @@ export async function POST(request: Request): Promise<Response> {
         imageUrl: recommendation.imageUrl ?? null,
         price: prices.get(recommendation.perfumeId) ?? null,
         matchPercent: recommendation.presentationScore,
+        // Batch 40 — the five values the engine scored with, verbatim (the
+        // head-to-head bars). Additive: when the engine produced none the key
+        // stays absent, so older payload shapes are unchanged.
+        matchingProfile: recommendation.matchingProfile,
         explanation: explanations.get(recommendation.perfumeId),
       }),
     ),

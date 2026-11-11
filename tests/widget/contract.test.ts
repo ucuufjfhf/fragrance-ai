@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   isValidStoreId,
   validateWidgetVector,
+  type WidgetRecommendation,
 } from "@/lib/widget/contract";
 import { PERSONALITY_DIMENSIONS } from "@/types/personality";
 
@@ -76,5 +77,44 @@ describe("validateWidgetVector — strict vector contract (§13)", () => {
     const result = validateWidgetVector({ ...makeVector(0), bold: 100 });
 
     expect(result.ok).toBe(true);
+  });
+});
+
+describe("WidgetRecommendation — additive five-axis pass-through (batch 40)", () => {
+  const base = {
+    perfumeId: "p-1",
+    rank: 1,
+    name: "عطر یک",
+    brand: "برند یک",
+    productUrl: "https://shop.example/p/1",
+    imageUrl: null,
+    price: null,
+    matchPercent: 88.4,
+  };
+
+  it("keeps the existing payload valid without the new field", () => {
+    const recommendation: WidgetRecommendation = base;
+
+    expect(recommendation.matchingProfile).toBeUndefined();
+    expect(Object.keys(recommendation).sort()).toEqual([
+      "brand", "imageUrl", "matchPercent", "name", "perfumeId", "price", "productUrl", "rank",
+    ]);
+  });
+
+  it("carries the five matching values verbatim when present", () => {
+    const recommendation: WidgetRecommendation = {
+      ...base,
+      matchingProfile: { fresh: 90, warm: 10, mysterious: 40, elegant: 60, bold: 20 },
+    };
+
+    expect(recommendation.matchingProfile).toEqual({
+      fresh: 90,
+      warm: 10,
+      mysterious: 40,
+      elegant: 60,
+      bold: 20,
+    });
+    // Display only: the contract still has exactly one score field.
+    expect(recommendation.matchPercent).toBe(88.4);
   });
 });

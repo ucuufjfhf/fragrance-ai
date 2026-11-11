@@ -52,6 +52,11 @@ const CARD_SOURCE = readFileSync(
   new URL("../../components/results/RecommendationCard.tsx", import.meta.url),
   "utf8",
 );
+/** Batch 40 moved the shared rule here; the results component re-exports it. */
+const COMPARISON_SOURCE = readFileSync(
+  new URL("../../lib/head-to-head/comparison.ts", import.meta.url),
+  "utf8",
+);
 
 function render(element: ReactElement): string {
   return renderToStaticMarkup(element).replace(/<!--[\s\S]*?-->/g, "");
@@ -259,7 +264,9 @@ describe("head-to-head — the closeness difference", () => {
     }
 
     expect(CARD_SOURCE).toContain("const closeness = Math.round(presentationScore);");
-    expect(HEAD_SOURCE).toContain("return Math.round(presentationScore);");
+    // Batch 40 extracted this rule; the pin follows the behaviour to its new
+    // home, which the results component re-exports unchanged.
+    expect(COMPARISON_SOURCE).toContain("return Math.round(presentationScore);");
   });
 });
 

@@ -1,4 +1,5 @@
 import { PROFILE_AXES } from "@/lib/fragrance/profile";
+import type { MatchingProfileRow } from "@/lib/fragrance/profile";
 import type { PersonalityVector } from "@/types/personality";
 
 /**
@@ -76,6 +77,15 @@ export interface WidgetRecommendation {
   price: number | null;
   /** Presentation score (round(score × 10) / 10) — display only. */
   matchPercent: number;
+  /**
+   * The perfume's five matching-axis values (batch 40) — copied verbatim from
+   * the engine result's `matchingProfile`, never recomputed in the route.
+   *
+   * Display pass-through for the widget's head-to-head comparison. Optional and
+   * additive: an older payload without it still parses, and the comparison then
+   * renders zero bars instead of guessing values.
+   */
+  matchingProfile?: MatchingProfileRow;
   /** Persian «چرا این عطر؟» copy when the AI answered; absent otherwise. */
   explanation?: string;
 }

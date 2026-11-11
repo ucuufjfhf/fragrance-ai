@@ -2,19 +2,28 @@
 
 import { useState } from "react";
 
+import ComparisonAxes from "@/components/head-to-head/ComparisonAxes";
 import {
-  MATCHING_DIMENSIONS,
-  type MatchingDimension,
-  type MatchingProfileRow,
-} from "@/lib/fragrance/profile";
-import { SCENT_RADAR_LABELS, clampRadarValue } from "@/lib/fragrance/radar";
+  DEFAULT_HEAD_TO_HEAD_PAIR,
+  closenessGap,
+  pickHeadToHeadPair,
+  selectHeadToHeadPair,
+  type HeadToHeadPair,
+} from "@/lib/head-to-head/comparison";
 import { formatPersianScore, toPersianDigits } from "@/lib/persian";
 import type { MatchedPerfume } from "@/types/recommendation";
 
 /**
- * Batch 39 — head-to-head: any two of the top-3, compared on the five scent
- * axes side by side, plus the difference between the closeness indices the
- * cards already print.
+ * Batch 39 — head-to-head on `/result`: any two of the top-3, compared on the
+ * five scent axes side by side, plus the difference between the closeness
+ * indices the cards already print.
+ *
+ * The numbers and the axis rows are NOT owned here any more: batch 40 extracted
+ * them to `lib/head-to-head/comparison` and `components/head-to-head/
+ * ComparisonAxes` so the embedded widget runs the same rule. This component
+ * keeps the results-page layout, copy, palette and chip defaults; the exported
+ * helpers below are re-exported for the batch-39 pins, which keep running
+ * against the same behaviour.
  *
  * Everything here is display: the bars read the perfumes' own five values
  * threaded through the engine output (`MatchedPerfume.matchingProfile`) and the
@@ -27,86 +36,22 @@ import type { MatchedPerfume } from "@/types/recommendation";
  * `prefers-reduced-motion`, so there is no motion gate to get wrong.
  */
 
-/** The two selected positions in the recommendation list. */
-export interface HeadToHeadPair {
-  first: number;
-  second: number;
-}
+export {
+  DEFAULT_HEAD_TO_HEAD_PAIR,
+  axisValueFor,
+  closenessGap,
+  closenessOf,
+  headToHeadAxes,
+  headToHeadOrder,
+  pickHeadToHeadPair,
+} from "@/lib/head-to-head/comparison";
+export type { HeadToHeadPair } from "@/lib/head-to-head/comparison";
 
-/** Ranks 1 and 2 until the shopper picks otherwise. */
-export const DEFAULT_HEAD_TO_HEAD_PAIR: HeadToHeadPair = { first: 0, second: 1 };
-
-/**
- * Swaps a chip into the pair.
- *
- * Tapping an already-selected perfume is a no-op, and an out-of-list index is
- * ignored, so the pair is always exactly two distinct perfumes. The most
- * recently selected slot survives and the older one is replaced — the shopper
- * keeps what they just chose and swaps out the one they moved on from.
- */
-export function pickHeadToHeadPair(
-  pair: HeadToHeadPair,
-  index: number,
-  count: number,
-): HeadToHeadPair {
-  if (!Number.isInteger(index) || index < 0 || index >= count) {
-    return pair;
-  }
-
-  if (index === pair.first || index === pair.second) {
-    return pair;
-  }
-
-  return { first: pair.second, second: index };
-}
-
-/** The pair in displayed order: the lower rank is always the first column. */
-export function headToHeadOrder(pair: HeadToHeadPair): [number, number] {
-  return pair.first <= pair.second
-    ? [pair.first, pair.second]
-    : [pair.second, pair.first];
-}
-
-/**
- * The whole number the recommendation cards print — one rounding, shared so the
- * difference can never disagree with the two printed indices.
- */
-export function closenessOf(presentationScore: number): number {
-  return Math.round(presentationScore);
-}
-
-/** Absolute difference of the two printed closeness indices (0 on a tie). */
-export function closenessGap(
-  firstPresentationScore: number,
-  secondPresentationScore: number,
-): number {
-  return Math.abs(
-    closenessOf(firstPresentationScore) - closenessOf(secondPresentationScore),
-  );
-}
-
-/**
- * One perfume's value on one axis. Missing or invalid data reads as 0 — the
- * shopper's vector is never borrowed and the other perfume's value is never
- * reused.
- */
-export function axisValueFor(
-  profile: MatchingProfileRow | null | undefined,
-  axis: MatchingDimension,
-): number {
-  const value = profile?.[axis];
-  return typeof value === "number" ? clampRadarValue(value) : 0;
-}
-
-/** One perfume's five-axis bars, in `MATCHING_DIMENSIONS` order. */
-export function headToHeadAxes(
-  recommendation: MatchedPerfume,
-): Array<{ axis: MatchingDimension; value: number }> {
-  return MATCHING_DIMENSIONS.map((axis) => ({
-    axis,
-    value: axisValueFor(recommendation.matchingProfile, axis),
-  }));
-}
+/** The results page's existing gold→accent fill, both sides. */
+const RESULT_BAR_FILL = {
+  backgroundImage:
+    "linear-gradient(to right, var(--marker-gold) 0%, var(--accent) 100%)",
+} as const;
 
 export default function HeadToHead({
   recommendations,
@@ -117,24 +62,13 @@ export default function HeadToHead({
 
   // Fewer than two perfumes means there is nothing to compare: the block is
   // simply absent, never a comparison against a placeholder.
-  if (recommendations.length < 2) {
+  const selected = selectHeadToHeadPair(recommendations, pair);
+
+  if (!selected) {
     return null;
   }
 
-  const [firstIndex, secondIndex] = headToHeadOrder(pair).map((index) =>
-    // A shorter list than the state expects can only come from a prop change
-    // between renders; clamp instead of indexing past the end.
-    Math.min(index, recommendations.length - 1),
-  ) as [number, number];
-
-  // The two slots are always distinct: the clamp above can only collide on a
-  // one-item list, which already returned.
-  const first = recommendations[firstIndex];
-  const second =
-    secondIndex === firstIndex
-      ? recommendations[firstIndex === 0 ? 1 : 0]
-      : recommendations[secondIndex];
-
+  const [first, second] = selected;
   const gap = closenessGap(first.presentationScore, second.presentationScore);
   const pairIds = new Set([first.perfumeId, second.perfumeId]);
 
@@ -204,59 +138,11 @@ export default function HeadToHead({
       </div>
 
       {/* --- five axis rows, two bars each (left = first, right = second) --- */}
-      <div className="flex flex-col gap-4">
-        {MATCHING_DIMENSIONS.map((axis) => {
-          const label = SCENT_RADAR_LABELS[axis];
-          const leftValue = axisValueFor(first.matchingProfile, axis);
-          const rightValue = axisValueFor(second.matchingProfile, axis);
-
-          return (
-            <div
-              key={axis}
-              data-axis={axis}
-              role="group"
-              aria-label={`${label}؛ ${first.name} ${toPersianDigits(leftValue)}، ${second.name} ${toPersianDigits(rightValue)}`}
-              className="flex flex-col gap-2"
-            >
-              <span className="text-center text-xs font-medium text-muted">
-                {label}
-              </span>
-              <div dir="ltr" className="grid grid-cols-2 gap-4">
-                {[
-                  { recommendation: first, value: leftValue, side: "first" },
-                  { recommendation: second, value: rightValue, side: "second" },
-                ].map((entry) => (
-                  <div
-                    key={`${axis}-${entry.side}`}
-                    data-side={entry.side}
-                    className="flex flex-col gap-1"
-                  >
-                    <span className="tnum text-xs font-semibold text-foreground">
-                      {toPersianDigits(entry.value)}
-                    </span>
-                    <span
-                      aria-hidden="true"
-                      className="block h-2 w-full overflow-hidden rounded-full bg-surface-2"
-                    >
-                      <span
-                        className="block h-full rounded-full"
-                        style={{
-                          width: `${entry.value}%`,
-                          backgroundImage:
-                            "linear-gradient(to right, var(--marker-gold) 0%, var(--accent) 100%)",
-                        }}
-                      />
-                    </span>
-                    <span className="sr-only">
-                      {entry.recommendation.name}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <ComparisonAxes
+        first={first}
+        second={second}
+        sideStyles={[RESULT_BAR_FILL, RESULT_BAR_FILL]}
+      />
 
       {/* The difference of the two printed whole numbers. A tie is a real 0. */}
       <p className="text-sm font-medium text-foreground">

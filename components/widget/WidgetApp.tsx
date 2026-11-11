@@ -16,6 +16,7 @@ import Question from "@/components/quiz/Question";
 import StagedReveal from "@/components/results/StagedReveal";
 import { BrandMark } from "@/components/ui-icons";
 import WidgetAnalysis from "@/components/widget/WidgetAnalysis";
+import WidgetHeadToHead from "@/components/widget/WidgetHeadToHead";
 import WidgetRecommendationCard from "@/components/widget/WidgetRecommendationCard";
 import WidgetShell from "@/components/widget/WidgetShell";
 import WidgetStoreHeader from "@/components/widget/WidgetStoreHeader";
@@ -608,6 +609,16 @@ export function WidgetResult({
           </StagedReveal>
         </section>
       )}
+
+      {/* Batch 40 — the merchant-facing half of head-to-head: any two of the
+          top three compared side by side, ending in the same product links the
+          cards offer. Needs a real pair, so fewer than two hides it. */}
+      <WidgetHeadToHead
+        recommendations={data.recommendations}
+        storeId={storeId}
+        storeSlug={storeSlug}
+        storeWebsiteUrl={storeWebsiteUrl}
+      />
 
       <button
         type="button"

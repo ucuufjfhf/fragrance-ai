@@ -346,6 +346,43 @@ describe("POST /api/widget/recommend — response contract (§12)", () => {
     expect(first.perfumeId).toBe("store-A-perfume-1"); // minimum identifier (§12)
   });
 
+  it("carries the five matching values verbatim when the engine provides them (batch 40)", async () => {
+    const result = makeMatchResult("store-A", 2);
+    result.recommendations[0].matchingProfile = {
+      fresh: 90,
+      warm: 10,
+      mysterious: 40,
+      elegant: 60,
+      bold: 20,
+    };
+    mocks.matchPerfumes.mockReturnValue(result);
+
+    const response = await recommendPost(
+      new Request("https://app.test/api/widget/recommend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storeId: "store-A", personalityVector: VECTOR }),
+      }),
+    );
+
+    const body = await response.json();
+
+    // Pure pass-through of the object the engine already scored with.
+    expect(body.recommendations[0].matchingProfile).toEqual({
+      fresh: 90,
+      warm: 10,
+      mysterious: 40,
+      elegant: 60,
+      bold: 20,
+    });
+    // Absent stays absent: the older payload shape is unchanged, which is the
+    // companion to the exact-key pin above.
+    expect(body.recommendations[1]).not.toHaveProperty("matchingProfile");
+    expect(Object.keys(body.recommendations[1]).sort()).toEqual([
+      "brand", "imageUrl", "matchPercent", "name", "perfumeId", "price", "productUrl", "rank",
+    ]);
+  });
+
   it("includes each perfume's stored price, and null when there is none", async () => {
     mocks.matchPerfumes.mockReturnValue(makeMatchResult("store-A", 2));
     mocks.priceFindMany.mockResolvedValue([
