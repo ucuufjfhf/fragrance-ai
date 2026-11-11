@@ -44,14 +44,17 @@ import {
   openContext,
   restartQuiz,
   returnToResult,
+  parseMiniQuizAnswer,
   selectAnswer,
   selectAudience,
+  selectAudienceSkippingAnswer,
   selectOccasion,
   selectSeason,
   showAnalysis,
   showFiltering,
   showResult,
   startQuiz,
+  startQuizWithAnswer,
   toAnswers,
   type QuizFlowState,
 } from "@/lib/personality/quiz-flow";
@@ -126,7 +129,10 @@ function optionCenter(questionId: string, optionId: string): { x: number; y: num
  * handler falls back to a plain navigation. In the browser the router always
  * exists and the skip stays a client-side transition.
  */
-function useOptionalRouter(): { push(href: string): void } | null {
+function useOptionalRouter(): {
+  push(href: string): void;
+  replace?(href: string): void;
+} | null {
   try {
     return useRouter();
   } catch {
@@ -201,9 +207,32 @@ const glyphProps = {
  * gets the same store attribution the Phase 8 widget already has. No store
  * selector is ever shown to the shopper (§10 Phase 8: the merchant picks the
  * store at installation time, never the customer).
+ *
+ * `carriedOptionId` (batch 38): the homepage hero answers Q1 itself and hands
+ * its option id over in `?q1=`. When it validates against the bank, the run
+ * starts at the AUDIENCE step (context before questions) with Q1 already
+ * selected, and that audience answer advances straight to Q2. An invalid,
+ * missing or stale value is dropped silently and the quiz starts on the intro,
+ * exactly as before.
  */
-export default function Quiz({ storeId }: { storeId?: string }) {
-  const [flow, setFlow] = useState<QuizFlowState>(createInitialQuizFlowState);
+export default function Quiz({
+  storeId,
+  carriedOptionId,
+}: {
+  storeId?: string;
+  carriedOptionId?: string;
+}) {
+  // Batch 38 — the hero's Q1 answer arrives in the URL. It is validated against
+  // the bank exactly once, when the attempt is created: an unknown, missing or
+  // stale value is null, so the quiz simply starts on the ordinary intro. The
+  // resumed run begins at the AUDIENCE step with Q1 selected.
+  const [carriedAnswer] = useState(() => parseMiniQuizAnswer(carriedOptionId));
+  const [flow, setFlow] = useState<QuizFlowState>(
+    () => startQuizWithAnswer(carriedAnswer) ?? createInitialQuizFlowState(),
+  );
+  // One audience answer is the hand-off: after it the hero's question is behind
+  // us, and later audience picks (back from Q1) take the normal path.
+  const skipAnsweredQuestion = useRef(carriedAnswer !== null);
   const [result, setResult] = useState<QuizResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -230,6 +259,19 @@ export default function Quiz({ storeId }: { storeId?: string }) {
     const frame = requestAnimationFrame(() => setStepEntered(true));
     return () => cancelAnimationFrame(frame);
   }, [screenKey]);
+
+  // Batch 38 — a resumed entry IS the shopper entering the quiz, so this
+  // attempt's single QUIZ_STARTED fires once, on arrival. A fresh entry keeps
+  // firing it on the intro button below; the tracker's own once-guard makes the
+  // two paths mutually exclusive. The homepage never fires it.
+  const resumedStartTracked = useRef(false);
+  useEffect(() => {
+    if (carriedAnswer === null || resumedStartTracked.current) {
+      return;
+    }
+    resumedStartTracked.current = true;
+    trackQuizStarted(storeId);
+  }, [carriedAnswer, storeId]);
 
   // Act 2's layers are presentation only: they READ the flow (selections) and
   // the pointer, and write nothing back into it.
@@ -300,10 +342,19 @@ export default function Quiz({ storeId }: { storeId?: string }) {
     [spawnPulse],
   );
 
-  // The audience choice is recorded in the flow state and immediately advances
-  // to Q1 — it never touches the answer selections, so scoring is untouched.
+  // The audience choice is recorded in the flow state and normally advances to
+  // Q1 — it never touches the answer selections, so scoring is untouched.
+  // Batch 38: on a hero-carried attempt Q1 is already answered, so that first
+  // audience answer lands on Q2 instead. After the hand-off, later audience
+  // picks (the shopper coming back from Q1) take the ordinary path to Q1.
   const handleAudienceSelect = useCallback((audience: AudienceGender) => {
-    setFlow((current) => selectAudience(current, audience));
+    const handOff = skipAnsweredQuestion.current;
+    skipAnsweredQuestion.current = false;
+    setFlow((current) =>
+      handOff
+        ? selectAudienceSkippingAnswer(current, audience)
+        : selectAudience(current, audience),
+    );
   }, []);
 
   // Context selections live in the flow state only: they never enter the
@@ -332,7 +383,21 @@ export default function Quiz({ storeId }: { storeId?: string }) {
     pulseTimers.current = [];
     setBlooms([]);
     setPulses([]);
-  }, []);
+
+    // A hero answer lives in the URL, so a new attempt must not inherit it: the
+    // carry leaves the address bar along with the cleared attempt.
+    skipAnsweredQuestion.current = false;
+    if (carriedAnswer !== null) {
+      const cleanHref = storeId
+        ? `/quiz?store=${encodeURIComponent(storeId)}`
+        : "/quiz";
+      if (router?.replace) {
+        router.replace(cleanHref);
+      } else if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", cleanHref);
+      }
+    }
+  }, [carriedAnswer, router, storeId]);
 
   const handleSubmit = useCallback(async () => {
     if (!isQuizComplete(flow)) {

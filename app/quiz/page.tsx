@@ -29,6 +29,14 @@ export default async function QuizPage({ searchParams }: QuizPageProps) {
   const rawStore = params.store;
   const storeId = (Array.isArray(rawStore) ? rawStore[0] : rawStore)?.trim() || undefined;
 
+  // Batch 38 — the homepage hero's Q1 answer rides in `?q1=<optionId>`. It is
+  // only a hint: Quiz validates it against the question bank and silently
+  // ignores anything that is not a real Q1 option, so a stale or hand-edited
+  // link starts an ordinary quiz instead of rendering a phantom answer.
+  const rawCarry = params.q1;
+  const carriedOptionId =
+    (Array.isArray(rawCarry) ? rawCarry[0] : rawCarry)?.trim() || undefined;
+
   return (
     <div className="flex flex-1 flex-col">
       {/* The quiz's own atmosphere: warm washes behind the flow and a film-grain
@@ -44,7 +52,7 @@ export default async function QuizPage({ searchParams }: QuizPageProps) {
           breathes without going unreadably wide. Asymmetry is preserved:
           the wider column is still start-aligned content, never centred. */}
       <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6 sm:py-14 lg:max-w-5xl">
-        <Quiz storeId={storeId} />
+        <Quiz storeId={storeId} carriedOptionId={carriedOptionId} />
       </main>
 
       <SiteFooter />

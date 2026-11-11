@@ -4,7 +4,11 @@ import {
   isSeasonFilter,
   type SeasonFilter,
 } from "@/lib/context";
-import { QUIZ_QUESTIONS, getOptionById } from "@/lib/personality/questions";
+import {
+  QUIZ_QUESTIONS,
+  getOptionById,
+  getQuestionById,
+} from "@/lib/personality/questions";
 import type { QuizAnswer, QuizQuestion } from "@/types/personality";
 import type { Occasion } from "@/types/fragrance";
 
@@ -62,6 +66,16 @@ export interface QuizFlowState {
   season: SeasonFilter | null;
   occasion: Occasion | null;
 }
+
+/**
+ * The homepage mini-quiz (batch 38): Q1 of the bank is answered in the hero.
+ * The id lives here so the hero, the /quiz route and the validation below can
+ * never drift apart — and it is a bank id, never a hard-coded option list.
+ */
+export const MINI_QUIZ_QUESTION_ID = "choice-style";
+
+/** The /quiz query parameter that carries the hero's Q1 answer. */
+export const MINI_QUIZ_PARAM = "q1";
 
 export interface QuizProgress {
   /** 1-based position of the current question. */
@@ -142,6 +156,82 @@ export function selectAudience(
 /** Restart returns to the intro screen with all answers cleared. */
 export function restartQuiz(): QuizFlowState {
   return createInitialQuizFlowState();
+}
+
+/**
+ * Validates a carried hero answer against the bank.
+ *
+ * The value comes from the URL, so it is untrusted: only an option id that
+ * really belongs to Q1 survives. A repeated `?q1=` (an array), an empty value,
+ * an option of another question, or an id that no longer exists are all
+ * dropped — the quiz then starts fresh instead of rendering or scoring
+ * something the bank does not contain.
+ */
+export function parseMiniQuizAnswer(raw: unknown): string | null {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const optionId = value.trim();
+  if (!optionId) {
+    return null;
+  }
+
+  const question = getQuestionById(MINI_QUIZ_QUESTION_ID);
+  if (!question || !getOptionById(question, optionId)) {
+    return null;
+  }
+
+  return optionId;
+}
+
+/**
+ * A resumed attempt: the audience step, with Q1 already answered in the hero.
+ *
+ * Returns null when the carried value is not a real Q1 option, so the caller
+ * falls back to the ordinary intro. The audience still comes first — it is
+ * merchandising context and is never scored — and the carried answer is a
+ * normal entry in `selections`, so it scores through `toAnswers` exactly like
+ * a tap on the question screen.
+ */
+export function startQuizWithAnswer(raw: unknown): QuizFlowState | null {
+  const optionId = parseMiniQuizAnswer(raw);
+
+  if (!optionId) {
+    return null;
+  }
+
+  return {
+    ...startQuiz(),
+    selections: { [MINI_QUIZ_QUESTION_ID]: optionId },
+  };
+}
+
+/**
+ * The audience answer for an attempt resumed from the hero.
+ *
+ * Same contract as `selectAudience`, except that Q1 is already answered, so the
+ * audience step advances straight to the next question (Q2, «سؤال ۲ از ۱۰»).
+ * Going back from there is the ordinary `goPrevious`, which lands on Q1 with
+ * the hero option preselected and changeable.
+ */
+export function selectAudienceSkippingAnswer(
+  state: QuizFlowState,
+  audience: unknown,
+): QuizFlowState {
+  const next = selectAudience(state, audience);
+
+  if (
+    next === state ||
+    next.selections[MINI_QUIZ_QUESTION_ID] === undefined ||
+    next.questionIndex !== 0
+  ) {
+    return next;
+  }
+
+  return QUIZ_QUESTIONS.length > 1 ? { ...next, questionIndex: 1 } : next;
 }
 
 /**

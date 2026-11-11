@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import FaqSection from "@/components/landing/FaqSection";
+import HeroMiniQuiz from "@/components/landing/HeroMiniQuiz";
 import SampleResultSection from "@/components/landing/SampleResultSection";
 import MarkerWipe from "@/components/quiz/MarkerWipe";
 import SiteFooter from "@/components/site/SiteFooter";
@@ -61,6 +62,10 @@ export default function Home() {
                 فقط ۱۰ سوال کوتاه؛ بعدش می‌فهمید کدوم رایحه واقعاً به سلیقه و شخصیتتون می‌خوره —
                 نه بر اساس تبلیغ، بر اساس خودتون.
               </p>
+              {/* Batch 38 — Q1 itself, answered right here: the block comes
+                  from the question bank and hands its option to /quiz in the
+                  URL. The button below stays the no-answer path. */}
+              <HeroMiniQuiz />
               <Link
                 href="/quiz"
                 className="btn-primary flex min-h-14 items-center justify-center px-9 text-lg font-medium text-background"
