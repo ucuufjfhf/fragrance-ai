@@ -105,11 +105,14 @@ export function trackResultViewed(storeId?: string): void {
 /**
  * The attempt token if one already exists — never mints one.
  *
- * WIDGET_VIEWED happens BEFORE any quiz attempt, so minting a token here would
- * create an identity for a visit that never becomes an attempt. It rides along
- * with the token only when the shopper already has one.
+ * Any event that can fire BEFORE or OUTSIDE a quiz attempt reads the token this
+ * way: minting there would create an identity for a visit that never becomes an
+ * attempt, and a fabricated attempt is worse than an absent token. WIDGET_VIEWED
+ * uses it (the widget mounts before the shopper answers anything), and so do
+ * the widget's result and click events (batch 44) — they ride along only when
+ * this attempt already minted its token through QUIZ_STARTED/QUIZ_COMPLETED.
  */
-function peekSessionToken(): string | undefined {
+export function peekSessionToken(): string | undefined {
   try {
     return window.sessionStorage.getItem(SESSION_STORAGE_KEY) ?? undefined;
   } catch {

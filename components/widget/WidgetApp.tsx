@@ -21,7 +21,6 @@ import WidgetHeadToHead from "@/components/widget/WidgetHeadToHead";
 import WidgetRecommendationCard from "@/components/widget/WidgetRecommendationCard";
 import WidgetShell from "@/components/widget/WidgetShell";
 import WidgetStoreHeader from "@/components/widget/WidgetStoreHeader";
-import { trackEvent } from "@/lib/analytics/client";
 import {
   resetAnalyticsFlow,
   trackQuizCompleted,
@@ -29,6 +28,7 @@ import {
   trackWidgetViewed,
 } from "@/lib/analytics/flow-tracker";
 import { splitEmphasis } from "@/lib/personality/archetypes";
+import { trackWidgetResultEvents } from "@/lib/widget/events";
 import { QUESTION_HIGHLIGHTS, splitHighlighted } from "@/lib/personality/question-highlights";
 import { QUIZ_QUESTIONS } from "@/lib/personality/questions";
 import {
@@ -298,18 +298,12 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
 
     const data = state.recommendations;
 
-    // RESULT_VIEWED / RECOMMENDATIONS_SHOWN with widget store context.
-    void trackEvent({ eventType: "RESULT_VIEWED", storeId });
-    void trackEvent({
-      eventType: "RECOMMENDATIONS_SHOWN",
-      storeId,
-      // `count` is the list size; `perfumeIds` is what actually rendered, in
-      // display order (the same enrichment the main quiz sends server-side).
-      metadata: {
-        count: data.recommendations.length,
-        perfumeIds: data.recommendations.map((recommendation) => recommendation.perfumeId),
-      },
-    });
+    // RESULT_VIEWED / RECOMMENDATIONS_SHOWN with widget store context. The
+    // helper attaches the attempt token with peek semantics (batch 44): it
+    // rides along only when this attempt already minted one through
+    // QUIZ_STARTED/QUIZ_COMPLETED, so a result view is joinable to its attempt
+    // and the widget never fabricates an attempt of its own.
+    trackWidgetResultEvents(storeId, data.recommendations);
 
     setState((current) =>
       current.phase === "loading" ? { ...current, phase: "result" } : current,
