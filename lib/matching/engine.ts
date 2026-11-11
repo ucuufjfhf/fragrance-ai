@@ -220,6 +220,11 @@ export function matchPerfumes(input: MatchPerfumesInput): MatchResult {
       description: candidate.description ?? null,
       family: candidate.family ?? null,
       notes: candidate.notes ?? null,
+      // The five values this candidate was just scored with, passed through
+      // verbatim for display (batch 39's head-to-head bars). It is a copy of
+      // the already-validated profile, so nothing is recomputed: the distance,
+      // score and ordering above are untouched.
+      matchingProfile: profile,
     });
   }
 

@@ -9,6 +9,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import AnswerDecode from "@/components/results/AnswerDecode";
+import HeadToHead from "@/components/results/HeadToHead";
 import BrandSignoff from "@/components/results/BrandSignoff";
 import DownloadResultCardButton from "@/components/results/DownloadResultCardButton";
 import ShareResultButton from "@/components/results/ShareResultButton";
@@ -330,6 +331,13 @@ export default function ResultsView({
           </StagedReveal>
         )}
       </section>
+
+      {/* --- head-to-head: any two of the top three, side by side (batch 39).
+          Needs a real pair, so an empty result or a single recommendation hides
+          the block entirely. --- */}
+      {!isEmpty && recommendations.length >= 2 ? (
+        <HeadToHead recommendations={recommendations} />
+      ) : null}
 
       {/* --- how did I get here: the shopper's own answers, decoded --- */}
       <div className="w-full lg:mx-auto lg:max-w-2xl">

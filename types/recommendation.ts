@@ -9,6 +9,7 @@ import type {
   Occasion,
   Season,
 } from "@/types/fragrance";
+import type { MatchingProfileRow } from "@/lib/fragrance/profile";
 
 /** A single scored recommendation produced by the deterministic engine. */
 export interface ScoredRecommendation {
@@ -139,6 +140,16 @@ export interface MatchedPerfume {
   description?: string | null;
   family?: string | null;
   notes?: string[] | null;
+  /**
+   * The perfume's five matching-axis values — the exact profile the engine
+   * validated and scored with, copied verbatim AFTER scoring (batch 39).
+   *
+   * Pure display pass-through for the head-to-head comparison's bars: it is
+   * never read by `similarityScore`, never used for eligibility and never
+   * sorted on, so it cannot change the result set. Optional because hand-built
+   * candidates and older callers do not need to carry it.
+   */
+  matchingProfile?: MatchingProfileRow;
 }
 
 export interface MatchResult {
