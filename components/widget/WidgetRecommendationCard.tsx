@@ -4,6 +4,7 @@ import { BottleMark } from "@/components/ui-icons";
 import { formatPersianScore, toPersianDigits } from "@/lib/persian";
 import { formatTomanPrice } from "@/lib/pricing/currency";
 import { withWidgetAttribution } from "@/lib/widget/attribution";
+import FadeInImage from "@/components/media/FadeInImage";
 import { trackWidgetPerfumeClick } from "@/lib/widget/click";
 import type { WidgetRecommendation } from "@/lib/widget/contract";
 
@@ -71,10 +72,10 @@ export default function WidgetRecommendationCard({
       {/* --- artwork panel: fixed 3:4 box, so no card changes height --- */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface-2">
         {imageUrl ? (
-          // Merchant-provided absolute URL; plain <img> keeps it working
-          // without a configured image domain.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          // Merchant-provided absolute URL; a plain <img> keeps it working
+          // without a configured image domain. The shared FadeInImage adds the
+          // one-shot entrance once it loads (batch 45).
+          <FadeInImage
             src={imageUrl}
             alt={`تصویر عطر ${name}`}
             className="h-full w-full object-cover"

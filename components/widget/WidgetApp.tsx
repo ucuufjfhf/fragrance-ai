@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { archetypeEmblemImageFor } from "@/components/archetype-emblems";
+import FadeInImage from "@/components/media/FadeInImage";
 import MarkerWipe from "@/components/quiz/MarkerWipe";
 import ProgressBar from "@/components/quiz/ProgressBar";
 import Question from "@/components/quiz/Question";
@@ -17,6 +18,7 @@ import ScentRadar from "@/components/results/ScentRadar";
 import StagedReveal from "@/components/results/StagedReveal";
 import { BrandMark } from "@/components/ui-icons";
 import WidgetAnalysis from "@/components/widget/WidgetAnalysis";
+import WidgetBoot from "@/components/widget/WidgetBoot";
 import WidgetHeadToHead from "@/components/widget/WidgetHeadToHead";
 import WidgetRecommendationCard from "@/components/widget/WidgetRecommendationCard";
 import WidgetShell from "@/components/widget/WidgetShell";
@@ -101,11 +103,6 @@ interface WidgetState {
 const STORE_UNAVAILABLE = "این فروشگاه در حال حاضر در دسترس نیست.";
 const RECOMMENDATION_ERROR = "فعلاً نتونستیم پیشنهادها رو آماده کنیم. لطفاً دوباره تلاش کنید.";
 const EMPTY_INVENTORY = "فعلاً عطری برای پیشنهاد در این فروشگاه ثبت نشده است.";
-// Neutral on purpose: this is the store-config fetch, before any quiz exists.
-// The results-flavoured «در حال پیدا کردن عطر…» was describing a search that
-// had not started (the quiz's own analysis phase has its own copy).
-const LOADING = "در حال بارگذاری…";
-
 /** The widget intro headline — the quiz's approved copy, byte-identical. */
 const INTRO_HEADLINE = "عطر مناسب خودتون رو پیدا کنید";
 const INTRO_HIGHLIGHT = splitHighlighted(INTRO_HEADLINE, QUESTION_HIGHLIGHTS.intro);
@@ -340,8 +337,11 @@ export default function WidgetApp({ storeId }: { storeId: string }) {
     return shell(<WidgetNotice>{STORE_UNAVAILABLE}</WidgetNotice>);
   }
 
+  // The boot is the INITIAL view, not a delayed one: the state above starts at
+  // "validating" and the config effect replaces it with "intro" the moment the
+  // store resolves. No minimum display time exists anywhere (batch 45).
   if (state.phase === "validating") {
-    return shell(<WidgetNotice>{LOADING}</WidgetNotice>);
+    return shell(<WidgetBoot />);
   }
 
   if (state.phase === "loading") {
@@ -544,8 +544,7 @@ export function WidgetResult({
               }}
             />
             <span aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-full">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <FadeInImage
                 src={archetypeEmblemImageFor(result.archetype.id)}
                 alt=""
                 width={1600}

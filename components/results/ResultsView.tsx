@@ -1,6 +1,7 @@
 import { BrandMark } from "@/components/ui-icons";
 import { archetypeEmblemImageFor } from "@/components/archetype-emblems";
 import AmbientParticles from "@/components/AmbientParticles";
+import FadeInImage from "@/components/media/FadeInImage";
 import TraitBars from "@/components/results/TraitBars";
 
 import { Fragment } from "react";
@@ -155,9 +156,9 @@ export default function ResultsView({
                 above already carries the accessible name. */}
             <span aria-hidden="true" className="absolute inset-0 overflow-hidden rounded-full">
               {/* Bundled public/ asset, not merchant data: a plain <img> ships the
-                  exact file, so the artwork is never re-encoded. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+                  exact file, so the artwork is never re-encoded. The shared
+                  FadeInImage gives it the one-shot entrance on load (batch 45). */}
+              <FadeInImage
                 src={archetypeEmblemImageFor(archetype.id)}
                 alt=""
                 width={1600}

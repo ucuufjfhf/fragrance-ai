@@ -1653,6 +1653,85 @@ h1, h2, h3, h4, h5, h6 {
     radial-gradient(140% 85% at 50% 110%, rgb(138 35 51 / 0.06) 0%, transparent 62%);
 }
 
+/* ---------------------------------------------------------------------------
+ * Batch 45 — the widget boot state.
+ *
+ * The widget's initial view while the store config resolves (see
+ * components/widget/WidgetBoot.tsx). Loading-scoped, small-area motion only:
+ * the star breathes (opacity + scale), the gold line sweeps (translateX), the
+ * skeleton bars pulse (opacity). Nothing here resamples the page behind it or
+ * animates a background: the Android flicker red lines (184f357) hold in full.
+ * Under `prefers-reduced-motion` every one is off and the boot renders as
+ * static mark + text.
+ * ------------------------------------------------------------------------- */
+@keyframes widget-boot-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.widget-boot {
+  animation: widget-boot-fade 280ms ease-out both;
+}
+
+@keyframes widget-boot-breathe {
+  0%, 100% { opacity: 0.35; transform: scale(0.88); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+.widget-boot-star {
+  animation: widget-boot-breathe 1.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes widget-boot-shimmer {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(320%); }
+}
+
+.widget-boot-shimmer {
+  animation: widget-boot-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes widget-boot-bar {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.85; }
+}
+
+.widget-boot-bar {
+  animation: widget-boot-bar 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .widget-boot,
+  .widget-boot-star,
+  .widget-boot-shimmer,
+  .widget-boot-bar {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Batch 45 — one-shot image entrance for the result surfaces.
+ *
+ * Applied by `components/media/FadeInImage.tsx` when a real image load happens,
+ * never by a timer and never under `prefers-reduced-motion`. Transform +
+ * opacity only; the host boxes already fix the geometry, so nothing shifts.
+ * ------------------------------------------------------------------------- */
+@keyframes media-fade-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.media-fade-in {
+  animation: media-fade-in 900ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-fade-in {
+    animation: none;
+  }
+}
+
 /* The grain: the quiz's own tile, static (no animation to freeze). */
 .widget-ambience::after {
   content: "";

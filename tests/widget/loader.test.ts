@@ -126,10 +126,11 @@ describe("GET /widget — iframe document (§8/§31)", () => {
     );
 
     expect(html).toContain('dir="rtl"');
-    // SSR renders the validating state (the store check is a client-side
-    // fetch after hydration); the intro appears once validation passes.
-    // Neutral config-load copy: no quiz exists yet at this phase.
-    expect(html).toContain("در حال بارگذاری…");
+    // SSR renders the boot state (the store check is a client-side fetch after
+    // hydration); the intro appears once validation passes. The boot is
+    // FIAGE-branded because no store context exists yet (batch 45).
+    expect(html).toContain("در حال آماده‌سازی آزمون…");
+    expect(html).toContain("FIND YOUR SCENT");
     // The resize bridge posts to the parent for loader sizing.
     expect(html).toContain("fragrance-ai:resize");
   });

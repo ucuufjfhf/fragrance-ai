@@ -1,5 +1,6 @@
 "use client";
 
+import FadeInImage from "@/components/media/FadeInImage";
 import { artworkForPerfume } from "@/lib/perfumes/artwork";
 import { trackEvent } from "@/lib/analytics/client";
 import { formatPersianScore, toPersianDigits } from "@/lib/persian";
@@ -58,10 +59,10 @@ export default function RecommendationCard({
       {/* --- artwork panel --- */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface-2">
         {imageUrl ? (
-          // Plain <img> keeps merchant data working without a configured image
-          // domain; the URL comes from the merchant inventory.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          // A plain <img> keeps merchant data working without a configured
+          // image domain; the URL comes from the merchant inventory. The shared
+          // FadeInImage adds the one-shot entrance once it loads (batch 45).
+          <FadeInImage
             src={imageUrl}
             alt={`تصویر عطر ${name}`}
             className="h-full w-full object-cover"
