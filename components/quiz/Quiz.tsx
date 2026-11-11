@@ -264,13 +264,17 @@ export default function Quiz({
   // attempt's single QUIZ_STARTED fires once, on arrival. A fresh entry keeps
   // firing it on the intro button below; the tracker's own once-guard makes the
   // two paths mutually exclusive. The homepage never fires it.
+  //
+  // Batch 46 — this is the hero entry, so the event carries the "hero" marker.
+  // The intro button below stays marker-less: only the carried-answer path is
+  // the homepage. The marker comes from this argument alone, never storage.
   const resumedStartTracked = useRef(false);
   useEffect(() => {
     if (carriedAnswer === null || resumedStartTracked.current) {
       return;
     }
     resumedStartTracked.current = true;
-    trackQuizStarted(storeId);
+    trackQuizStarted(storeId, "hero");
   }, [carriedAnswer, storeId]);
 
   // Act 2's layers are presentation only: they READ the flow (selections) and

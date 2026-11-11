@@ -83,9 +83,25 @@ function fireOnce(eventType: AnalyticsEventType, payload: Record<string, unknown
   return true;
 }
 
-/** QUIZ_STARTED — when the shopper actually enters the quiz (intro → Q1). */
-export function trackQuizStarted(storeId?: string): void {
-  fireOnce("QUIZ_STARTED", { storeId, sessionId: getSessionToken() });
+/**
+ * QUIZ_STARTED — when the shopper actually enters the quiz (intro → Q1).
+ *
+ * `entry` (batch 46) marks HOW the attempt was entered, so batch 38's homepage
+ * hero carry can be measured: the hero answers Q1 on the homepage and sends the
+ * shopper straight into the quiz, and that resumed entry passes "hero". The
+ * marker is written once, at fire time, from the call argument — it is never
+ * persisted or read back, so a restart and a later fresh start carry nothing.
+ * Absent → the payload has no `metadata` key at all, exactly as before.
+ *
+ * The once-per-attempt guard and the token owner are untouched: this is still
+ * one event per attempt, with `getSessionToken()`'s token.
+ */
+export function trackQuizStarted(storeId?: string, entry?: "hero"): void {
+  fireOnce("QUIZ_STARTED", {
+    storeId,
+    sessionId: getSessionToken(),
+    ...(entry === "hero" ? { metadata: { entry: "hero" } } : {}),
+  });
 }
 
 /** QUIZ_COMPLETED — a valid personality vector exists (API or offline path). */

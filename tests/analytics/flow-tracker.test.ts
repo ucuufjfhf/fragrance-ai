@@ -41,15 +41,19 @@ describe("flow-tracker — once-per-attempt semantics (§12)", () => {
   it("fires QUIZ_STARTED exactly once even across repeated calls (rerenders)", async () => {
     const tracker = await loadTracker();
 
+    // Batch 46: the guard covers both call forms — a hero entry followed by
+    // repeated calls (marked and bare) still yields ONE event, and it is the
+    // first call's payload that survives.
+    tracker.trackQuizStarted(undefined, "hero");
     tracker.trackQuizStarted();
-    tracker.trackQuizStarted();
-    tracker.trackQuizStarted();
+    tracker.trackQuizStarted(undefined, "hero");
 
     const started = trackEventMock.mock.calls.filter(
       ([payload]) => payload.eventType === "QUIZ_STARTED",
     );
 
     expect(started).toHaveLength(1);
+    expect(started[0][0].metadata).toEqual({ entry: "hero" });
   });
 
   it("fires QUIZ_COMPLETED once per attempt", async () => {

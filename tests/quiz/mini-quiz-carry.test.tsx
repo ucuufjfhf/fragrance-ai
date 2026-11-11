@@ -268,10 +268,13 @@ describe("analytics — one QUIZ_STARTED per attempt", () => {
 
     expect(effect).toContain("useEffect(");
     expect(effect).toContain("if (carriedAnswer === null || resumedStartTracked.current)");
-    expect(effect).toContain("trackQuizStarted(storeId)");
-    // Exactly two call sites on the quiz: the resumed arrival and the intro
-    // button. The hero carries no analytics at all.
-    expect(QUIZ_SOURCE.match(/trackQuizStarted\(storeId\)/g) ?? []).toHaveLength(2);
+    // Batch 46: the resumed arrival is the hero entry, so its call carries the
+    // marker; the intro button stays bare. Both exact forms are pinned once.
+    expect(effect).toContain('trackQuizStarted(storeId, "hero")');
+    // Exactly two call sites on the quiz. The homepage itself carries no
+    // analytics at all.
+    expect(QUIZ_SOURCE.match(/trackQuizStarted\(storeId, "hero"\)/g) ?? []).toHaveLength(1);
+    expect(QUIZ_SOURCE.match(/trackQuizStarted\(storeId\)/g) ?? []).toHaveLength(1);
   });
 
   it("tracks the once-per-attempt guard the resumed entry relies on", async () => {
