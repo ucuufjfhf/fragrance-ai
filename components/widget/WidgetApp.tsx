@@ -13,6 +13,7 @@ import { archetypeEmblemImageFor } from "@/components/archetype-emblems";
 import MarkerWipe from "@/components/quiz/MarkerWipe";
 import ProgressBar from "@/components/quiz/ProgressBar";
 import Question from "@/components/quiz/Question";
+import ScentRadar from "@/components/results/ScentRadar";
 import StagedReveal from "@/components/results/StagedReveal";
 import { BrandMark } from "@/components/ui-icons";
 import WidgetAnalysis from "@/components/widget/WidgetAnalysis";
@@ -581,6 +582,20 @@ export function WidgetResult({
           </p>
         </div>
       </section>
+
+      {/* Batch 41 — the shopper's own scent picture: the SAME shared radar as
+          /result, fed by this widget's own result vector (the one the shared
+          scorer just produced), never the archetype centroid or a perfume's
+          profile. It sits directly under the archetype presentation and above
+          the recommendation cards, so the result reads profile-then-picks.
+
+          Capped and centred for the loader's 480px frame: the card is 340px
+          wide at most and the SVG scales by its viewBox, so there is no fixed
+          pixel width and no horizontal scroll at 360px. The radar's own SVG
+          cap (300px) is untouched, which keeps its axis labels legible. */}
+      <div className="mx-auto w-full max-w-[340px]">
+        <ScentRadar vector={result.vector} />
+      </div>
 
       {data.recommendations.length === 0 ? (
         <WidgetNotice>{EMPTY_INVENTORY}</WidgetNotice>
