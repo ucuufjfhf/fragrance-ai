@@ -23,10 +23,6 @@ const PAGE_SOURCE = readFileSync(
 const render = (): string =>
   renderToStaticMarkup(<Home />).replace(/<!--[\s\S]*?-->/g, "");
 
-/** The module with its block comments stripped: prose may name the words the
- * code must not use. */
-const PAGE_CODE = PAGE_SOURCE.replace(/\/\*[\s\S]*?\*\//g, "");
-
 /** Landmarks inside the hero visual column. next/image encodes its src. */
 const GOLD = "radial-gradient(58% 46% at 50% 42%";
 const WINE = "radial-gradient(closest-side";
@@ -147,8 +143,10 @@ describe("homepage hero bloom", () => {
       // Only background paint is inline — no transforms to animate later.
       expect(tag).not.toMatch(/transform|will-change|@media/);
     }
-    // Not in the page module either, and no <style> block dragged in.
-    expect(PAGE_CODE).not.toMatch(/\banimation|\btransition|@keyframes/);
+    // Now the WHOLE module, comments included: prose may never name the words
+    // the code must not use either, so the comment is worded around them rather
+    // than stripped out of the scan (batch 42).
+    expect(PAGE_SOURCE).not.toMatch(/\banimation|\btransition|@keyframes/);
     expect(PAGE_SOURCE).not.toContain("<style");
     expect(html).not.toContain("quiz-orb");
     expect(html).not.toContain("QuizAmbience");

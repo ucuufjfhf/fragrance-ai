@@ -8,7 +8,8 @@
 >
 > `C:\Users\Admin\fragrance-ai`
 >
-> Production URL: **https://fiage.netlify.app** (deploy `6ab4b1e7eff8ea05cf01667a`,
+> Production URL: **https://fiage.ir** (custom domain on the Netlify site;
+> `www` redirects to the apex — deploy `6ab4b1e7eff8ea05cf01667a`,
 > smoke-tested 2026-09-24 — see §16B.5).
 >
 > This document describes the current repository state through **Phase 16B**
@@ -192,7 +193,7 @@ Do not invent or start Phase 12.6 without explicit user approval.
 # 4. Current Development State
 
 The latest completed implementation is **Phase 16B — Production Deployment +
-Smoke Testing** (2026-09-24). The site is LIVE at https://fiage.netlify.app.
+Smoke Testing** (2026-09-24). The site is LIVE at https://fiage.ir.
 
 The previously completed implementation phase was **Phase 12.5 — Server
 Integration + Admin UI**, which connected the bulk AI profiling engine to the
@@ -1102,11 +1103,14 @@ self-cleanup).
 # 16B. Production Deployment — Netlify (COMPLETE, smoke-tested 2026-09-24)
 
 The production deployment target is **Netlify** and the deployment is
-**COMPLETE AND VERIFIED**. Production URL:
+**COMPLETE AND VERIFIED**. The address at the time of this phase was:
 
 ```text
 https://fiage.netlify.app
 ```
+
+Production is now served at **https://fiage.ir** — a custom domain on that same
+Netlify site, with `www` redirecting to the apex.
 
 Site: `fiage` (siteId `1f00a6f8-f7e7-4f99-8b40-395b08cfa039`); final deploy
 `6ab4b1e7eff8ea05cf01667a`. Project visibility was switched from Netlify's
@@ -1193,6 +1197,9 @@ Database (Supabase Session Pooler): working in production
 AI (Qwen/GapGPT): working in production (aiAvailable: true on /api/widget/recommend)
 Project visibility: PUBLIC
 ```
+
+The host above is the dated 2026-09-24 record; production now answers on
+**https://fiage.ir** (same Netlify site, `www` → apex).
 
 Redeploying from the local working directory (intentionally dirty Git state,
 no commit needed):

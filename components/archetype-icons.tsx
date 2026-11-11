@@ -8,9 +8,10 @@
  * is decorative, and the seal that wraps it carries the accessible name (see
  * `QuizResultCard` / `ResultsView`).
  *
- * Deliberately generic shapes — an emblem is chosen by archetype id only
- * (`components/archetype-icon-map.ts`) and never encodes a score, a rank or any
- * other engine value.
+ * Deliberately generic shapes — an emblem never encodes a score, a rank or any
+ * other engine value. The seals themselves render the illustrated emblems from
+ * `components/archetype-emblems.ts`; these drawn icons are the generic emblem
+ * vocabulary that predates them.
  */
 export interface ArchetypeIconProps {
   /** Sizing/placement utilities; color always comes from `currentColor`. */

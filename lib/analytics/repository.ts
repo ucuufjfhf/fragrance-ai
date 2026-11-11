@@ -211,8 +211,19 @@ export interface DailyAnalyticsRow {
 }
 
 /**
- * Daily roll-up. Postgres groups by the raw timestamp; the boundaries are UTC
- * days, which is the documented MVP timezone assumption.
+ * Daily roll-up for the dashboard chart.
+ *
+ * The query pulls this store's events in the half-open `[from, to)` range and
+ * the bucketing happens here in JS, not in Postgres: each event is filed under
+ * the UTC calendar day of `createdAt` (`toISOString().slice(0, 10)`), so the
+ * boundaries are UTC days — the documented MVP timezone assumption. Only days
+ * that actually carry events come back; the series is not zero-filled, and rows
+ * are returned sorted ascending by date.
+ *
+ * Through the dashboard read this is a 60-second snapshot: `service.ts` caches
+ * the finished aggregation per argument set (`DASHBOARD_CACHE_TTL_MS`), nothing
+ * invalidates it when an event is written, and failures are never cached — so a
+ * new event can take up to a minute to appear in the chart.
  */
 export async function getDailyAnalytics(
   storeId: string,

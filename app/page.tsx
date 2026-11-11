@@ -78,12 +78,12 @@ export default function Home() {
             <div className="relative mx-auto w-full max-w-[270px] sm:max-w-[300px] lg:max-w-[330px]">
               {/* Two still light layers behind the glass — the gold-and-wine pair
                   from the quiz ambience, frozen into one glow. Both are pure
-                  paint: no animation, no keyframes, no transition, and nothing
-                  animated is imported from the quiz. Horizontally they stay
-                  inside this column's box (inset-x-0 and percentage insets, no
-                  negative offsets), so the bloom can never widen the page on a
-                  phone. They come first in source order, so the bottle and its
-                  ground shadow paint above them. */}
+                  paint that renders once and then holds still: no motion layer
+                  here, and nothing that moves is imported from the quiz.
+                  Horizontally they stay inside this column's box (inset-x-0 and
+                  percentage insets, no negative offsets), so the bloom can never
+                  widen the page on a phone. They come first in source order, so
+                  the bottle and its ground shadow paint above them. */}
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-x-0 top-[2%] h-[76%]"
