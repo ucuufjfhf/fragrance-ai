@@ -68,4 +68,4 @@ export const EVENT_LABELS: Record<AnalyticsEventType, string> = {
   WIDGET_VIEWED: "باز شدن ویجت",
 };
 
-export const CONTACT_EMAIL = "majidemoon0@gmail.com";
+export const CONTACT_EMAIL = "majid@fiage.ir";

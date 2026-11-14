@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -6,15 +8,39 @@ import AboutPage, { metadata } from "@/app/about/page";
 import SiteFooter from "@/components/site/SiteFooter";
 
 /** The contact address — must match the mailto in the page and the footer. */
-const CONTACT_EMAIL = "majidemoon0@gmail.com";
+const CONTACT_EMAIL = "majid@fiage.ir";
 
 /**
  * Server-side render smoke tests for the trust infrastructure (same
  * convention as the other UI tests: react-dom/server, no jsdom, no browser).
  * Navigation and the mailto CTA are covered by the browser gate.
+ *
+ * Batch 50: the copy pins below are the owner-approved brand rewrite — his
+ * exact strings, asserted verbatim, not paraphrases.
  */
 function render(element: ReactElement): string {
   return renderToStaticMarkup(element).replace(/<!--[\s\S]*?-->/g, "");
+}
+
+/** Every non-generated text source file under one of the app dirs. */
+function sourceFiles(dir: string): string[] {
+  const files: string[] = [];
+
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (["node_modules", ".next", "generated"].includes(entry.name)) {
+      continue;
+    }
+
+    const path = join(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      files.push(...sourceFiles(path));
+    } else if (/\.(ts|tsx|css|json|md)$/.test(entry.name)) {
+      files.push(path);
+    }
+  }
+
+  return files;
 }
 
 describe("about page", () => {
@@ -22,12 +48,19 @@ describe("about page", () => {
     expect(metadata.title).toContain("درباره‌ی فیاژ");
   });
 
-  it("tells the founder story in his voice, without invented details", () => {
+  it("carries the approved metadata description", () => {
+    expect(metadata.description).toContain("هر کسی یه امضای بویایی داره");
+    expect(metadata.description).toContain("سه عطر منتخب رو با دلیل");
+  });
+
+  it("opens on the approved headline and brand story", () => {
     const html = render(<AboutPage />);
 
-    expect(html).toContain("دستیار شخصی رایگان عطر شماست");
-    expect(html).toContain("دو سال استفاده از عطرهای مختلف");
-    expect(html).toContain("نشانه‌ی خودشونه");
+    expect(html).toContain("هر کسی یه امضای بویایی داره");
+    expect(html).toContain("عطر خریدن معمولاً شانسیه");
+    expect(html).toContain("همه‌شون شبیه همن");
+    expect(html).toContain("نه گرون‌ترین، نه معروف‌ترین");
+    expect(html).toContain("با دلیل");
     expect(html).toContain("بدون ثبت‌نام");
   });
 
@@ -36,7 +69,9 @@ describe("about page", () => {
 
     expect(html).toContain("۱۰ سوال");
     expect(html).toContain("فیاژ چطور کار می‌کنه؟");
-    expect(html).toContain("۳ عطر منتخب");
+    expect(html).toContain("سه عطر، با دلیل");
+    expect(html).toContain("نقشهٔ سلیقه‌تون ساخته میشه");
+    expect(html).toContain("در اسرع وقت پاسخ می‌دیم");
     expect(html).toContain(`mailto:${CONTACT_EMAIL}`);
     expect(html).toContain("ایمیل بزنید");
     expect(html).toContain("تماس با ما");
@@ -62,5 +97,21 @@ describe("site footer trust links", () => {
     expect(html).toContain("آزمون سلیقه");
     expect(html).toContain("چطور کار می‌کند");
     expect(html).toContain("انتخاب عطر بر اساس پروفایل تو");
+  });
+});
+
+describe("contact address — the business mailbox is the only one", () => {
+  it("has no personal Gmail left anywhere under app/, components/ or lib/", () => {
+    const files = ["app", "components", "lib"].flatMap((dir) =>
+      sourceFiles(join(process.cwd(), dir)),
+    );
+
+    expect(files.length).toBeGreaterThan(50);
+
+    const offenders = files.filter((file) =>
+      readFileSync(file, "utf8").includes("majidemoon0@gmail.com"),
+    );
+
+    expect(offenders).toEqual([]);
   });
 });

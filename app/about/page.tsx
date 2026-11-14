@@ -5,35 +5,36 @@ import SiteFooter from "@/components/site/SiteFooter";
 import SiteHeader from "@/components/site/SiteHeader";
 
 /**
- * GET /about — who FIAGE is, in the founder's own voice.
+ * GET /about — who FIAGE is, in the brand's own voice.
  *
- * The story below is majid's text with light polish only (spacing, flow) —
- * his words and colloquial warmth are kept as given. No biographical details
- * are added: no surname, no dates, no stats, no testimonials.
+ * The story below is the owner-approved brand rewrite (2026-11-14) — his exact
+ * copy, kept byte-for-byte: not reworded, not «polished». The colloquial words
+ * and the em dash are deliberate. No invented details are added: no surname,
+ * no dates, no stats, no testimonials.
  */
 
 export const metadata: Metadata = {
   title: "درباره‌ی فیاژ | FIAGE",
   description:
-    "فیاژ دستیار شخصی رایگان عطر شماست؛ با ۱۰ سوال، پروفایل عطری‌تون ساخته میشه و ۳ عطر منتخب با دلیل می‌بینید.",
+    "هر کسی یه امضای بویایی داره. فیاژ با ۱۰ سوال کوتاه نقشهٔ سلیقهٔ شما رو می‌سازه و سه عطر منتخب رو با دلیل نشون می‌ده.",
 };
 
 const whatItDoes = [
   {
     n: "۱",
-    title: "به ۱۰ سوال جواب بدید",
-    detail: "کوتاه و ساده؛ فقط سلیقه‌تون رو بگید.",
+    title: "۱۰ سوال کوتاه",
+    detail: "دربارهٔ سبک و حس‌وحال شما؛ چند دقیقه بیشتر طول نمی‌کشه.",
   },
   {
     n: "۲",
-    title: "پروفایل ۹محوره‌تون ساخته میشه",
-    detail: "از جواب‌هاتون پروفایل سلیقه‌تون درست میشه.",
+    title: "نقشهٔ سلیقه‌تون ساخته میشه",
+    detail: "از جواب‌هاتون یه پروفایل بویایی روی ۹ محور درست میشه.",
   },
   {
     n: "۳",
-    title: "۳ عطر منتخب رو با دلیل ببینید",
+    title: "سه عطر، با دلیل",
     detail:
-      "بر اساس پنج محور رایحه‌ای پروفایل‌تون؛ با توضیح اینکه هر کدوم چرا به سلیقه‌تون می‌خوره.",
+      "سه‌تایی که روی پنج محور رایحه‌ای به نقشهٔ شما می‌خورن، با توضیح اینکه چرا.",
   },
 ];
 
@@ -48,11 +49,11 @@ export default function AboutPage() {
               size — the muted token clears AA. */}
           <p className="text-sm font-medium text-muted">درباره‌ی فیاژ</p>
           <h1 className="mt-2 font-heading text-4xl font-bold leading-[1.3] text-foreground sm:text-5xl">
-            دستیار شخصی رایگان عطر شما
+            هر کسی یه امضای بویایی داره
           </h1>
         </section>
 
-        {/* The founder's story — his voice, lightly polished. */}
+        {/* The brand story — the owner-approved rewrite (2026-11-14). */}
         <section
           aria-labelledby="founder-story"
           className="mx-auto w-full max-w-3xl px-5 py-8 sm:px-8"
@@ -65,13 +66,17 @@ export default function AboutPage() {
           </h2>
           <div className="mt-6 flex flex-col gap-4 rounded-3xl border border-border-soft bg-surface p-6 sm:p-8">
             <p className="leading-loose text-foreground/90">
-              فیاژ دستیار شخصی رایگان عطر شماست. بعد از دو سال استفاده از
-              عطرهای مختلف تصمیم گرفتم یه دستیاری بسازم که با توجه به شرایط
-              اخیر بتونه به همه کمک کنه تا بدون هزینه‌ی اضافی، عطری که نشانه‌ی
-              خودشونه رو انتخاب کنن.
+              عطر خریدن معمولاً شانسیه: صدها شیشه، توضیح‌هایی که همه‌شون شبیه همن،
+              و قیمتی که اشتباه رو گرون می‌کنه.
+            </p>
+            <p className="leading-loose text-foreground/90">
+              فیاژ برای همین ساخته شد. سلیقهٔ هر کسی یه شکل بویایی داره و عطر
+              درست همونیه که به اون شکل می‌خوره — نه گرون‌ترین، نه معروف‌ترین. ما
+              اول شما رو می‌شناسیم، بعد سه عطر نشون می‌دیم که واقعاً مال شماست، با
+              دلیل.
             </p>
             <p className="text-sm leading-loose text-muted">
-              بدون ثبت‌نام، بدون هزینه — فقط با جواب دادن به چند سوال کوتاه.
+              بدون ثبت‌نام و بدون هزینه.
             </p>
           </div>
         </section>
@@ -125,11 +130,10 @@ export default function AboutPage() {
             تماس با ما
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-sm leading-loose text-muted">
-            سوال، پیشنهاد یا حرفی درباره عطرها دارید؟ خوشحال میشم بشنوم — مستقیم
-            ایمیل بزنید.
+            سوال یا پیشنهادی دارید؟ مستقیم ایمیل بزنید — در اسرع وقت پاسخ می‌دیم.
           </p>
           <a
-            href="mailto:majidemoon0@gmail.com"
+            href="mailto:majid@fiage.ir"
             className="btn-tertiary btn-tertiary-forward mx-auto mt-8 text-lg font-medium"
           >
             ایمیل بزنید

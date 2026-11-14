@@ -50,7 +50,7 @@ export default function SiteFooter() {
             برای فروشگاه‌ها
           </Link>
           <a
-            href="mailto:majidemoon0@gmail.com"
+            href="mailto:majid@fiage.ir"
             className="inline-flex min-h-10 items-center transition-colors hover:text-foreground"
           >
             تماس

@@ -81,7 +81,7 @@ describe("data policy page — who sees what, and honesty limits", () => {
   });
 
   it("offers the same public contact address as /about", () => {
-    expect(CONTACT_EMAIL).toBe("majidemoon0@gmail.com");
+    expect(CONTACT_EMAIL).toBe("majid@fiage.ir");
     expect(html).toContain(`mailto:${CONTACT_EMAIL}`);
   });
 });

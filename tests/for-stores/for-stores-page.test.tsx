@@ -151,7 +151,7 @@ describe("for-stores page — contact and footer", () => {
     const aboutMailto = about.match(/mailto:([^"]+)/)?.[1];
     const forStoresMailto = html.match(/mailto:([^"]+)/)?.[1];
 
-    expect(aboutMailto).toBe("majidemoon0@gmail.com");
+    expect(aboutMailto).toBe("majid@fiage.ir");
     expect(forStoresMailto).toBe(aboutMailto);
   });
 
