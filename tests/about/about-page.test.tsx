@@ -5,7 +5,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import AboutPage, { metadata } from "@/app/about/page";
+import { archetypeEmblemImageFor } from "@/components/archetype-emblems";
 import SiteFooter from "@/components/site/SiteFooter";
+import { ARCHETYPES } from "@/lib/personality/archetypes";
 
 /** The contact address — must match the mailto in the page and the footer. */
 const CONTACT_EMAIL = "majid@fiage.ir";
@@ -77,6 +79,72 @@ describe("about page", () => {
     expect(html).toContain("ایمیل بزنید");
     expect(html).toContain("تماس با ما");
     expect(html).toContain('href="/quiz"');
+  });
+});
+
+describe("about page — the eight-archetype emblem strip", () => {
+  const LABELS = ["ماه", "قطره", "خورشید", "الماس", "پر", "رز", "شعله", "تاج"];
+  const NAMES = [
+    "The Moon",
+    "The Droplet",
+    "The Sun",
+    "The Diamond",
+    "The Feather",
+    "The Rose",
+    "The Flame",
+    "The Crown",
+  ];
+
+  it("renders the approved heading", () => {
+    expect(render(<AboutPage />)).toContain("هشت تیپ عطری");
+  });
+
+  it("shows every emblem from the exhaustive archetype lookup", () => {
+    const html = render(<AboutPage />);
+
+    for (const archetype of ARCHETYPES) {
+      expect(html).toContain(`src="${archetypeEmblemImageFor(archetype.id)}"`);
+    }
+
+    expect(ARCHETYPES.map((archetype) => archetype.id)).toEqual([
+      "mysterious-explorer",
+      "clean-minimalist",
+      "charismatic",
+      "elegant-classic",
+      "free-spirit",
+      "romantic",
+      "bold-one",
+      "sophisticated",
+    ]);
+  });
+
+  it("renders all eight Persian labels and English names", () => {
+    const html = render(<AboutPage />);
+
+    for (const label of LABELS) {
+      expect(html).toContain(label);
+    }
+
+    for (const name of NAMES) {
+      expect(html).toContain(name);
+      expect(html).toContain(`dir="ltr"`);
+    }
+
+    // The names are the archetype data's own strings, not a local copy.
+    expect(ARCHETYPES.map((archetype) => archetype.label)).toEqual(LABELS);
+    expect(ARCHETYPES.map((archetype) => archetype.name)).toEqual(NAMES);
+  });
+
+  it("sits after the steps section and before the contact section", () => {
+    const html = render(<AboutPage />);
+
+    const steps = html.indexOf("فیاژ چطور کار می‌کنه؟");
+    const strip = html.indexOf("هشت تیپ عطری");
+    const contact = html.indexOf("تماس با ما");
+
+    expect(steps).toBeGreaterThan(-1);
+    expect(strip).toBeGreaterThan(steps);
+    expect(contact).toBeGreaterThan(strip);
   });
 });
 

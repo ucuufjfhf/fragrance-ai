@@ -3,6 +3,8 @@ import Link from "next/link";
 
 import SiteFooter from "@/components/site/SiteFooter";
 import SiteHeader from "@/components/site/SiteHeader";
+import { archetypeEmblemImageFor } from "@/components/archetype-emblems";
+import { ARCHETYPES } from "@/lib/personality/archetypes";
 
 /**
  * GET /about — who FIAGE is, in the brand's own voice.
@@ -115,6 +117,66 @@ export default function AboutPage() {
             >
               شروع آزمون
             </Link>
+          </div>
+        </section>
+
+        {/*
+         * The eight archetypes — the same emblems the results medallion shows,
+         * now all visible at once. Paths come from the exhaustive
+         * `archetypeEmblemImageFor` lookup and the copy from `ARCHETYPES`
+         * itself, so no file path, label or name is retyped here.
+         */}
+        <section
+          aria-labelledby="archetypes"
+          className="border-b border-border-soft bg-surface-2"
+        >
+          <div className="mx-auto w-full max-w-6xl px-5 py-14 sm:px-8 lg:py-20">
+            <h2
+              id="archetypes"
+              className="font-heading text-2xl font-semibold text-foreground sm:text-3xl"
+            >
+              هشت تیپ عطری
+            </h2>
+            <ul className="mx-auto mt-10 grid w-full max-w-3xl grid-cols-4 gap-x-4 gap-y-8">
+              {ARCHETYPES.map((archetype) => (
+                <li
+                  key={archetype.id}
+                  className="flex flex-col items-center gap-2 text-center"
+                >
+                  {/* Same medallion language as the results card: circular,
+                      gold ring, soft shadow, emblem clipped to the circle. */}
+                  <span
+                    className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-[3px] bg-surface shadow-[var(--shadow-soft)] sm:h-[84px] sm:w-[84px]"
+                    style={{ borderColor: "var(--marker-gold)" }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-0 overflow-hidden rounded-full"
+                    >
+                      {/* Bundled public/ asset, not merchant data: a plain
+                          <img> ships the exact file, never re-encoded. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={archetypeEmblemImageFor(archetype.id)}
+                        alt=""
+                        width={1600}
+                        height={1600}
+                        className="h-full w-full object-cover"
+                      />
+                    </span>
+                  </span>
+                  <span className="text-sm font-medium text-foreground">
+                    {archetype.label}
+                  </span>
+                  <span
+                    dir="ltr"
+                    className="text-[0.65rem] uppercase tracking-[0.18em] text-muted"
+                  >
+                    {archetype.name}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
