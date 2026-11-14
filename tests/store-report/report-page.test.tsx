@@ -178,3 +178,86 @@ describe("store report page — «most recommended» from impressions", () => {
     expect(html).not.toContain("NaN");
   });
 });
+
+describe("store report page — branded header and proportional funnel bars", () => {
+  it("shows the FIAGE mark beside the unchanged merchant header", async () => {
+    const html = await renderReport();
+
+    expect(html).toContain('src="/brand/fiage-mark.png"');
+    expect(html).toContain('width="560"');
+    expect(html).toContain('height="560"');
+    expect(html).toContain("h-12 w-12");
+    expect(html).toContain("گزارش عملکرد فروشگاه شما");
+    expect(html).toContain("فروشگاه:");
+    expect(html).toContain("فروشگاه نمونه");
+  });
+
+  it("uses the editorial heading face for all three sections", async () => {
+    const html = await renderReport();
+
+    expect((html.match(/font-heading/g) ?? []).length).toBe(3);
+    expect(html).toContain('class="font-heading text-lg font-bold"');
+  });
+
+  it("renders five bars proportional to the largest stage", async () => {
+    const html = await renderReport();
+
+    // Fixture: 9 started (the max), 7 completed, 6 result views, 6 shown, 3 clicks.
+    const widths = [...html.matchAll(/width:(\d+)%/g)].map((match) => Number(match[1]));
+
+    expect(widths).toEqual([100, 78, 67, 67, 33]);
+    expect((html.match(/h-\[22px\]/g) ?? []).length).toBe(5);
+    // Counts stay real text, in Persian digits.
+    for (const count of [9, 7, 6, 3]) {
+      expect(html).toContain(toPersianDigits(count));
+    }
+  });
+
+  it("renders the four stage-to-stage rates under their labels", async () => {
+    const html = await renderReport();
+
+    expect(html).toContain(`${formatPersianPercent((7 / 9) * 100)} از شروع`);
+    expect(html).toContain(`${formatPersianPercent((6 / 7) * 100)} از تکمیل`);
+    expect(html).toContain(`${formatPersianPercent(100)} از مشاهده`);
+    expect(html).toContain(`${formatPersianPercent(50)} از مشاهده`);
+  });
+
+  it("renders «—» for a stage rate whose denominator is zero", async () => {
+    const html = await renderReport({
+      ...DATA,
+      sessionFunnel: {
+        ...DATA.sessionFunnel,
+        resultViewed: 0,
+        recommendationsShown: 0,
+        resultViewRate: null,
+        clickRate: null,
+      },
+    });
+
+    expect(html).toContain("—");
+    expect(html).not.toContain("NaN");
+    expect(html).not.toContain("Infinity");
+  });
+
+  it("keeps the funnel table-free and the two data tables untouched", async () => {
+    const html = await renderReport();
+    const funnelSection = html.slice(
+      html.indexOf("قیف تلاش‌ها"),
+      html.indexOf("عطرهای پرتکرار در پیشنهادها"),
+    );
+
+    expect(funnelSection).not.toContain("<table");
+    // Top perfumes + daily roll-up (batch 54 owns the chart).
+    expect((html.match(/<table/g) ?? []).length).toBe(2);
+    expect(html).toContain("روند روزانه");
+  });
+
+  it("keeps the disclosure note byte-identical", async () => {
+    const html = await renderReport();
+    const text = html.replace(/\s+/g, " ");
+
+    expect(text).toContain(
+      "بر اساس تلاش‌های دارای شناسهٔ نشست؛ رویدادهای بدون شناسه در این بخش شمرده نمی‌شوند و شمارش کلی رویدادها در بالا دست‌نخورده است.",
+    );
+  });
+});

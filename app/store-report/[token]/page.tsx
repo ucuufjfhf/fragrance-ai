@@ -50,9 +50,35 @@ export default async function StoreReportPage({ params, searchParams }: StoreRep
 
   const data = await getAnalyticsDashboardData(store.id, range);
 
+  // Funnel bars are proportional to the LARGEST stage, not to "started": a
+  // shared result link can produce RESULT_VIEWED without a QUIZ_STARTED, so
+  // assuming step 1 is the maximum would push a bar past 100%.
+  const funnel = data.sessionFunnel;
+  const funnelMax = Math.max(
+    funnel.started,
+    funnel.completed,
+    funnel.resultViewed,
+    funnel.recommendationsShown,
+    funnel.perfumeClicked,
+  );
+  // Impressions per result view — the same null-on-zero-denominator rule as
+  // the other joined rates.
+  const recommendationsRate =
+    funnel.resultViewed === 0 ? null : (funnel.recommendationsShown / funnel.resultViewed) * 100;
+
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-10">
       <header className="mb-6 flex items-center gap-4">
+        {/* Bundled public/ asset, not merchant data: a plain <img> keeps the
+            exact file, with no loader in between. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/brand/fiage-mark.png"
+          alt="FIAGE"
+          width={560}
+          height={560}
+          className="h-12 w-12 shrink-0 object-contain"
+        />
         {store.logoUrl ? (
           // Plain img: merchant logos are external URLs outside the
           // next/image remote allowlist, and this page ships no client JS.
@@ -103,33 +129,41 @@ export default async function StoreReportPage({ params, searchParams }: StoreRep
 
           {/* --- session-joined funnel --- */}
           <section className="mt-10">
-            <h2 className="text-lg font-bold">قیف تلاش‌ها</h2>
+            <h2 className="font-heading text-lg font-bold">قیف تلاش‌ها</h2>
             <p className="mb-3 mt-1 text-xs leading-6 text-muted">
               بر اساس تلاش‌های دارای شناسهٔ نشست؛ رویدادهای بدون شناسه در این بخش
               شمرده نمی‌شوند و شمارش کلی رویدادها در بالا دست‌نخورده است.
             </p>
-            <div className="overflow-x-auto rounded-xl border border-border-soft">
-              <table className="w-full text-sm">
-                <caption className="sr-only">
-                  تعداد تلاش‌های متمایز در هر مرحله از قیف
-                </caption>
-                <thead>
-                  <tr className="bg-surface-2 text-right">
-                    <th scope="col" className="px-3 py-2">مرحله</th>
-                    <th scope="col" className="px-3 py-2">تعداد تلاش</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <FunnelRow label="شروع آزمون" value={data.sessionFunnel.started} />
-                  <FunnelRow label="تکمیل آزمون" value={data.sessionFunnel.completed} />
-                  <FunnelRow label="مشاهدهٔ نتیجه" value={data.sessionFunnel.resultViewed} />
-                  <FunnelRow
-                    label="نمایش پیشنهادها"
-                    value={data.sessionFunnel.recommendationsShown}
-                  />
-                  <FunnelRow label="کلیک روی عطر" value={data.sessionFunnel.perfumeClicked} />
-                </tbody>
-              </table>
+            <div className="mt-4 flex flex-col gap-4">
+              <FunnelBar label="شروع آزمون" count={funnel.started} max={funnelMax} />
+              <FunnelBar
+                label="تکمیل آزمون"
+                rate={funnel.completionRate}
+                rateLabel="از شروع"
+                count={funnel.completed}
+                max={funnelMax}
+              />
+              <FunnelBar
+                label="مشاهدهٔ نتیجه"
+                rate={funnel.resultViewRate}
+                rateLabel="از تکمیل"
+                count={funnel.resultViewed}
+                max={funnelMax}
+              />
+              <FunnelBar
+                label="نمایش پیشنهادها"
+                rate={recommendationsRate}
+                rateLabel="از مشاهده"
+                count={funnel.recommendationsShown}
+                max={funnelMax}
+              />
+              <FunnelBar
+                label="کلیک روی عطر"
+                rate={funnel.clickRate}
+                rateLabel="از مشاهده"
+                count={funnel.perfumeClicked}
+                max={funnelMax}
+              />
             </div>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <KpiCard
@@ -164,7 +198,7 @@ export default async function StoreReportPage({ params, searchParams }: StoreRep
 
           {/* --- top recommended perfumes --- */}
           <section className="mt-10">
-            <h2 className="mb-3 text-lg font-bold">عطرهای پرتکرار در پیشنهادها</h2>
+            <h2 className="mb-3 font-heading text-lg font-bold">عطرهای پرتکرار در پیشنهادها</h2>
             {data.topPerfumes.length === 0 ? (
               <p className="rounded-xl border border-border-soft bg-surface p-4 text-sm text-muted">
                 هنوز داده‌ای برای نمایش وجود ندارد.
@@ -210,7 +244,7 @@ export default async function StoreReportPage({ params, searchParams }: StoreRep
 
           {/* --- daily roll-up --- */}
           <section className="mt-10">
-            <h2 className="mb-3 text-lg font-bold">روند روزانه</h2>
+            <h2 className="mb-3 font-heading text-lg font-bold">روند روزانه</h2>
             <div className="overflow-x-auto rounded-xl border border-border-soft">
               <table className="w-full text-sm">
                 <caption className="sr-only">رویدادهای هر روز در بازه انتخابی</caption>
@@ -248,12 +282,61 @@ export default async function StoreReportPage({ params, searchParams }: StoreRep
   );
 }
 
-function FunnelRow({ label, value }: { label: string; value: number }) {
+/**
+ * One funnel stage as a proportional gold bar.
+ *
+ * The bar is decoration (`aria-hidden`): the stage label, the count and the
+ * stage-to-stage rate are real text, so the information survives without it.
+ * Width is relative to the largest stage (`max`), and a zero count renders a
+ * 0%-wide bar rather than disappearing — «۰» is a real reading.
+ */
+function FunnelBar({
+  label,
+  rate,
+  rateLabel,
+  count,
+  max,
+}: {
+  label: string;
+  rate?: number | null;
+  rateLabel?: string;
+  count: number;
+  max: number;
+}) {
+  const width = max === 0 ? 0 : Math.round((count / max) * 100);
+
   return (
-    <tr className="border-t border-border-soft">
-      <td className="px-3 py-2">{label}</td>
-      <td className="px-3 py-2 tnum">{toPersianDigits(value)}</td>
-    </tr>
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium text-foreground">{label}</span>
+          {rateLabel === undefined ? null : (
+            <span className="text-xs text-muted">
+              {rate === null || rate === undefined
+                ? "—"
+                : `${formatPersianPercent(rate)} ${rateLabel}`}
+            </span>
+          )}
+        </div>
+        <span className="tnum text-sm font-semibold text-accent">
+          {toPersianDigits(count)}
+        </span>
+      </div>
+      <div
+        aria-hidden="true"
+        className="h-[22px] w-full overflow-hidden rounded-full bg-surface-2"
+      >
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: `${width}%`,
+            // The closeness bar's gold: marker gold lightening into accent.
+            backgroundImage:
+              "linear-gradient(to left, var(--marker-gold) 0%, color-mix(in srgb, var(--marker-gold) 55%, var(--accent)) 60%, var(--accent) 100%)",
+          }}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -272,7 +355,7 @@ function KpiCard({
           The value used to carry aria-label={label}, which (where honoured)
           replaced the number with the label a second time. */}
       <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 text-xl font-bold tnum">
+      <p className="mt-1 text-xl font-bold tnum text-accent">
         {value === null ? "—" : isPercent ? formatPersianPercent(value) : toPersianDigits(value)}
       </p>
     </div>
