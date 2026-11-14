@@ -101,6 +101,67 @@ export default async function StoreReportPage({ params, searchParams }: StoreRep
             />
           </section>
 
+          {/* --- session-joined funnel --- */}
+          <section className="mt-10">
+            <h2 className="text-lg font-bold">قیف تلاش‌ها</h2>
+            <p className="mb-3 mt-1 text-xs leading-6 text-muted">
+              بر اساس تلاش‌های دارای شناسهٔ نشست؛ رویدادهای بدون شناسه در این بخش
+              شمرده نمی‌شوند و شمارش کلی رویدادها در بالا دست‌نخورده است.
+            </p>
+            <div className="overflow-x-auto rounded-xl border border-border-soft">
+              <table className="w-full text-sm">
+                <caption className="sr-only">
+                  تعداد تلاش‌های متمایز در هر مرحله از قیف
+                </caption>
+                <thead>
+                  <tr className="bg-surface-2 text-right">
+                    <th scope="col" className="px-3 py-2">مرحله</th>
+                    <th scope="col" className="px-3 py-2">تعداد تلاش</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <FunnelRow label="شروع آزمون" value={data.sessionFunnel.started} />
+                  <FunnelRow label="تکمیل آزمون" value={data.sessionFunnel.completed} />
+                  <FunnelRow label="مشاهدهٔ نتیجه" value={data.sessionFunnel.resultViewed} />
+                  <FunnelRow
+                    label="نمایش پیشنهادها"
+                    value={data.sessionFunnel.recommendationsShown}
+                  />
+                  <FunnelRow label="کلیک روی عطر" value={data.sessionFunnel.perfumeClicked} />
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <KpiCard
+                label="تکمیل از شروع"
+                value={
+                  data.sessionFunnel.completionRate === null
+                    ? null
+                    : Math.round(data.sessionFunnel.completionRate)
+                }
+                isPercent
+              />
+              <KpiCard
+                label="مشاهدهٔ نتیجه از تکمیل"
+                value={
+                  data.sessionFunnel.resultViewRate === null
+                    ? null
+                    : Math.round(data.sessionFunnel.resultViewRate)
+                }
+                isPercent
+              />
+              <KpiCard
+                label="کلیک از مشاهدهٔ نتیجه"
+                value={
+                  data.sessionFunnel.clickRate === null
+                    ? null
+                    : Math.round(data.sessionFunnel.clickRate)
+                }
+                isPercent
+              />
+            </div>
+          </section>
+
           {/* --- top recommended perfumes --- */}
           <section className="mt-10">
             <h2 className="mb-3 text-lg font-bold">عطرهای پرتکرار در پیشنهادها</h2>
@@ -184,6 +245,15 @@ export default async function StoreReportPage({ params, searchParams }: StoreRep
         رفتار فردی کاربرد ندارد.
       </p>
     </main>
+  );
+}
+
+function FunnelRow({ label, value }: { label: string; value: number }) {
+  return (
+    <tr className="border-t border-border-soft">
+      <td className="px-3 py-2">{label}</td>
+      <td className="px-3 py-2 tnum">{toPersianDigits(value)}</td>
+    </tr>
   );
 }
 

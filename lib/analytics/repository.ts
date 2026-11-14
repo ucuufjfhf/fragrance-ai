@@ -80,6 +80,111 @@ export async function getAnalyticsSummary(
   };
 }
 
+/**
+ * The five quiz-attempt stages, in funnel order. `WIDGET_VIEWED` is excluded on
+ * purpose: it is traffic, not a quiz attempt.
+ */
+export const ATTEMPT_FUNNEL_STAGES = [
+  "QUIZ_STARTED",
+  "QUIZ_COMPLETED",
+  "RESULT_VIEWED",
+  "RECOMMENDATIONS_SHOWN",
+  "PERFUME_CLICKED",
+] as const;
+
+export interface SessionFunnel {
+  /**
+   * Distinct session tokens that carried each stage's event in the range.
+   *
+   * These are ATTEMPTS, not events: two RESULT_VIEWED rows from one session
+   * (a refresh, a double-fire, a shared URL) count once. Only rows whose
+   * `sessionId` is non-null take part — the pre-join traffic the event-count
+   * KPIs report is deliberately a different population and is never added in.
+   */
+  started: number;
+  completed: number;
+  resultViewed: number;
+  recommendationsShown: number;
+  perfumeClicked: number;
+  /** Distinct session-bearing attempts anywhere in the range. */
+  sessions: number;
+  /** Percentages; null means a zero denominator (rendered «—»), never NaN. */
+  completionRate: number | null;
+  resultViewRate: number | null;
+  clickRate: number | null;
+}
+
+/**
+ * Session-joined funnel for one store + range.
+ *
+ * Basis: one grouped read keyed on `[sessionId, eventType]`. Postgres collapses
+ * each pair to a single row, so the DISTINCT work happens in SQL rather than in
+ * a JS pass over raw events, and the row bound is the number of distinct
+ * (attempt, stage) pairs in the range — at most 5 × distinct sessions, never
+ * the event count. The only `take`-less scan is the one the 60s dashboard cache
+ * already amortises; the range is capped at 30 days by `buildAnalyticsRange`.
+ *
+ * Rows with a null sessionId are excluded by the query AND skipped again in the
+ * loop, so a driver/mock that leaks one still cannot inflate a joined stage.
+ */
+export async function getSessionFunnel(
+  storeId: string,
+  range: AnalyticsDateRange,
+): Promise<SessionFunnel> {
+  const prisma = getPrisma();
+
+  const grouped = await prisma.analyticsEvent.groupBy({
+    by: ["sessionId", "eventType"],
+    where: {
+      storeId,
+      createdAt: { gte: range.from, lt: range.to },
+      sessionId: { not: null },
+      eventType: { in: [...ATTEMPT_FUNNEL_STAGES] },
+    },
+    _count: { _all: true },
+  });
+
+  const stageSessions = new Map<string, Set<string>>();
+  const sessions = new Set<string>();
+
+  for (const row of grouped) {
+    const sessionId = row.sessionId;
+
+    if (sessionId === null) continue;
+
+    sessions.add(sessionId);
+
+    const stage = stageSessions.get(row.eventType) ?? new Set<string>();
+    stage.add(sessionId);
+    stageSessions.set(row.eventType, stage);
+  }
+
+  const countAt = (stage: (typeof ATTEMPT_FUNNEL_STAGES)[number]): number =>
+    stageSessions.get(stage)?.size ?? 0;
+
+  const started = countAt("QUIZ_STARTED");
+  const completed = countAt("QUIZ_COMPLETED");
+  const resultViewed = countAt("RESULT_VIEWED");
+  const recommendationsShown = countAt("RECOMMENDATIONS_SHOWN");
+  const perfumeClicked = countAt("PERFUME_CLICKED");
+
+  // Null, not 0 and never Infinity: «—» is the honest reading of "no attempt".
+  const rate = (numerator: number, denominator: number): number | null =>
+    denominator === 0 ? null : (numerator / denominator) * 100;
+
+  return {
+    started,
+    completed,
+    resultViewed,
+    recommendationsShown,
+    perfumeClicked,
+    sessions: sessions.size,
+    completionRate: rate(completed, started),
+    resultViewRate: rate(resultViewed, completed),
+    clickRate: rate(perfumeClicked, resultViewed),
+  };
+}
+
 export interface TopPerfumeRow {
   perfumeId: string;
   name: string;

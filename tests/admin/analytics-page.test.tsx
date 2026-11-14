@@ -38,6 +38,19 @@ const DATA: AnalyticsDashboardData = {
   },
   topPerfumes: [],
   daily: [],
+  // Present on the shared object (both consumers receive it); this page's
+  // explicit markup does not render the funnel block yet.
+  sessionFunnel: {
+    started: 9,
+    completed: 7,
+    resultViewed: 6,
+    recommendationsShown: 6,
+    perfumeClicked: 3,
+    sessions: 9,
+    completionRate: (7 / 9) * 100,
+    resultViewRate: (6 / 7) * 100,
+    clickRate: 50,
+  },
   completionRate: 50,
   clickRate: 40,
   hasData: true,

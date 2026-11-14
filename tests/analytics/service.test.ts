@@ -32,6 +32,7 @@ vi.mock("@/lib/analytics/repository", () => ({
   getAnalyticsSummary: vi.fn(),
   getTopPerfumes: vi.fn(),
   getDailyAnalytics: vi.fn(),
+  getSessionFunnel: vi.fn(),
 }));
 
 beforeEach(() => {
@@ -275,5 +276,43 @@ describe("getAnalyticsDashboardData — KPI math (§16/§18)", () => {
     expect(data.clickRate).toBeNull();
     expect(Number.isNaN(data.completionRate ?? 0)).toBe(false);
     expect(data.hasData).toBe(false);
+  });
+
+  it("carries the session-joined funnel beside the untouched event counts", async () => {
+    vi.resetModules();
+
+    const repositoryMock = vi.mocked(await import("@/lib/analytics/repository"));
+
+    vi.mocked(repositoryMock.getAnalyticsSummary).mockResolvedValue({
+      widgetViewed: 30,
+      quizStarted: 10,
+      quizCompleted: 7,
+      resultViewed: 6,
+      recommendationsShown: 20,
+      perfumeClicked: 5,
+    });
+    vi.mocked(repositoryMock.getTopPerfumes).mockResolvedValue([]);
+    vi.mocked(repositoryMock.getDailyAnalytics).mockResolvedValue([]);
+    vi.mocked(repositoryMock.getSessionFunnel).mockResolvedValue({
+      started: 9,
+      completed: 7,
+      resultViewed: 6,
+      recommendationsShown: 6,
+      perfumeClicked: 3,
+      sessions: 9,
+      completionRate: (7 / 9) * 100,
+      resultViewRate: (6 / 7) * 100,
+      clickRate: 50,
+    });
+
+    const { getAnalyticsDashboardData } = await import("@/lib/analytics/service");
+    const data = await getAnalyticsDashboardData("store-1", "7d");
+
+    // The joined funnel rides the same cached aggregation, additively.
+    expect(data.sessionFunnel.started).toBe(9);
+    expect(data.sessionFunnel.clickRate).toBe(50);
+    // Event counts are a different population and stay exactly as they were.
+    expect(data.summary.quizStarted).toBe(10);
+    expect(data.completionRate).toBeCloseTo(70);
   });
 });

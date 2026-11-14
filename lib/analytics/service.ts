@@ -119,10 +119,12 @@ export async function recordAnalyticsEvent(input: unknown): Promise<RecordEventR
 import {
   getAnalyticsSummary,
   getDailyAnalytics,
+  getSessionFunnel,
   getTopPerfumes,
   type AnalyticsDateRange,
   type AnalyticsSummary,
   type DailyAnalyticsRow,
+  type SessionFunnel,
   type TopPerfumeRow,
 } from "@/lib/analytics/repository";
 
@@ -172,6 +174,14 @@ export interface AnalyticsDashboardData {
   summary: AnalyticsSummary;
   topPerfumes: TopPerfumeRow[];
   daily: DailyAnalyticsRow[];
+  /**
+   * Distinct-attempt funnel over the SESSION-BEARING subset only.
+   *
+   * Deliberately additive: `summary` keeps its event counts untouched, so the
+   * two populations are never mixed in one number. The report discloses the
+   * subset beside the block.
+   */
+  sessionFunnel: SessionFunnel;
   /** Derived KPIs; null means «—» (zero denominator — never NaN/Infinity). */
   completionRate: number | null;
   clickRate: number | null;
@@ -246,12 +256,14 @@ async function computeAnalyticsDashboardData(
   const summary = await getAnalyticsSummary(storeId, range);
   const topPerfumes = await getTopPerfumes(storeId, range);
   const daily = await getDailyAnalytics(storeId, range);
+  const sessionFunnel = await getSessionFunnel(storeId, range);
 
   return {
     range: preset,
     summary,
     topPerfumes,
     daily,
+    sessionFunnel,
     completionRate:
       summary.quizStarted === 0
         ? null

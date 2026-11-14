@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createAnalyticsEvent,
   getAnalyticsSummary,
+  getSessionFunnel,
   getTopPerfumes,
   getDailyAnalytics,
 } from "@/lib/analytics/repository";
@@ -237,6 +238,104 @@ describe("getDailyAnalytics — daily roll-up (§19)", () => {
     const rows = await getDailyAnalytics("store-1", RANGE);
 
     expect(rows).toEqual([]);
+  });
+});
+
+describe("getSessionFunnel — distinct attempts per stage (§16/§18)", () => {
+  it("counts one attempt per session even when a stage fired twice", async () => {
+    mocks.groupBy.mockResolvedValue([
+      // Two RESULT_VIEWED rows from the same attempt (refresh / double-fire).
+      { sessionId: "s-1", eventType: "RESULT_VIEWED", _count: { _all: 1 } },
+      { sessionId: "s-1", eventType: "RESULT_VIEWED", _count: { _all: 1 } },
+      // A different attempt at the same stage counts separately.
+      { sessionId: "s-2", eventType: "RESULT_VIEWED", _count: { _all: 1 } },
+      { sessionId: "s-1", eventType: "QUIZ_STARTED", _count: { _all: 1 } },
+      { sessionId: "s-2", eventType: "QUIZ_STARTED", _count: { _all: 1 } },
+    ]);
+
+    const funnel = await getSessionFunnel("store-1", RANGE);
+
+    expect(funnel.resultViewed).toBe(2);
+    expect(funnel.started).toBe(2);
+    expect(funnel.sessions).toBe(2);
+
+    // One grouped read: DISTINCT lives in SQL, and the query itself excludes
+    // the pre-join population (null sessionId) and WIDGET_VIEWED traffic.
+    const args = mocks.groupBy.mock.calls[0][0];
+
+    expect(args.by).toEqual(["sessionId", "eventType"]);
+    expect(args.where.storeId).toBe("store-1");
+    expect(args.where.createdAt).toEqual({ gte: RANGE.from, lt: RANGE.to });
+    expect(args.where.sessionId).toEqual({ not: null });
+    expect(args.where.eventType.in).toContain("QUIZ_STARTED");
+    expect(args.where.eventType.in).not.toContain("WIDGET_VIEWED");
+  });
+
+  it("yields one attempt at every stage and 100% rates for a complete attempt", async () => {
+    mocks.groupBy.mockResolvedValue(
+      ["QUIZ_STARTED", "QUIZ_COMPLETED", "RESULT_VIEWED", "RECOMMENDATIONS_SHOWN", "PERFUME_CLICKED"].map(
+        (eventType) => ({ sessionId: "s-1", eventType, _count: { _all: 1 } }),
+      ),
+    );
+
+    const funnel = await getSessionFunnel("store-1", RANGE);
+
+    expect(funnel).toEqual({
+      started: 1,
+      completed: 1,
+      resultViewed: 1,
+      recommendationsShown: 1,
+      perfumeClicked: 1,
+      sessions: 1,
+      completionRate: 100,
+      resultViewRate: 100,
+      clickRate: 100,
+    });
+  });
+
+  it("reports 0% completion — not null — when a started attempt never completes", async () => {
+    mocks.groupBy.mockResolvedValue([
+      { sessionId: "s-1", eventType: "QUIZ_STARTED", _count: { _all: 1 } },
+    ]);
+
+    const funnel = await getSessionFunnel("store-1", RANGE);
+
+    // A real attempt that did not finish is a genuine zero, not missing data.
+    expect(funnel.started).toBe(1);
+    expect(funnel.completionRate).toBe(0);
+    // No completed attempt exists, so these denominators are empty.
+    expect(funnel.resultViewRate).toBeNull();
+    expect(funnel.clickRate).toBeNull();
+  });
+
+  it("returns null rates — never NaN — for an empty joined population", async () => {
+    mocks.groupBy.mockResolvedValue([]);
+
+    const funnel = await getSessionFunnel("store-1", RANGE);
+
+    expect(funnel.started).toBe(0);
+    expect(funnel.sessions).toBe(0);
+    expect(funnel.completionRate).toBeNull();
+    expect(funnel.resultViewRate).toBeNull();
+    expect(funnel.clickRate).toBeNull();
+    expect(Number.isNaN(funnel.completionRate ?? 0)).toBe(false);
+    expect(Number.isNaN(funnel.clickRate ?? 0)).toBe(false);
+  });
+
+  it("counts a null-session row in no stage — the pre-join population stays out", async () => {
+    // Defensive: even if an ungrouped/null row reaches the loop, it contributes
+    // to neither the stage counts nor the session population.
+    mocks.groupBy.mockResolvedValue([
+      { sessionId: null, eventType: "QUIZ_STARTED", _count: { _all: 5 } },
+      { sessionId: null, eventType: "PERFUME_CLICKED", _count: { _all: 2 } },
+    ]);
+
+    const funnel = await getSessionFunnel("store-1", RANGE);
+
+    expect(funnel.started).toBe(0);
+    expect(funnel.perfumeClicked).toBe(0);
+    expect(funnel.sessions).toBe(0);
+    expect(funnel.completionRate).toBeNull();
   });
 });
 

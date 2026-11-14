@@ -67,14 +67,25 @@ const DATA: AnalyticsDashboardData = {
     },
   ],
   daily: [],
+  sessionFunnel: {
+    started: 9,
+    completed: 7,
+    resultViewed: 6,
+    recommendationsShown: 6,
+    perfumeClicked: 3,
+    sessions: 9,
+    completionRate: (7 / 9) * 100,
+    resultViewRate: (6 / 7) * 100,
+    clickRate: 50,
+  },
   completionRate: 66.666,
   clickRate: 40,
   hasData: true,
 };
 
-async function renderReport() {
+async function renderReport(data: AnalyticsDashboardData = DATA) {
   mocks.storeByToken.mockResolvedValue({ id: "store-1", name: "فروشگاه نمونه", logoUrl: null });
-  mocks.dashboardData.mockResolvedValue(DATA);
+  mocks.dashboardData.mockResolvedValue(data);
 
   return renderToStaticMarkup(
     await StoreReportPage({
@@ -126,6 +137,36 @@ describe("store report page — «most recommended» from impressions", () => {
 
     expect(label).toBeGreaterThan(-1);
     expect(value).toBeGreaterThan(label);
+  });
+
+  it("renders the session-joined funnel with its own population note", async () => {
+    const html = await renderReport();
+
+    expect(html).toContain("قیف تلاش‌ها");
+    expect(html).toContain("بر اساس تلاش‌های دارای شناسهٔ نشست");
+    expect(html).toContain(toPersianDigits(DATA.sessionFunnel.started));
+    expect(html).toContain(toPersianDigits(DATA.sessionFunnel.perfumeClicked));
+    // 3 clicks / 6 result views — the joined rate, never the event-count rate.
+    expect(html).toContain(formatPersianPercent(50));
+    // The event-count KPIs stay beside it, unmerged.
+    expect(html).toContain("بازدید ویجت");
+  });
+
+  it("renders «—» for null joined rates and no session identifier anywhere", async () => {
+    const html = await renderReport({
+      ...DATA,
+      sessionFunnel: {
+        ...DATA.sessionFunnel,
+        completionRate: null,
+        resultViewRate: null,
+        clickRate: null,
+      },
+    });
+
+    expect(html).toContain("—");
+    expect(html).not.toContain("NaN");
+    // Aggregate-only contract: not a single attempt id reaches the markup.
+    expect(html.toLowerCase()).not.toContain("session");
   });
 
   it("renders a dash for a perfume that was only ever clicked", async () => {

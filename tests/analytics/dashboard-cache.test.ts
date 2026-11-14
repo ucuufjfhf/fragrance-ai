@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   summary: vi.fn(),
   top: vi.fn(),
   daily: vi.fn(),
+  funnel: vi.fn(),
 }));
 
 vi.mock("@/lib/analytics/repository", () => ({
@@ -34,6 +35,7 @@ vi.mock("@/lib/analytics/repository", () => ({
   getAnalyticsSummary: mocks.summary,
   getTopPerfumes: mocks.top,
   getDailyAnalytics: mocks.daily,
+  getSessionFunnel: mocks.funnel,
 }));
 
 const SUMMARY = {
@@ -50,6 +52,7 @@ function expectAggregations(count: number): void {
   expect(mocks.summary).toHaveBeenCalledTimes(count);
   expect(mocks.top).toHaveBeenCalledTimes(count);
   expect(mocks.daily).toHaveBeenCalledTimes(count);
+  expect(mocks.funnel).toHaveBeenCalledTimes(count);
 }
 
 beforeEach(() => {
@@ -58,6 +61,17 @@ beforeEach(() => {
   mocks.summary.mockResolvedValue(SUMMARY);
   mocks.top.mockResolvedValue([]);
   mocks.daily.mockResolvedValue([]);
+  mocks.funnel.mockResolvedValue({
+    started: 3,
+    completed: 2,
+    resultViewed: 2,
+    recommendationsShown: 1,
+    perfumeClicked: 1,
+    sessions: 3,
+    completionRate: (2 / 3) * 100,
+    resultViewRate: 100,
+    clickRate: 50,
+  });
 });
 
 afterEach(() => {
