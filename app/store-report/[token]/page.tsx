@@ -6,6 +6,7 @@ import AnalyticsRangeNav from "@/components/admin/AnalyticsRangeNav";
 import {
   getAnalyticsDashboardData,
   parseAnalyticsRange,
+  type AnalyticsDashboardData,
   type AnalyticsRangePreset,
 } from "@/lib/analytics/service";
 import { getStoreByReportToken } from "@/lib/store-report/report";
@@ -245,6 +246,12 @@ export default async function StoreReportPage({ params, searchParams }: StoreRep
           {/* --- daily roll-up --- */}
           <section className="mt-10">
             <h2 className="mb-3 font-heading text-lg font-bold">روند روزانه</h2>
+            {data.daily.length > 0 ? (
+              <>
+                <p className="mb-3 text-xs text-muted">شروع آزمون در هر روز</p>
+                <DailyChart rows={data.daily} />
+              </>
+            ) : null}
             <div className="overflow-x-auto rounded-xl border border-border-soft">
               <table className="w-full text-sm">
                 <caption className="sr-only">رویدادهای هر روز در بازه انتخابی</caption>
@@ -290,6 +297,78 @@ export default async function StoreReportPage({ params, searchParams }: StoreRep
  * Width is relative to the largest stage (`max`), and a zero count renders a
  * 0%-wide bar rather than disappearing — «۰» is a real reading.
  */
+/**
+ * The funnel and the daily chart share one gold: marker gold lightening into
+ * accent, exactly the closeness bar's fill on /result.
+ */
+const GOLD_BAR_GRADIENT =
+  "linear-gradient(to left, var(--marker-gold) 0%, color-mix(in srgb, var(--marker-gold) 55%, var(--accent)) 60%, var(--accent) 100%)";
+
+/** UTC weekday names, indexed by `Date.prototype.getUTCDay()` (0 = Sunday). */
+const PERSIAN_WEEKDAYS = [
+  "یکشنبه",
+  "دوشنبه",
+  "سه‌شنبه",
+  "چهارشنبه",
+  "پنجشنبه",
+  "جمعه",
+  "شنبه",
+] as const;
+
+/**
+ * Daily quiz starts as gold columns — the same rows, in the same order, that
+ * the table below renders. The weekday is read in UTC from the ISO date, the
+ * same UTC-day convention `getDailyAnalytics` buckets by.
+ *
+ * Presentational only: the count and the weekday are real text in every
+ * column, so the bar itself is `aria-hidden` decoration. Empty `rows` renders
+ * nothing (the table still renders on its own).
+ */
+function DailyChart({ rows }: { rows: AnalyticsDashboardData["daily"] }) {
+  if (rows.length === 0) {
+    return null;
+  }
+
+  const max = Math.max(...rows.map((row) => row.quizStarted), 0);
+
+  return (
+    <div
+      role="group"
+      aria-label="شروع آزمون در هر روز"
+      className="mb-6 mt-1 flex items-end gap-1.5 sm:gap-3"
+    >
+      {rows.map((row) => {
+        const height = max === 0 ? 0 : Math.round((row.quizStarted / max) * 100);
+        const weekday =
+          PERSIAN_WEEKDAYS[new Date(`${row.date}T00:00:00Z`).getUTCDay()];
+
+        return (
+          <div
+            key={row.date}
+            className="flex min-w-0 flex-1 flex-col items-center gap-1.5"
+          >
+            <span className="tnum text-xs font-semibold text-accent">
+              {toPersianDigits(row.quizStarted)}
+            </span>
+            <div aria-hidden="true" className="flex h-28 w-full items-end">
+              <div
+                className="w-full rounded-t-md"
+                style={{
+                  height: `${height}%`,
+                  backgroundImage: GOLD_BAR_GRADIENT,
+                }}
+              />
+            </div>
+            <span className="w-full truncate text-center text-[0.65rem] text-muted">
+              {weekday}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function FunnelBar({
   label,
   rate,
@@ -330,9 +409,7 @@ function FunnelBar({
           className="h-full rounded-full"
           style={{
             width: `${width}%`,
-            // The closeness bar's gold: marker gold lightening into accent.
-            backgroundImage:
-              "linear-gradient(to left, var(--marker-gold) 0%, color-mix(in srgb, var(--marker-gold) 55%, var(--accent)) 60%, var(--accent) 100%)",
+            backgroundImage: GOLD_BAR_GRADIENT,
           }}
         />
       </div>

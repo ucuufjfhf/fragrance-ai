@@ -179,6 +179,74 @@ describe("store report page — «most recommended» from impressions", () => {
   });
 });
 
+describe("store report page — daily bar chart above the table", () => {
+  // 2026-09-19 is a Saturday, 09-20 a Sunday, 09-21 Monday, 09-22 Tuesday.
+  const DAILY: AnalyticsDashboardData["daily"] = [
+    { date: "2026-09-19", quizStarted: 5, quizCompleted: 4, resultViewed: 3, perfumeClicked: 1 },
+    { date: "2026-09-20", quizStarted: 10, quizCompleted: 8, resultViewed: 6, perfumeClicked: 2 },
+    { date: "2026-09-21", quizStarted: 0, quizCompleted: 0, resultViewed: 0, perfumeClicked: 0 },
+    { date: "2026-09-22", quizStarted: 1, quizCompleted: 1, resultViewed: 1, perfumeClicked: 0 },
+  ];
+
+  it("renders one column per row, in the table's order, with UTC weekday labels", async () => {
+    const html = await renderReport({ ...DATA, daily: DAILY });
+
+    expect((html.match(/rounded-t-md/g) ?? []).length).toBe(DAILY.length);
+
+    const order = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه"].map((day) => html.indexOf(day));
+    expect(order.every((index) => index > -1)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  it("scales bar heights to the busiest day and shows zero as ۰", async () => {
+    const html = await renderReport({ ...DATA, daily: DAILY });
+    const heights = [...html.matchAll(/height:(\d+)%/g)].map((match) => Number(match[1]));
+
+    // max(quizStarted) = 10 on 2026-09-20 → 5/10=50, 10/10=100, 0, 1/10=10.
+    expect(heights).toEqual([50, 100, 0, 10]);
+    expect(html).toContain(toPersianDigits(0));
+  });
+
+  it("prints each day's starts in Persian digits under the sub-label", async () => {
+    const html = await renderReport({ ...DATA, daily: DAILY });
+
+    expect(html).toContain("شروع آزمون در هر روز");
+    for (const count of [5, 10, 0, 1]) {
+      expect(html).toContain(toPersianDigits(count));
+    }
+  });
+
+  it("keeps the daily table with all four metrics and the same rows", async () => {
+    const html = await renderReport({ ...DATA, daily: DAILY });
+
+    expect((html.match(/<table/g) ?? []).length).toBe(2);
+    expect(html).toContain("روند روزانه");
+    for (const heading of ["تاریخ", "شروع آزمون", "تکمیل آزمون", "مشاهده نتایج", "کلیک"]) {
+      expect(html).toContain(heading);
+    }
+    // Every row's date and its four metrics are still printed.
+    for (const row of DAILY) {
+      expect(html).toContain(toPersianDigits(row.date));
+      for (const value of [row.quizStarted, row.quizCompleted, row.resultViewed, row.perfumeClicked]) {
+        expect(html).toContain(toPersianDigits(value));
+      }
+    }
+    // The other sections were not restructured by the chart.
+    expect(html).toContain("قیف تلاش‌ها");
+    expect(html).toContain("بازدید ویجت");
+    expect(html).toContain("عطرهای پرتکرار در پیشنهادها");
+  });
+
+  it("renders no chart (and no sub-label) when the range has no rows", async () => {
+    const html = await renderReport({ ...DATA, daily: [] });
+
+    expect(html).not.toContain("rounded-t-md");
+    expect(html).not.toContain("شروع آزمون در هر روز");
+    expect(html).toContain("روند روزانه");
+    expect((html.match(/<table/g) ?? []).length).toBe(2);
+  });
+});
+
 describe("store report page — branded header and proportional funnel bars", () => {
   it("shows the FIAGE mark beside the unchanged merchant header", async () => {
     const html = await renderReport();
