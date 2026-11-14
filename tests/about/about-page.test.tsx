@@ -70,7 +70,8 @@ describe("about page", () => {
     expect(html).toContain("۱۰ سوال");
     expect(html).toContain("فیاژ چطور کار می‌کنه؟");
     expect(html).toContain("سه عطر، با دلیل");
-    expect(html).toContain("نقشهٔ سلیقه‌تون ساخته میشه");
+    expect(html).toContain("نقشهٔ سلیقه\u200cتون ساخته می\u200cشه");
+    expect(html).toContain("از جواب\u200cهاتون یه پروفایل بویایی روی ۹ محور درست می\u200cشه.");
     expect(html).toContain("در اسرع وقت پاسخ می‌دیم");
     expect(html).toContain(`mailto:${CONTACT_EMAIL}`);
     expect(html).toContain("ایمیل بزنید");
