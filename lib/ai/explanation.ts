@@ -9,7 +9,7 @@ import type {
 } from "@/lib/ai/provider";
 import { MATCHING_DIMENSIONS } from "@/lib/fragrance/profile";
 import { PERSONALITY_LABELS } from "@/lib/personality/labels";
-import type { PersonalityVector } from "@/types/personality";
+import { PERSONALITY_DIMENSIONS, type PersonalityVector } from "@/types/personality";
 
 /**
  * Persian «چرا این عطر؟» explanations (Phase 4).
@@ -107,6 +107,51 @@ export function buildExplanationUserPrompt(input: AiExplanationInput): string {
     .join("\n");
 }
 
+/**
+ * Unambiguous informal-singular markers (تو register).
+ *
+ * Deliberately a short, curated list of whole words rather than Persian
+ * conjugation logic: only forms that cannot also be a plural/formal form or a
+ * different word belong here. Matching is by whole token, so «توضیح» (which
+ * contains «تو») passes, and every شما form («شما»، «می‌خواید»، «هستید») is
+ * absent by construction.
+ */
+const INFORMAL_SINGULAR_MARKERS = new Set([
+  "تو",
+  "خودت",
+  "هستی",
+  "می‌خوای",
+  "می‌کنی",
+  "می‌تونی",
+  "برات",
+  "بهت",
+  "باهات",
+  "ازت",
+]);
+
+/**
+ * Persian labels of the four personality axes the matcher never reads.
+ *
+ * Derived from `PERSONALITY_DIMENSIONS` minus `MATCHING_DIMENSIONS`, so the
+ * strings stay in sync with `PERSONALITY_LABELS` instead of being copied here.
+ * A reply crediting one of these is a false attribution: they take no part in
+ * eligibility, distance, score or ranking.
+ */
+const NON_MATCHING_TRAIT_LABELS: readonly string[] = PERSONALITY_DIMENSIONS.filter(
+  (dimension) => !(MATCHING_DIMENSIONS as readonly string[]).includes(dimension),
+).map((dimension) => PERSONALITY_LABELS[dimension]);
+
+/** Strips punctuation/quotes from a token's edges; letters and digits stay. */
+const TOKEN_EDGE_PUNCTUATION = /^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu;
+
+/** Whitespace tokens with surrounding punctuation removed (whole-word view). */
+function replyTokens(text: string): string[] {
+  return text
+    .split(/\s+/)
+    .map((token) => token.replace(TOKEN_EDGE_PUNCTUATION, ""))
+    .filter((token) => token !== "");
+}
+
 const PERSIAN_LETTER = /[\u0600-\u06FF]/;
 const DIGITS = /[0-9\u06F0-\u06F9\u0660-\u0669]/;
 const PERCENT_SIGNS = /[%٪]/;
@@ -151,7 +196,10 @@ function quotedSegmentsAreKnown(text: string, allowed: string[]): boolean {
  *
  * Rejected (throws `AiResponseError`): non-object payloads, unknown keys, empty or
  * over-long text, text without Persian letters, any digits/percentages (so no
- * invented scores can leak into the UI) and quoted names that are not this perfume.
+ * invented scores can leak into the UI), quoted names that are not this perfume,
+ * the informal singular register, and any attribution to one of the four
+ * personality axes the matcher never reads. The last two checks run AFTER all the
+ * earlier ones, so every pre-existing rejection still fires for its own reason.
  * `perfumeId` always comes from the input, never from the model.
  */
 export function validateAiExplanation(
@@ -201,6 +249,27 @@ export function validateAiExplanation(
   ) {
     throw new AiResponseError(
       "AI explanation mentioned a product that was not the recommended one.",
+    );
+  }
+
+  const tokens = replyTokens(explanation);
+
+  // The prompt asks for the polite plural; this is the runtime enforcement.
+  const informalToken = tokens.find((token) => INFORMAL_SINGULAR_MARKERS.has(token));
+
+  if (informalToken !== undefined) {
+    throw new AiResponseError(
+      `AI explanation used the informal singular register («${informalToken}»); the polite plural «شما» is required.`,
+    );
+  }
+
+  // Only the five scent axes ground a match; crediting a personality-only axis
+  // is a false attribution even when it reads naturally.
+  const foreignTrait = tokens.find((token) => NON_MATCHING_TRAIT_LABELS.includes(token));
+
+  if (foreignTrait !== undefined) {
+    throw new AiResponseError(
+      `AI explanation attributed the match to a personality trait the matcher never reads («${foreignTrait}»).`,
     );
   }
 

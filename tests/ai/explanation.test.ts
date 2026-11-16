@@ -23,7 +23,7 @@ import { makeExplanationInput, makeVector } from "./fixtures";
 
 /** Valid Persian copy: no digits, 40–400 chars, no invented products. */
 const VALID_TEXT =
-  "این عطر با سلیقه گرم و مرموز تو هماهنگه و همون حس خاصی که دنبالش هستی رو منتقل می‌کنه.";
+  "این عطر با سلیقه گرم و مرموز شما هماهنگه و همون حس خاصی که دنبالش هستید رو منتقل می‌کنه.";
 
 const explanationProvider = (
   generate: AIProvider["generateRecommendationExplanation"],
@@ -191,7 +191,7 @@ describe("validateAiExplanation", () => {
     expect(() =>
       validateAiExplanation(
         {
-          explanation: `عطر «${input.perfume.name}» با سلیقه گرم تو هماهنگه و حس خاصی بهت می‌ده.`,
+          explanation: `عطر «${input.perfume.name}» با سلیقه گرم شما هماهنگه و حس خاصی بهتون می‌ده.`,
         },
         input,
       ),
@@ -200,7 +200,7 @@ describe("validateAiExplanation", () => {
     expect(() =>
       validateAiExplanation(
         {
-          explanation: `از برند «${input.perfume.brand}» عطری انتخاب شده که با تو جور درمیاد و خاصه.`,
+          explanation: `از برند «${input.perfume.brand}» عطری انتخاب شده که با شما جور درمیاد و خاصه.`,
         },
         input,
       ),
@@ -242,6 +242,100 @@ describe("validateAiExplanation", () => {
 
     for (const [name, raw] of invalid) {
       expect(() => validateAiExplanation(raw, input), name).toThrow(/AI/);
+    }
+  });
+});
+
+describe("validateAiExplanation — runtime register and trait guards", () => {
+  const input = makeExplanationInput();
+
+  it("rejects the informal singular register", () => {
+    expect(() =>
+      validateAiExplanation(
+        {
+          explanation:
+            "این عطر با سلیقه گرم تو هماهنگه و همون حسی که دنبالش هستی رو بهت می‌ده.",
+        },
+        input,
+      ),
+    ).toThrow(/register/i);
+  });
+
+  it("accepts the same meaning in the polite plural", () => {
+    expect(() =>
+      validateAiExplanation(
+        {
+          explanation:
+            "این عطر با سلیقه گرم شما هماهنگه و همون حسی که دنبالش هستید رو بهتون می‌ده.",
+        },
+        input,
+      ),
+    ).not.toThrow();
+  });
+
+  it("matches whole tokens only — «توضیح» is not the pronoun «تو»", () => {
+    expect(() =>
+      validateAiExplanation(
+        {
+          explanation:
+            "این عطر با سلیقه گرم و مرموز شما هماهنگه؛ توضیح کوتاه اینکه حس خاصی منتقل می‌کنه.",
+        },
+        input,
+      ),
+    ).not.toThrow();
+  });
+
+  it("accepts plural verb forms such as «می‌خواید»", () => {
+    expect(() =>
+      validateAiExplanation(
+        {
+          explanation:
+            "این عطر با سلیقه گرم شما هماهنگه؛ اگه می‌خواید حس خاصی داشته باشید انتخاب مناسبیه.",
+        },
+        input,
+      ),
+    ).not.toThrow();
+  });
+
+  it("rejects a reply crediting any of the four non-matching personality axes", () => {
+    for (const label of ["اجتماعی", "ماجراجو", "پرشور", "تجربه‌گرا"]) {
+      expect(
+        () =>
+          validateAiExplanation(
+            {
+              explanation: `این عطر با سلیقه گرم شما هماهنگه چون شخصیت ${label} دارید و حس خاصی منتقل می‌کنه.`,
+            },
+            input,
+          ),
+        label,
+      ).toThrow(/personality trait/i);
+    }
+  });
+
+  it("still accepts the scent traits the matcher actually uses", () => {
+    expect(() =>
+      validateAiExplanation(
+        {
+          explanation:
+            "این عطر با سلیقه گرم، مرموز و جسور شما هماهنگه و حس خاصی منتقل می‌کنه.",
+        },
+        input,
+      ),
+    ).not.toThrow();
+  });
+
+  it("surfaces a register violation as ok:false instead of throwing", async () => {
+    const provider = explanationProvider(async (candidate) => ({
+      perfumeId: candidate.recommendation.perfumeId,
+      explanation:
+        "این عطر با سلیقه گرم تو هماهنگه و همون حسی که دنبالش هستی رو بهت می‌ده.",
+    }));
+
+    const outcome = await generateExplanation(provider, makeExplanationInput());
+
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok) {
+      expect(outcome.reason).toMatch(/register/i);
     }
   });
 });

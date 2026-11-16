@@ -37,7 +37,7 @@ function jsonResponse(content: string, status = 200): Response {
 /** A model reply the validators accept (Persian, no digits, correct length). */
 const VALID_EXPLANATION_JSON = JSON.stringify({
   explanation:
-    "این عطر با سلیقه گرم و مرموز تو هماهنگه و همون حس خاصی که دنبالش هستی رو منتقل می‌کنه.",
+    "این عطر با سلیقه گرم و مرموز شما هماهنگه و همون حس خاصی که دنبالش هستید رو منتقل می‌کنه.",
 });
 
 function createProvider(fetchImpl: typeof fetch, timeoutMs = 5_000) {

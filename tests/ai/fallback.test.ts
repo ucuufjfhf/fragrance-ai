@@ -21,7 +21,7 @@ import type { AiExplanationInput } from "@/lib/ai/provider";
  */
 
 const VALID_TEXT =
-  "این عطر با سلیقه گرم و مرموز تو هماهنگه و همون حس خاصی که دنبالش هستی رو منتقل می‌کنه.";
+  "این عطر با سلیقه گرم و مرموز شما هماهنگه و همون حس خاصی که دنبالش هستید رو منتقل می‌کنه.";
 
 const providerWith = (
   generate: AIProvider["generateRecommendationExplanation"],

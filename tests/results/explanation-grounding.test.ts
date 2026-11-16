@@ -114,7 +114,7 @@ function healthyProvider() {
     generateRecommendationExplanation: vi.fn(async (input) => ({
       perfumeId: input.recommendation.perfumeId,
       explanation:
-        "این عطر با سلیقه تو هماهنگ است چون حس گرم و متعادلی دارد و برای استفاده روزانه مناسب به نظر می‌رسد.",
+        "این عطر با سلیقه شما هماهنگ است چون حس گرم و متعادلی دارد و برای استفاده روزانه مناسب به نظر می‌رسد.",
     })),
   };
 }
@@ -341,7 +341,7 @@ describe("partial AI failure degrades per item", () => {
       return {
         perfumeId: input.recommendation.perfumeId,
         explanation:
-          "این عطر با سلیقه تو هماهنگ است چون حس متعادلی دارد و برای استفاده روزانه مناسب به نظر می‌رسد.",
+          "این عطر با سلیقه شما هماهنگ است چون حس متعادلی دارد و برای استفاده روزانه مناسب به نظر می‌رسد.",
       };
     });
 
