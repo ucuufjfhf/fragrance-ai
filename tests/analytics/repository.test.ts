@@ -241,9 +241,23 @@ describe("getDailyAnalytics — daily roll-up (§19)", () => {
   });
 });
 
+/**
+ * getSessionFunnel now runs two grouped reads through one mock (batch 56):
+ * stage rows are grouped by [sessionId, eventType], hero rows by [sessionId]
+ * only. Route by shape so neither fixture is mistaken for the other.
+ */
+function mockFunnelQueries(
+  stageRows: Array<{ sessionId: string | null; eventType: string; _count: { _all: number } }>,
+  heroRows: Array<{ sessionId: string | null; _count: { _all: number } }> = [],
+) {
+  mocks.groupBy.mockImplementation((args: { by: string[] }) =>
+    Promise.resolve(args.by.includes("eventType") ? stageRows : heroRows),
+  );
+}
+
 describe("getSessionFunnel — distinct attempts per stage (§16/§18)", () => {
   it("counts one attempt per session even when a stage fired twice", async () => {
-    mocks.groupBy.mockResolvedValue([
+    mockFunnelQueries([
       // Two RESULT_VIEWED rows from the same attempt (refresh / double-fire).
       { sessionId: "s-1", eventType: "RESULT_VIEWED", _count: { _all: 1 } },
       { sessionId: "s-1", eventType: "RESULT_VIEWED", _count: { _all: 1 } },
@@ -258,6 +272,7 @@ describe("getSessionFunnel — distinct attempts per stage (§16/§18)", () => {
     expect(funnel.resultViewed).toBe(2);
     expect(funnel.started).toBe(2);
     expect(funnel.sessions).toBe(2);
+    expect(funnel.entrySplit).toEqual({ hero: 0, other: 2 });
 
     // One grouped read: DISTINCT lives in SQL, and the query itself excludes
     // the pre-join population (null sessionId) and WIDGET_VIEWED traffic.
@@ -272,7 +287,7 @@ describe("getSessionFunnel — distinct attempts per stage (§16/§18)", () => {
   });
 
   it("yields one attempt at every stage and 100% rates for a complete attempt", async () => {
-    mocks.groupBy.mockResolvedValue(
+    mockFunnelQueries(
       ["QUIZ_STARTED", "QUIZ_COMPLETED", "RESULT_VIEWED", "RECOMMENDATIONS_SHOWN", "PERFUME_CLICKED"].map(
         (eventType) => ({ sessionId: "s-1", eventType, _count: { _all: 1 } }),
       ),
@@ -290,11 +305,12 @@ describe("getSessionFunnel — distinct attempts per stage (§16/§18)", () => {
       completionRate: 100,
       resultViewRate: 100,
       clickRate: 100,
+      entrySplit: { hero: 0, other: 1 },
     });
   });
 
   it("reports 0% completion — not null — when a started attempt never completes", async () => {
-    mocks.groupBy.mockResolvedValue([
+    mockFunnelQueries([
       { sessionId: "s-1", eventType: "QUIZ_STARTED", _count: { _all: 1 } },
     ]);
 
@@ -309,12 +325,13 @@ describe("getSessionFunnel — distinct attempts per stage (§16/§18)", () => {
   });
 
   it("returns null rates — never NaN — for an empty joined population", async () => {
-    mocks.groupBy.mockResolvedValue([]);
+    mockFunnelQueries([]);
 
     const funnel = await getSessionFunnel("store-1", RANGE);
 
     expect(funnel.started).toBe(0);
     expect(funnel.sessions).toBe(0);
+    expect(funnel.entrySplit).toEqual({ hero: 0, other: 0 });
     expect(funnel.completionRate).toBeNull();
     expect(funnel.resultViewRate).toBeNull();
     expect(funnel.clickRate).toBeNull();
@@ -325,7 +342,7 @@ describe("getSessionFunnel — distinct attempts per stage (§16/§18)", () => {
   it("counts a null-session row in no stage — the pre-join population stays out", async () => {
     // Defensive: even if an ungrouped/null row reaches the loop, it contributes
     // to neither the stage counts nor the session population.
-    mocks.groupBy.mockResolvedValue([
+    mockFunnelQueries([
       { sessionId: null, eventType: "QUIZ_STARTED", _count: { _all: 5 } },
       { sessionId: null, eventType: "PERFUME_CLICKED", _count: { _all: 2 } },
     ]);
@@ -336,6 +353,102 @@ describe("getSessionFunnel — distinct attempts per stage (§16/§18)", () => {
     expect(funnel.perfumeClicked).toBe(0);
     expect(funnel.sessions).toBe(0);
     expect(funnel.completionRate).toBeNull();
+    expect(funnel.entrySplit).toEqual({ hero: 0, other: 0 });
+  });
+});
+
+describe("getSessionFunnel — hero-entry split (batch 56)", () => {
+  it("counts a hero session once even when its start fired twice", async () => {
+    mockFunnelQueries(
+      [{ sessionId: "s-1", eventType: "QUIZ_STARTED", _count: { _all: 1 } }],
+      // A groupBy on sessionId already collapses these; the Set is the second
+      // guard, so a driver/mock that leaks a duplicate still cannot inflate it.
+      [
+        { sessionId: "s-1", _count: { _all: 1 } },
+        { sessionId: "s-1", _count: { _all: 1 } },
+      ],
+    );
+
+    const funnel = await getSessionFunnel("store-1", RANGE);
+
+    expect(funnel.entrySplit).toEqual({ hero: 1, other: 0 });
+    expect(funnel.started).toBe(1);
+  });
+
+  it("puts unmarked sessions in «سایر»", async () => {
+    mockFunnelQueries(
+      [
+        { sessionId: "s-1", eventType: "QUIZ_STARTED", _count: { _all: 1 } },
+        { sessionId: "s-2", eventType: "QUIZ_STARTED", _count: { _all: 1 } },
+        { sessionId: "s-3", eventType: "QUIZ_STARTED", _count: { _all: 1 } },
+      ],
+      [{ sessionId: "s-1", _count: { _all: 1 } }],
+    );
+
+    const funnel = await getSessionFunnel("store-1", RANGE);
+
+    expect(funnel.entrySplit).toEqual({ hero: 1, other: 2 });
+  });
+
+  it("counts a session with a hero start and an unmarked start once, in hero", async () => {
+    mockFunnelQueries(
+      [
+        // The stage read sees the session once regardless of two start rows.
+        { sessionId: "s-1", eventType: "QUIZ_STARTED", _count: { _all: 2 } },
+        { sessionId: "s-2", eventType: "QUIZ_STARTED", _count: { _all: 1 } },
+      ],
+      [{ sessionId: "s-1", _count: { _all: 1 } }],
+    );
+
+    const funnel = await getSessionFunnel("store-1", RANGE);
+
+    expect(funnel.started).toBe(2);
+    expect(funnel.entrySplit).toEqual({ hero: 1, other: 1 });
+  });
+
+  it("returns { hero: 0, other: 0 } for an empty range", async () => {
+    mockFunnelQueries([], []);
+
+    const funnel = await getSessionFunnel("store-1", RANGE);
+
+    expect(funnel.entrySplit).toEqual({ hero: 0, other: 0 });
+  });
+
+  it("keeps other === started - hero", async () => {
+    mockFunnelQueries(
+      [1, 2, 3, 4, 5].map((n) => ({
+        sessionId: `s-${n}`,
+        eventType: "QUIZ_STARTED",
+        _count: { _all: 1 },
+      })),
+      [1, 2].map((n) => ({ sessionId: `s-${n}`, _count: { _all: 1 } })),
+    );
+
+    const funnel = await getSessionFunnel("store-1", RANGE);
+
+    expect(funnel.entrySplit.hero).toBe(2);
+    expect(funnel.entrySplit.other).toBe(funnel.started - funnel.entrySplit.hero);
+  });
+
+  it("selects the marker with the JSON path filter on the same store and range", async () => {
+    mockFunnelQueries([
+      { sessionId: "s-1", eventType: "QUIZ_STARTED", _count: { _all: 1 } },
+    ]);
+
+    await getSessionFunnel("store-1", RANGE);
+
+    // Two grouped reads: stages, then the hero subset.
+    expect(mocks.groupBy).toHaveBeenCalledTimes(2);
+
+    const heroArgs = mocks.groupBy.mock.calls[1][0];
+
+    expect(heroArgs.by).toEqual(["sessionId"]);
+    expect(heroArgs.where.storeId).toBe("store-1");
+    expect(heroArgs.where.createdAt).toEqual({ gte: RANGE.from, lt: RANGE.to });
+    expect(heroArgs.where.sessionId).toEqual({ not: null });
+    expect(heroArgs.where.eventType).toBe("QUIZ_STARTED");
+    // groupBy cannot group ON a Json field, so the marker is a path filter.
+    expect(heroArgs.where.metadata).toEqual({ path: ["entry"], equals: "hero" });
   });
 });
 

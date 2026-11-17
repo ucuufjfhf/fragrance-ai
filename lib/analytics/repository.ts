@@ -112,6 +112,16 @@ export interface SessionFunnel {
   completionRate: number | null;
   resultViewRate: number | null;
   clickRate: number | null;
+  /**
+   * Hero-entry split of `started` (batch 46's marker, read since batch 56).
+   *
+   * Distinct sessions, not events: a session that started the quiz from the
+   * homepage hero counts once, and `other` is `started - hero` because the
+   * marked sessions are a subset of the started population by construction.
+   * Attempts recorded before the marker shipped carry no metadata at all and
+   * land in `other` — the report says so, rather than implying a clean split.
+   */
+  entrySplit: { hero: number; other: number };
 }
 
 /**
@@ -162,6 +172,29 @@ export async function getSessionFunnel(
   const countAt = (stage: (typeof ATTEMPT_FUNNEL_STAGES)[number]): number =>
     stageSessions.get(stage)?.size ?? 0;
 
+  // Batch 46's entry marker, read here for the first time (batch 56). One more
+  // grouped read on the same store + range: groupBy cannot group ON a Json
+  // column, so the hero rows are selected with the JSON path filter and the
+  // DISTINCT sessions fall out of grouping by sessionId. Same 60s dashboard
+  // cache and 30-day range cap apply — this is inside the cached aggregation.
+  const heroRows = await prisma.analyticsEvent.groupBy({
+    by: ["sessionId"],
+    where: {
+      storeId,
+      createdAt: { gte: range.from, lt: range.to },
+      sessionId: { not: null },
+      eventType: "QUIZ_STARTED",
+      metadata: { path: ["entry"], equals: "hero" },
+    },
+    _count: { _all: true },
+  });
+
+  const hero = new Set(
+    heroRows
+      .map((row) => row.sessionId)
+      .filter((sessionId): sessionId is string => sessionId !== null),
+  ).size;
+
   const started = countAt("QUIZ_STARTED");
   const completed = countAt("QUIZ_COMPLETED");
   const resultViewed = countAt("RESULT_VIEWED");
@@ -182,6 +215,9 @@ export async function getSessionFunnel(
     completionRate: rate(completed, started),
     resultViewRate: rate(resultViewed, completed),
     clickRate: rate(perfumeClicked, resultViewed),
+    // Clamped: hero sessions are a subset of started by construction, so a
+    // negative `other` would mean a broken read, never a real number.
+    entrySplit: { hero, other: Math.max(0, started - hero) },
   };
 }
 

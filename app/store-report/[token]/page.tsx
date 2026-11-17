@@ -133,10 +133,15 @@ export default async function StoreReportPage({ params, searchParams }: StoreRep
             <h2 className="font-heading text-lg font-bold">قیف تلاش‌ها</h2>
             <p className="mb-3 mt-1 text-xs leading-6 text-muted">
               بر اساس تلاش‌های دارای شناسهٔ نشست؛ رویدادهای بدون شناسه در این بخش
-              شمرده نمی‌شوند و شمارش کلی رویدادها در بالا دست‌نخورده است.
+              شمرده نمی‌شوند و شمارش کلی رویدادها در بالا دست‌نخورده است. «سایر»
+              شامل تلاش‌های بدون برچسب هم می‌شود.
             </p>
             <div className="mt-4 flex flex-col gap-4">
               <FunnelBar label="شروع آزمون" count={funnel.started} max={funnelMax} />
+              {/* Batch 46's entry marker: how the started sessions came in. */}
+              <p className="-mt-2 text-xs leading-6 text-muted">
+                {`از هیرو: ${toPersianDigits(funnel.entrySplit.hero)} · سایر ورودی‌ها: ${toPersianDigits(funnel.entrySplit.other)}`}
+              </p>
               <FunnelBar
                 label="تکمیل آزمون"
                 rate={funnel.completionRate}

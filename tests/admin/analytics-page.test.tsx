@@ -50,6 +50,7 @@ const DATA: AnalyticsDashboardData = {
     completionRate: (7 / 9) * 100,
     resultViewRate: (6 / 7) * 100,
     clickRate: 50,
+    entrySplit: { hero: 4, other: 5 },
   },
   completionRate: 50,
   clickRate: 40,
@@ -121,6 +122,7 @@ describe("admin analytics session funnel", () => {
         completionRate: null,
         resultViewRate: null,
         clickRate: null,
+        entrySplit: { hero: 0, other: 0 },
       },
     };
     mocks.dashboard.mockResolvedValue(zero);

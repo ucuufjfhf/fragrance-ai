@@ -303,6 +303,7 @@ describe("getAnalyticsDashboardData — KPI math (§16/§18)", () => {
       completionRate: (7 / 9) * 100,
       resultViewRate: (6 / 7) * 100,
       clickRate: 50,
+      entrySplit: { hero: 4, other: 5 },
     });
 
     const { getAnalyticsDashboardData } = await import("@/lib/analytics/service");

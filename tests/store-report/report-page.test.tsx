@@ -77,6 +77,8 @@ const DATA: AnalyticsDashboardData = {
     completionRate: (7 / 9) * 100,
     resultViewRate: (6 / 7) * 100,
     clickRate: 50,
+    // Batch 56: 4 of the 9 started sessions came in through the hero.
+    entrySplit: { hero: 4, other: 5 },
   },
   completionRate: 66.666,
   clickRate: 40,
@@ -150,6 +152,19 @@ describe("store report page — «most recommended» from impressions", () => {
     expect(html).toContain(formatPersianPercent(50));
     // The event-count KPIs stay beside it, unmerged.
     expect(html).toContain("بازدید ویجت");
+  });
+
+  it("splits the started sessions by entry, in Persian digits", async () => {
+    const html = await renderReport();
+
+    expect(html).toContain(
+      `از هیرو: ${toPersianDigits(DATA.sessionFunnel.entrySplit.hero)} · سایر ورودی‌ها: ${toPersianDigits(DATA.sessionFunnel.entrySplit.other)}`,
+    );
+    // The marker only exists on starts written after batch 46, so unmarked
+    // attempts are disclosed rather than silently folded into the hero number.
+    expect(html.replace(/\s+/g, " ")).toContain(
+      "«سایر» شامل تلاش‌های بدون برچسب هم می‌شود.",
+    );
   });
 
   it("renders «—» for null joined rates and no session identifier anywhere", async () => {
