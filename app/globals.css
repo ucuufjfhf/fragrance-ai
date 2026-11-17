@@ -191,7 +191,8 @@
 
 .btn-primary:focus-visible,
 .btn-secondary:focus-visible,
-.btn-tertiary:focus-visible {
+.btn-tertiary:focus-visible,
+.skip-link:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--forest) 45%, white);
   outline-offset: 3px;
 }

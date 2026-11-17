@@ -42,7 +42,7 @@ export default function Home() {
     <div className="flex flex-1 flex-col">
       <SiteHeader />
 
-      <main className="flex flex-1 flex-col">
+      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col">
         {/* Hero — asymmetric editorial split: copy on the right, moody visual on the left. */}
         <section className="relative">
           <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-5 pb-14 pt-12 sm:px-8 lg:grid-cols-[1fr_0.92fr] lg:gap-16 lg:pb-24 lg:pt-20">

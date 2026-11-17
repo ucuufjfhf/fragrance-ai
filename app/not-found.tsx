@@ -21,7 +21,11 @@ export default function NotFound() {
     <div className="flex flex-1 flex-col">
       <SiteHeader />
 
-      <main className="flex flex-1 items-center justify-center px-5 py-16 sm:px-8">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex flex-1 items-center justify-center px-5 py-16 sm:px-8"
+      >
         <div className="flex w-full max-w-lg flex-col items-center gap-6 text-center">
           {/* Bundled public/ asset, not merchant data: a plain <img> keeps the
               exact file, with no loader in between. */}

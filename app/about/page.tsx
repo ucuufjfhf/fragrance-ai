@@ -45,7 +45,7 @@ export default function AboutPage() {
     <div className="flex flex-1 flex-col">
       <SiteHeader />
 
-      <main className="flex flex-1 flex-col">
+      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col">
         <section className="mx-auto w-full max-w-3xl px-5 pb-6 pt-12 sm:px-8 lg:pt-20">
           {/* text-muted (not accent): the site accent is 4.32:1 at this
               size — the muted token clears AA. */}

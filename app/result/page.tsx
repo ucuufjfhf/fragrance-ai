@@ -85,7 +85,11 @@ export default async function ResultPage({ searchParams }: ResultPageProps) {
       {/* The results wrapper only: mobile keeps today's narrow column, and from
           lg the room the three cards need (the fallback/empty state below stays
           at max-w-xl). */}
-      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6 sm:py-14 lg:max-w-6xl">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6 sm:py-14 lg:max-w-6xl"
+      >
         {/* The results screen's one note of depth: a single faint bottle
             silhouette behind the content, in its own fixed backdrop (see
             components/BottleSilhouettes.tsx). Decorative and inert — it never
@@ -113,7 +117,11 @@ function ResultErrorState() {
     <div className="flex flex-1 flex-col">
       <SiteHeader />
 
-      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6 sm:py-14">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6 sm:py-14"
+      >
         <section className="flex flex-col items-center gap-4 rounded-3xl border border-border-soft bg-surface p-6 text-center shadow-[var(--shadow-card)] sm:p-8">
           <BrandMark className="mx-auto h-8 w-8 text-accent" />
           <h1 className="font-heading text-xl font-bold sm:text-2xl">

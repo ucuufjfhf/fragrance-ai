@@ -21,6 +21,19 @@ import Link from "next/link";
 export default function SiteHeader() {
   return (
     <header className="site-header sticky top-0 z-40 border-b border-border-soft/70 bg-background/85">
+      {/* Skip link: the first thing in tab order on every public page. It is
+          visually hidden until it receives focus, and its absolutely positioned
+          wrapper is what keeps the header bar from shifting when the plate
+          appears — the link itself only flips `sr-only` off. */}
+      <div className="absolute start-2 top-2 z-50">
+        <a
+          href="#main-content"
+          className="skip-link sr-only flex min-h-10 items-center rounded-md bg-background px-4 text-sm font-medium text-foreground focus:not-sr-only"
+        >
+          پرش به محتوای اصلی
+        </a>
+      </div>
+
       <nav className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5 sm:px-8">
         <Link
           href="/"

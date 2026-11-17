@@ -44,7 +44,7 @@ export default function DataPolicyPage() {
     <div className="flex flex-1 flex-col">
       <SiteHeader />
 
-      <main className="flex flex-1 flex-col">
+      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col">
         <section className="mx-auto w-full max-w-3xl px-5 pb-6 pt-12 sm:px-8 lg:pt-20">
           <p className="text-sm font-medium text-muted">حریم خصوصی و داده‌ها</p>
           <h1 className="mt-2 font-heading text-4xl font-bold leading-[1.3] text-foreground sm:text-5xl">
