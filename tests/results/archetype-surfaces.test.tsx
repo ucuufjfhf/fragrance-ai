@@ -83,7 +83,7 @@ describe("landing sample — medallion + emphasis", () => {
 
   it("still reads as a sample, never as someone's result", () => {
     expect(html).toContain("نمونه نتیجه");
-    expect(html).toContain("نتیجه‌تون چیزی شبیه این میشه");
+    expect(html).toContain("نتیجه\u200cتون چیزی شبیه این می\u200cشه");
     expect(html).toContain("این یک نمونه‌ست، نه نتیجه واقعی شما");
     // The fixed archetype choice is unchanged (شعله).
     expect(html).toContain(archetype.label);

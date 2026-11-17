@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import HomePage from "@/app/page";
 import FaqSection, { FAQS } from "@/components/landing/FaqSection";
 import SampleResultSection from "@/components/landing/SampleResultSection";
 import { getArchetypeById } from "@/lib/personality/archetypes";
@@ -86,7 +87,7 @@ describe("landing FAQ", () => {
 
     // The profile and the archetype really do use all nine axes...
     expect(accuracy).toContain("پروفایل سلیقه با ۹ محور");
-    expect(accuracy).toContain("تیپ عطری‌تون از روی هر ۹ محور انتخاب میشه");
+    expect(accuracy).toContain("تیپ عطری\u200cتون از روی هر ۹ محور انتخاب می\u200cشه");
 
     // ...but the perfume picks compare only the five scent axes, by name.
     expect(accuracy).toContain("پنج محور رایحه‌ای");
@@ -94,5 +95,31 @@ describe("landing FAQ", () => {
       expect(accuracy).toContain(axis);
     }
     expect(catalog).toContain("پنج محور رایحه‌ای");
+  });
+});
+
+describe("home copy spelling", () => {
+  it("writes می‌شه with its zero-width non-joiner on the steps", () => {
+    const html = render(<HomePage />);
+
+    // Batch 62: About was fixed in batch 51 and the home steps were not, so the
+    // most-visited page spelled the same verb differently from the rest.
+    expect(html).toContain("پروفایل عطری\u200cتون ساخته می\u200cشه");
+    expect(html).toContain("۹ محور درست می\u200cشه");
+  });
+
+  it("writes می‌شه with its zero-width non-joiner in the FAQ answers", () => {
+    const answers = FAQS.map((faq) => faq.answer).join(" ");
+
+    for (const phrase of [
+      "محور ساخته می\u200cشه",
+      "محور انتخاب می\u200cشه",
+      "مقایسه می\u200cشه",
+      "پیشنهاد می\u200cشه",
+    ]) {
+      expect(answers).toContain(phrase);
+    }
+    // No joined «میشه» left (the «همیشه» spelling is a different word).
+    expect(answers).not.toContain(" میشه");
   });
 });

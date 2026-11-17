@@ -53,11 +53,11 @@ export default function SampleResultSection() {
           id="sample-result-heading"
           className="font-heading text-2xl font-semibold text-foreground sm:text-3xl"
         >
-          نتیجه‌تون چیزی شبیه این میشه
+          نتیجه‌تون چیزی شبیه این می‌شه
         </h2>
         <p className="max-w-2xl text-sm leading-loose text-muted">
           این یک نمونه‌ست، نه نتیجه واقعی شما — پروفایل واقعی‌تون از جواب‌های
-          خودتون ساخته میشه. مثلاً اگر پروفایل‌تون «شعله» بشه، همچین چیزی
+          خودتون ساخته می‌شه. مثلاً اگر پروفایل‌تون «شعله» بشه، همچین چیزی
           می‌بینید:
         </p>
       </div>
