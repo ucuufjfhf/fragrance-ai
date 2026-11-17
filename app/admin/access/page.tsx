@@ -12,7 +12,7 @@ import { isAdminAccessConfigured, safeAdminRedirectPath } from "@/lib/admin/acce
  */
 
 export const metadata = {
-  title: "ورود مدیریت | عطر خودتو پیدا کن",
+  title: "ورود مدیریت | عطر خودتون رو پیدا کنید",
   robots: { index: false, follow: false },
 };
 

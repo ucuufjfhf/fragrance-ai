@@ -35,7 +35,7 @@ const ADMIN_PERFUMES_PATH = "/admin/perfumes";
  */
 
 export const metadata: Metadata = {
-  title: "مدیریت عطرها | عطر خودتو پیدا کن",
+  title: "مدیریت عطرها | عطر خودتون رو پیدا کنید",
   robots: { index: false, follow: false },
 };
 

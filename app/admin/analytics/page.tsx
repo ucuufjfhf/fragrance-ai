@@ -24,7 +24,7 @@ import { requireAdmin } from "@/lib/admin/server-access";
  */
 
 export const metadata: Metadata = {
-  title: "تحلیل عملکرد | عطر خودتو پیدا کن",
+  title: "تحلیل عملکرد | عطر خودتون رو پیدا کنید",
   robots: { index: false, follow: false },
 };
 
