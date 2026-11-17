@@ -6,6 +6,7 @@ import AboutPage from "@/app/about/page";
 import ForStoresPage, { metadata } from "@/app/for-stores/page";
 import SiteFooter from "@/components/site/SiteFooter";
 import {
+  REPORT_FACTS,
   WIDGET_DEMO_STORE_ID,
   WIDGET_LOADER_ATTRIBUTES,
   WIDGET_LOADER_PATH,
@@ -96,9 +97,16 @@ describe("for-stores page — promises the code cannot keep are absent", () => {
   });
 
   it("states no trial duration and no free-price claim", () => {
+    // The one duration on the page is the report's own data window (batch 65),
+    // which is a measured range, not a trial or a commitment. Take it out before
+    // looking for the promises this test forbids.
+    const TREND_WINDOW = "روند روزانهٔ شروع آزمون در ۳۰ روز گذشته.";
+    const withoutWindow = copy.split(TREND_WINDOW).join(" ");
+
+    expect(copy).toContain(TREND_WINDOW);
     // No «۱۴ روز» / «۳ ماه» style promise in Latin or Persian digits.
-    expect(copy).not.toMatch(/(\d+|[۰-۹]+)\s*(روز|ماه|هفته|ساعت|سال)/);
-    expect(copy).not.toMatch(/رایگان|تخفیف|تخفیف ویژه/);
+    expect(withoutWindow).not.toMatch(/(\d+|[۰-۹]+)\s*(روز|ماه|هفته|ساعت|سال)/);
+    expect(withoutWindow).not.toMatch(/رایگان|تخفیف|تخفیف ویژه/);
   });
 
   it("claims no uptime, SLA, backup or retention guarantee", () => {
@@ -121,6 +129,29 @@ describe("for-stores page — promises the code cannot keep are absent", () => {
     // The report page renders no revenue/sales figure — nor may this page.
     expect(copy).not.toMatch(/درآمد فروش|رقم فروش/);
     expect(copy).toContain("نه درآمد");
+  });
+
+  it("describes the funnel and the daily trend too, in render order", () => {
+    // Batch 65: batches 49 and 54 added two sections to the report, so the
+    // "one bullet per rendered section" promise needed two more bullets.
+    expect(REPORT_FACTS).toEqual([
+      "بازدید ویجت؛ فقط وقتی شمرده می‌شود که ویجت واقعاً در صفحه دیده شود، نه فقط بارگذاری شود.",
+      "شروع آزمون، تکمیل آزمون و نرخ تکمیل آزمون.",
+      "قیف تلاش‌ها؛ چند نشست یکتا هر مرحله از آزمون را رد کرده‌اند و نرخ گذر بین مرحله‌ها.",
+      "برای هر عطر: چند بار در پیشنهادها آمده، چند بار کلیک شده و نرخ کلیک.",
+      "روند روزانهٔ شروع آزمون در ۳۰ روز گذشته.",
+    ]);
+
+    // Render order on /store-report/[token]: KPIs, funnel, top perfumes, daily.
+    const order = [
+      "بازدید ویجت",
+      "شروع آزمون، تکمیل آزمون",
+      "قیف تلاش‌ها",
+      "برای هر عطر",
+      "روند روزانهٔ",
+    ].map((needle) => copy.indexOf(needle));
+    expect(order.every((index) => index > -1)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
   });
 
   it("keeps the data facts and links the full policy", () => {
