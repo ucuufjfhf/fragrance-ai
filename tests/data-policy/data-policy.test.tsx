@@ -9,6 +9,7 @@ import {
   COLLECTED_DATA,
   CONTACT_EMAIL,
   EVENT_LABELS,
+  LAST_UPDATED_FA,
   NOT_COLLECTED,
 } from "@/lib/data-policy/content";
 
@@ -42,6 +43,23 @@ describe("data policy page — what is actually collected", () => {
 
     // Batch 1's widget impression is a real event and must be visible here.
     expect(html).toContain("باز شدن ویجت");
+  });
+
+  it("tells the truth about what the event details contain", () => {
+    // Batch 64: the page claimed events held only a name and a store id, while
+    // the code records which perfumes were shown, where the quiz started and
+    // which perfume was clicked — anonymous, but not just a name.
+    expect(html).toContain("نام رویداد و شناسهٔ فروشگاه، به‌همراه جزئیات ناشناس همان رویداد");
+    expect(html).toContain("کدام عطرها در پیشنهادها آمده‌اند");
+    expect(html).toContain("آزمون از کجا شروع شده");
+    expect(html).toContain("کدام عطر کلیک شده");
+    expect(html).not.toContain("فقط نام رویداد و شناسهٔ فروشگاه؛");
+  });
+
+  it("dates the copy from the day it was last changed", () => {
+    // The file's rule: the date only moves when the words do.
+    expect(LAST_UPDATED_FA).toBe("۲۶ آبان ۱۴۰۵");
+    expect(html).toContain(LAST_UPDATED_FA);
   });
 
   it("says the profile is computed from the answers and the token is anonymous", () => {

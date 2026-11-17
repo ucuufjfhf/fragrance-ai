@@ -24,7 +24,7 @@ import type { AnalyticsEventType } from "@/lib/analytics/types";
  * A literal, not a computed date: the page tells the reader when its words were
  * written, so this only moves when the copy actually does.
  */
-export const LAST_UPDATED_FA = "۱۶ آبان ۱۴۰۵";
+export const LAST_UPDATED_FA = "۲۶ آبان ۱۴۰۵";
 
 /** What the widget actually records — one entry per real data category. */
 export const COLLECTED_DATA = [
@@ -43,7 +43,8 @@ export const COLLECTED_DATA = [
   },
   {
     title: "رویدادهای آماری",
-    detail: "فقط نام رویداد و شناسهٔ فروشگاه؛ فهرست کامل در بخش بعدی آمده است.",
+    detail:
+      "نام رویداد و شناسهٔ فروشگاه، به‌همراه جزئیات ناشناس همان رویداد — مثلاً کدام عطرها در پیشنهادها آمده‌اند، آزمون از کجا شروع شده و کدام عطر کلیک شده؛ فهرست کامل در بخش بعدی آمده است.",
   },
 ] as const;
 
