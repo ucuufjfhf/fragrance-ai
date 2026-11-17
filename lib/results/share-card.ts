@@ -36,7 +36,7 @@ export const SHARE_CARD_DIVIDER = "✦";
 export const SHARE_CARD_TOP_LABEL = "پیشنهاد اول شما";
 export const SHARE_CARD_CLOSENESS_LABEL = "شاخص نزدیکی";
 export const SHARE_CARD_FOOTER_SITE = "fiage.ir";
-export const SHARE_CARD_FOOTER_TITLE = "عطر خودتو پیدا کن";
+export const SHARE_CARD_FOOTER_TITLE = "عطر خودتون رو پیدا کنید";
 
 /** One run of the archetype description: plain copy, or an emphasised trait. */
 export interface ShareCardEmphasisSegment {

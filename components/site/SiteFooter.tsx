@@ -58,7 +58,7 @@ export default function SiteFooter() {
         </nav>
 
         <p className="text-xs leading-relaxed text-muted">
-          © ۱۴۰۵ FIAGE — انتخاب عطر بر اساس پروفایل تو.
+          © ۱۴۰۵ FIAGE — انتخاب عطر بر اساس پروفایل شما.
         </p>
       </div>
     </footer>

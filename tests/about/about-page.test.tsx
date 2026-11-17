@@ -165,7 +165,7 @@ describe("site footer trust links", () => {
     // Existing links and the protected tagline are untouched.
     expect(html).toContain("آزمون سلیقه");
     expect(html).toContain("چطور کار می‌کند");
-    expect(html).toContain("انتخاب عطر بر اساس پروفایل تو");
+    expect(html).toContain("انتخاب عطر بر اساس پروفایل شما");
   });
 });
 

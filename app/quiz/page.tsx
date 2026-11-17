@@ -6,7 +6,7 @@ import SiteFooter from "@/components/site/SiteFooter";
 import SiteHeader from "@/components/site/SiteHeader";
 
 export const metadata: Metadata = {
-  title: "عطر خودتو پیدا کن | آزمون سلیقه عطری",
+  title: "عطر خودتون رو پیدا کنید | آزمون سلیقه عطری",
   description:
     "با ۱۰ سؤال کوتاه پروفایل عطری خودتون رو پیدا کنید و ببینید چه رایحه‌ای با سلیقه‌تون هماهنگ‌تره.",
 };

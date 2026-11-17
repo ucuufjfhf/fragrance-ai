@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { metadata as quizMetadata } from "@/app/quiz/page";
 import ArchetypeRevealStage from "@/components/quiz/ArchetypeRevealStage";
 import AudienceStep from "@/components/quiz/AudienceStep";
 import FragranceProfileCard, {
@@ -34,6 +35,15 @@ function render(element: ReactElement): string {
 function withoutJoiners(value: string): string {
   return value.replace(/\u200c/g, "");
 }
+
+describe("quiz page metadata", () => {
+  it("uses the شما title, identical to the home hero", () => {
+    // Batch 60: the metadata title still said «خودتو» after the bulk شما pass.
+    expect(quizMetadata.title).toBe(
+      "عطر خودتون رو پیدا کنید | آزمون سلیقه عطری",
+    );
+  });
+});
 
 const noopSelect = (): void => undefined;
 

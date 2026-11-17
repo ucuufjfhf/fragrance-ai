@@ -164,7 +164,7 @@ describe("travel-note headline", () => {
 
     // Kicker keeps the old heading copy; centroid explainer byte-identical.
     expect(html).toContain("عطرهایی که بهتون میاد");
-    expect(html).toContain("شخصیتت");
+    expect(html).toContain("شخصیت شما");
     expect(html).toContain("پروفایل عطری شما");
   });
 });

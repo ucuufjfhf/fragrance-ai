@@ -21,7 +21,7 @@ import type { QuizResult } from "@/types/personality";
  * reveal stage and the profile card so both name the same basis verbatim.
  */
 export const SELECTION_BASIS =
-  "این پروفایل از روی همهٔ ۹ محور شخصیتت انتخاب شده است — نه فقط بالاترین محور.";
+  "این پروفایل از روی همهٔ ۹ محور شخصیت شما انتخاب شده است — نه فقط بالاترین محور.";
 
 export interface FragranceProfileCardProps {
   result: QuizResult;

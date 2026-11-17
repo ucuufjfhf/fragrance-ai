@@ -207,7 +207,7 @@ export default function ResultsView({
             className="quiz-rise mt-1 max-w-md text-xs leading-7 text-muted"
             style={{ animationDelay: "380ms", animationFillMode: "backwards" }}
           >
-            این پروفایل از روی همهٔ ۹ محور شخصیتت انتخاب شده است — نه فقط بالاترین محور.
+            این پروفایل از روی همهٔ ۹ محور شخصیت شما انتخاب شده است — نه فقط بالاترین محور.
           </p>
         </div>
       </section>

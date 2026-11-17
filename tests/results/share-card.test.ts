@@ -70,7 +70,7 @@ describe("share card model — content", () => {
 
   it("names the footer exactly: the site, the quiz title and nothing else", () => {
     expect(model.footer.site).toBe("fiage.ir");
-    expect(model.footer.title).toBe("عطر خودتو پیدا کن");
+    expect(model.footer.title).toBe("عطر خودتون رو پیدا کنید");
   });
 
   it("now carries the scent radar's five values (batch 37)", () => {
