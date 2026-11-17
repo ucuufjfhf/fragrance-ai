@@ -75,6 +75,26 @@ export default async function AdminAnalyticsPage({ searchParams }: AdminAnalytic
     stores.find((store) => store.id === params.storeId) ?? stores[0];
   const data = await getAnalyticsDashboardData(selectedStore.id, params.range);
 
+  // Distinct-attempt funnel (batch 66). `summary` above counts EVENTS — one
+  // shopper retrying three times is three starts — while these are distinct
+  // sessions per stage, so the two populations are shown side by side and never
+  // mixed into one number. The bar scale uses the widest stage as its maximum;
+  // assuming the first stage is largest would push a bar past 100%.
+  const funnel = data.sessionFunnel;
+  const funnelMax = Math.max(
+    funnel.started,
+    funnel.completed,
+    funnel.resultViewed,
+    funnel.recommendationsShown,
+    funnel.perfumeClicked,
+  );
+  // Impressions per result view — the same null-on-zero-denominator rule as
+  // the other joined rates, so a zero denominator renders «—», never NaN.
+  const recommendationsRate =
+    funnel.resultViewed === 0
+      ? null
+      : (funnel.recommendationsShown / funnel.resultViewed) * 100;
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
       <h1 className="mb-2 text-2xl font-bold">تحلیل عملکرد</h1>
@@ -145,6 +165,65 @@ export default async function AdminAnalyticsPage({ searchParams }: AdminAnalytic
               value={data.clickRate === null ? null : Math.round(data.clickRate)}
               isPercent
             />
+          </section>
+
+          {/* --- session-joined funnel: distinct attempts, not events --- */}
+          <section className="mt-10">
+            <h2 className="text-lg font-bold">قیف تلاش‌ها</h2>
+            <p className="mb-3 mt-1 text-xs leading-6 text-muted">
+              بر اساس تلاش‌های دارای شناسهٔ نشست؛ رویدادهای بدون شناسه در این بخش
+              شمرده نمی‌شوند و شمارش کلی رویدادها در بالا دست‌نخورده است.
+            </p>
+            <div className="mt-4 flex flex-col gap-4">
+              <AdminFunnelBar label="شروع آزمون" count={funnel.started} max={funnelMax} />
+              <AdminFunnelBar
+                label="تکمیل آزمون"
+                rate={funnel.completionRate}
+                rateLabel="از شروع"
+                count={funnel.completed}
+                max={funnelMax}
+              />
+              <AdminFunnelBar
+                label="مشاهدهٔ نتیجه"
+                rate={funnel.resultViewRate}
+                rateLabel="از تکمیل"
+                count={funnel.resultViewed}
+                max={funnelMax}
+              />
+              <AdminFunnelBar
+                label="نمایش پیشنهادها"
+                rate={recommendationsRate}
+                rateLabel="از مشاهده"
+                count={funnel.recommendationsShown}
+                max={funnelMax}
+              />
+              <AdminFunnelBar
+                label="کلیک روی عطر"
+                rate={funnel.clickRate}
+                rateLabel="از مشاهده"
+                count={funnel.perfumeClicked}
+                max={funnelMax}
+              />
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <KpiCard
+                label="تکمیل از شروع"
+                value={
+                  funnel.completionRate === null ? null : Math.round(funnel.completionRate)
+                }
+                isPercent
+              />
+              <KpiCard
+                label="مشاهدهٔ نتیجه از تکمیل"
+                value={funnel.resultViewRate === null ? null : Math.round(funnel.resultViewRate)}
+                isPercent
+              />
+              <KpiCard
+                label="کلیک از مشاهدهٔ نتیجه"
+                value={funnel.clickRate === null ? null : Math.round(funnel.clickRate)}
+                isPercent
+              />
+            </div>
           </section>
 
           {/* --- top recommended perfumes --- */}
@@ -230,6 +309,56 @@ export default async function AdminAnalyticsPage({ searchParams }: AdminAnalytic
         رفتار فردی کاربرد ندارد.
       </p>
     </main>
+  );
+}
+
+/**
+ * One funnel stage: label, optional stage-to-stage rate, distinct-attempt
+ * count and a proportional bar. The width is clamped by the widest stage, and
+ * a zero maximum draws an empty bar instead of dividing by zero.
+ *
+ * Admin styling only — the store report's gold gradient and merchant chrome
+ * have no place on the owner's dashboard.
+ */
+function AdminFunnelBar({
+  label,
+  rate,
+  rateLabel,
+  count,
+  max,
+}: {
+  label: string;
+  rate?: number | null;
+  rateLabel?: string;
+  count: number;
+  max: number;
+}) {
+  const width = max === 0 ? 0 : Math.round((count / max) * 100);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium text-foreground">{label}</span>
+          {rateLabel === undefined ? null : (
+            <span className="text-xs text-muted">
+              {rate === null || rate === undefined
+                ? "—"
+                : `${formatPersianPercent(rate)} ${rateLabel}`}
+            </span>
+          )}
+        </div>
+        <span className="tnum text-sm font-semibold text-accent">
+          {toPersianDigits(count)}
+        </span>
+      </div>
+      <div
+        aria-hidden="true"
+        className="h-[22px] w-full overflow-hidden rounded-full bg-surface-2"
+      >
+        <div className="h-full rounded-full bg-accent" style={{ width: `${width}%` }} />
+      </div>
+    </div>
   );
 }
 

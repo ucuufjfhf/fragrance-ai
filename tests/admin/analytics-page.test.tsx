@@ -23,7 +23,7 @@ vi.mock("@/lib/analytics/service", async (importOriginal) => {
 });
 
 import AdminAnalyticsPage from "@/app/admin/analytics/page";
-import { toPersianDigits } from "@/lib/persian";
+import { formatPersianPercent, toPersianDigits } from "@/lib/persian";
 import type { AnalyticsDashboardData } from "@/lib/analytics/service";
 
 const DATA: AnalyticsDashboardData = {
@@ -38,8 +38,8 @@ const DATA: AnalyticsDashboardData = {
   },
   topPerfumes: [],
   daily: [],
-  // Present on the shared object (both consumers receive it); this page's
-  // explicit markup does not render the funnel block yet.
+  // Batch 66: the page now renders this block (distinct sessions per stage,
+  // not the event counts above), so the fixture is load-bearing.
   sessionFunnel: {
     started: 9,
     completed: 7,
@@ -62,6 +62,77 @@ beforeEach(() => {
     { id: "store-1", name: "فروشگاه نمونه", websiteUrl: null },
   ]);
   mocks.dashboard.mockResolvedValue(DATA);
+});
+
+describe("admin analytics session funnel", () => {
+  it("renders the funnel stages and their stage-to-stage rates", async () => {
+    const html = renderToStaticMarkup(
+      await AdminAnalyticsPage({ searchParams: Promise.resolve({}) }),
+    );
+
+    expect(html).toContain("قیف تلاش‌ها");
+    for (const stage of ["شروع آزمون", "تکمیل آزمون", "مشاهدهٔ نتیجه", "نمایش پیشنهادها", "کلیک روی عطر"]) {
+      expect(html).toContain(stage);
+    }
+
+    // Distinct sessions, rendered as Persian digits: 9 / 7 / 6 / 6 / 3.
+    for (const count of [9, 7, 6, 3]) {
+      expect(html).toContain(toPersianDigits(count));
+    }
+    // Rate labels are the store report's, and the rates come from the fixture.
+    expect(html).toContain("از شروع");
+    expect(html).toContain("از تکمیل");
+    expect(html).toContain("از مشاهده");
+    expect(html).toContain(formatPersianPercent(50)); // clickRate
+  });
+
+  it("scales the bars by the widest stage, not the first one", async () => {
+    const html = renderToStaticMarkup(
+      await AdminAnalyticsPage({ searchParams: Promise.resolve({}) }),
+    );
+
+    // Funnel max is 9 (started), so started is full-width and completed is 7/9.
+    expect(html).toContain("width:100%");
+    expect(html).toContain("width:78%");
+    expect(html).not.toMatch(/width:NaN|Infinity/);
+  });
+
+  it("carries the store report's disclosure about the session subset", async () => {
+    const html = renderToStaticMarkup(
+      await AdminAnalyticsPage({ searchParams: Promise.resolve({}) }),
+    );
+
+    // Byte-identical wording to app/store-report/[token]/page.tsx.
+    expect(html.replace(/\s+/g, " ")).toContain(
+      "بر اساس تلاش‌های دارای شناسهٔ نشست؛ رویدادهای بدون شناسه در این بخش شمرده نمی‌شوند و شمارش کلی رویدادها در بالا دست‌نخورده است.",
+    );
+  });
+
+  it("draws empty bars and «—» on an all-zero funnel, never NaN", async () => {
+    const zero = {
+      ...DATA,
+      sessionFunnel: {
+        started: 0,
+        completed: 0,
+        resultViewed: 0,
+        recommendationsShown: 0,
+        perfumeClicked: 0,
+        sessions: 0,
+        completionRate: null,
+        resultViewRate: null,
+        clickRate: null,
+      },
+    };
+    mocks.dashboard.mockResolvedValue(zero);
+
+    const html = renderToStaticMarkup(
+      await AdminAnalyticsPage({ searchParams: Promise.resolve({}) }),
+    );
+
+    expect(html).not.toMatch(/NaN|Infinity/);
+    expect(html).toContain("width:0%");
+    expect(html).toContain("—");
+  });
 });
 
 describe("admin analytics KPI accessibility", () => {
